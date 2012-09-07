@@ -286,7 +286,6 @@ proc _wrap4tea {{dst {}}} {
     }
     return
 }
-
 proc Hdrop {} { return "?destination?\n\tRemove packages.\n\tdestination = path of package directory, default \[info library\]." }
 proc _drop {{dst {}}} {
     global packages
@@ -317,8 +316,6 @@ proc _drop {{dst {}}} {
 	puts "Removed package:     $dstl/$name$version"
     }
 }
-
-
 proc Hdoc {} { return "?destination?\n\t(Re)Generate the embedded documentation." }
 proc _doc {{dst {../embedded}}} {
     cd [file dirname $::me]/doc
@@ -370,6 +367,4 @@ proc _figures {} {
 
     return
 }}
-
-
 main
