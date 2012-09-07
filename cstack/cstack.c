@@ -5,7 +5,7 @@
  */
 
 CSTACK
-cstack_new (CSTACK_CELL_FREE freeCell, void* clientdata)
+cstack_create (CSTACK_CELL_FREE freeCell, void* clientdata)
 {
     CSTACK s = ALLOC (CSTACK_);
     s->cell = NALLOC (CSTACK_INITIAL_SIZE, void*);
@@ -18,7 +18,7 @@ cstack_new (CSTACK_CELL_FREE freeCell, void* clientdata)
 }
 
 void
-cstack_del (CSTACK s)
+cstack_destroy (CSTACK s)
 {
     if (s->freeCell && s->top) {
 	long int i;
@@ -31,6 +31,49 @@ cstack_del (CSTACK s)
     ckfree ((char*) s->cell);
     ckfree ((char*) s);
 }
+
+/*
+ * = = == === ===== ======== ============= =====================
+ */
+
+long int
+cstack_size (CSTACK s)
+{
+    return s->top;
+}
+
+void*
+cstack_top (CSTACK s)
+{
+    ASSERT_BOUNDS(s->top-1,s->max);
+    return s->cell [s->top - 1];
+}
+
+CSLICE
+cstack_get (CSTACK s, long int n, CSLICE_DIRECTION dir)
+{
+    ASSERT (n <= s->top, "Not enough elements in the cstack");
+
+    /*
+     * Note the double negation below. To get the normal order of the result,
+     * the order has to be reversed. To get the reverted order, nothing is to
+     * be done. So we revers on dir == cslice_normal.
+     *
+     * An optimization: We know that the direction is irrrelevant when
+     * returning a single element, therefore we can use the code path not
+     * doing allocation.
+     */
+
+    if ((dir == cslice_revers) || (n < 2)) {
+	return cslice_create (cslice_normal, s->cell + (s->top - n), n);
+    } else {
+	return cslice_create (cslice_revers, s->cell + (s->top - n), n);
+    }
+}
+
+/*
+ * = = == === ===== ======== ============= =====================
+ */
 
 void
 cstack_push (CSTACK s, void* item)
@@ -46,13 +89,6 @@ cstack_push (CSTACK s, void* item)
     ASSERT_BOUNDS(s->top,s->max);
     s->cell [s->top] = item;
     s->top ++;
-}
-
-void*
-cstack_top (CSTACK s)
-{
-    ASSERT_BOUNDS(s->top-1,s->max);
-    return s->cell [s->top - 1];
 }
 
 void
@@ -98,55 +134,6 @@ cstack_drop (CSTACK s, long int n)
 }
 
 void
-cstack_move (CSTACK dst, CSTACK src)
-{
-    ASSERT (dst->freeCell == src->freeCell, "Ownership mismatch");
-
-    /*
-     * Note: The destination takes ownership of the moved cell, thus there is
-     * no need to run free on them.
-     */
-
-    while (src->top > 0) {
-	src->top --;
-	ASSERT_BOUNDS(src->top,src->max);
-	cstack_push (dst, src->cell [src->top] );
-    }
-}
-
-void
-cstack_get (CSTACK s, long int n, CSTACK_DIRECTION dir, CSTACK_SLICE* slice)
-{
-    ASSERT (n <= s->top, "Not enough elements in the cstack");
-
-    /*
-     * Note the double negation below. To get the normal order of the result,
-     * the order has to be reversed. To get the reverted order, nothing is to
-     * be done. So we revers on dir == cstack_normal.
-     *
-     * As optimization we know that direction is irrrelevant when returning a
-     * single element and thus we can use the code path not doing any
-     * allocations.
-     */
-
-    if ((dir == cstack_revers) || (n < 2)) {
-	slice->dynamic = 0;
-	slice->cell = s->cell + (s->top - n);
-    } else {
-	int i;
-
-	slice->dynamic = 1;
-	slice->cell = NALLOC (n, void*);
-
-	for (i=0; i<n; i++) {
-	    ASSERT_BOUNDS (i,n);
-	    ASSERT_BOUNDS (s->top-i-1,s->top);
-	    slice->cell [i] = s->cell [s->top-i-1];
-	}
-    }
-}
-
-void
 cstack_rol (CSTACK s, long int n, long int steps)
 {
     long int i, j, start = s->top - n;
@@ -174,11 +161,26 @@ cstack_rol (CSTACK s, long int n, long int steps)
     ckfree ((char*) tmp);
 }
 
-long int
-cstack_size (CSTACK s)
+void
+cstack_move (CSTACK dst, CSTACK src)
 {
-    return s->top;
+    ASSERT (dst->freeCell == src->freeCell, "Ownership mismatch");
+
+    /*
+     * Note: The destination takes ownership of the moved cell, thus there is
+     * no need to run free on them.
+     */
+
+    while (src->top > 0) {
+	src->top --;
+	ASSERT_BOUNDS(src->top,src->max);
+	cstack_push (dst, src->cell [src->top] );
+    }
 }
+
+/*
+ * = = == === ===== ======== ============= =====================
+ */
 
 void
 cstack_clientdata_set (CSTACK s, void* clientdata)

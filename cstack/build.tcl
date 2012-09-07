@@ -2,9 +2,9 @@
 # -*- tcl -*- \
 exec tclsh "$0" ${1+"$@"}
 set me [file normalize [info script]]
-# Order of building and installation: "cstack", then "stackc", as the
-# latter depends on the former. Not relevant for wrap4tea.
-set packages {cstack stackc}
+set packages {
+    cstack
+}
 proc main {} {
     global argv tcl_platform tag
     set tag {}
@@ -107,7 +107,7 @@ proc _help {} {
     usage 0
     return
 }
-proc Hrecipes {} { return "\n\tList all brew commands, without details." }
+proc Hrecipes {} { return "\n\tList all build commands, without details." }
 proc _recipes {} {
     set r {}
     foreach c [info commands _*] {
@@ -286,4 +286,90 @@ proc _wrap4tea {{dst {}}} {
     }
     return
 }
+
+proc Hdrop {} { return "?destination?\n\tRemove packages.\n\tdestination = path of package directory, default \[info library\]." }
+proc _drop {{dst {}}} {
+    global packages
+
+    if {[llength [info level 0]] < 2} {
+	set dstl [info library]
+    } else {
+	set dstl $dst
+    }
+
+    foreach item $packages {
+	# Package: /name/
+
+	if {[llength $item] == 2} {
+	    lassign $item vfile name
+	} else {
+	    lassign $item name
+	    set vfile ${name}.tcl
+	}
+
+	if {$vfile ne {}} {
+	    set version  [version [file dirname $::me]/$vfile]
+	} else {
+	    set version {}
+	}
+
+	file delete -force $dstl/$name$version
+	puts "Removed package:     $dstl/$name$version"
+    }
+}
+
+
+proc Hdoc {} { return "?destination?\n\t(Re)Generate the embedded documentation." }
+proc _doc {{dst {../embedded}}} {
+    cd [file dirname $::me]/doc
+
+    puts "Removing old documentation..."
+    file delete -force $dst/man
+    file delete -force $dst/www
+
+    file mkdir $dst/man
+    file mkdir $dst/www
+
+    puts "Generating man pages..."
+    exec 2>@ stderr >@ stdout dtplite -ext n -o $dst/man nroff .
+    puts "Generating html..."
+    exec 2>@ stderr >@ stdout dtplite        -o $dst/www html .
+
+    cd  $dst/man
+    file delete -force .idxdoc .tocdoc
+    cd  ../www
+    file delete -force .idxdoc .tocdoc
+
+    return
+}
+proc Htextdoc {} { return "destination\n\tGenerate plain text documentation in specified directory." }
+proc _textdoc {dst} {
+    set destination [file normalize $dst]
+
+    cd [file dirname $::me]/doc
+
+    puts "Removing old text documentation at ${dst}..."
+    file delete -force $destination
+
+    file mkdir $destination
+
+    puts "Generating pages..."
+    exec 2>@ stderr >@ stdout dtplite -ext txt -o $destination text .
+
+    cd  $destination
+    file delete -force .idxdoc .tocdoc
+
+    return
+}
+if 0 {proc Hfigures {} { return "\n\t(Re)Generate the figures and diagrams for the documentation." }
+proc _figures {} {
+    cd [file dirname $::me]/doc/figures
+
+    puts "Generating (tklib) diagrams..."
+    eval [linsert [glob *.dia] 0 exec 2>@ stderr >@ stdout dia convert -t -o . png]
+
+    return
+}}
+
+
 main

@@ -1,7 +1,7 @@
 #ifndef CSTACK_INT_H
 #define CSTACK_INT_H 1
 
-#include "cstack/cstackDecls.h"
+#include "c_stack/c_stackDecls.h"
 
 /*
  * Waste a bit of space (1K) on each new stack to reduce the amount of

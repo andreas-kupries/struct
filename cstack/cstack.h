@@ -2,10 +2,10 @@
 #define CSTACK_H 1
 
 /*
- * Forward declaration of stacks (opaque handle).
+ * Import the slice API, especially the data types.
  */
 
-typedef struct CSTACK_* CSTACK;
+#include "c_slice/c_sliceDecls.h"
 
 /*
  * Stacks are conceptually an array of void* cells, with each cell
@@ -19,30 +19,14 @@ typedef struct CSTACK_* CSTACK;
  * of the stack's user.
  */
 
+/*
+ * Forward declaration of stacks (opaque handle).
+ * Type of cell release functions.
+ */
+
+typedef struct CSTACK_* CSTACK;
+
 typedef void (*CSTACK_CELL_FREE) (void* cell);
-
-/*
- * Data structure filled by 'stack_get'. The pointer to the cells may be
- * allocated on the heap, or not. If it is allocated the flag 'dynamic' is set
- * to true, and false otherwise.
- */
-
-typedef struct CSTACK_SLICE_ {
-    void** cell;
-    int    dynamic;
-} CSTACK_SLICE;
-
-#define cstack_slice_cleanup(slice) \
-    if ((slice).dynamic) { ckfree ((char*) (slice).cell); }
-
-/*
- * Cue to 'cstack_get' where to put the top element of the stack in the returned slice.
- */
-
-typedef enum {
-    cstack_normal,  /* cstack_get returns the slice with top-element at left/beginning */
-    cstack_revers   /* cstack_get returns the slice with top-element at right/end */
-} CSTACK_DIRECTION;
 
 #endif /* CSTACK_H */
 
