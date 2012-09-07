@@ -41,6 +41,8 @@ critcl::subject {generic data structure}
 critcl::api import c::slice 1
 critcl::api import c::stack 1
 
+critcl::tsources policy.tcl
+
 # # ## ### ##### ######## ############# #####################
 ## Implementation
 
