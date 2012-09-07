@@ -56,6 +56,14 @@ critcl::argtype stacksize {
     }
 } int int
 
+# Custom definition.
+critcl::resulttype sTcl_Obj* {
+    if (rv == NULL) { return TCL_ERROR; }
+    Tcl_SetObjResult(interp, rv);
+    /* No refcount adjustment */
+    return TCL_OK;
+} Tcl_Obj*
+
 critcl::class::define ::struct::stack {
     # # ## ### ##### ######## ############# #####################
 
@@ -65,7 +73,7 @@ critcl::class::define ::struct::stack {
 
     support {
 	/* * ** *** ***** ******** ************* ********************* */
-	/* Cell liefcycle, release */
+	/* Cell lifecycle, release */
 
 	static void
 	StructStackC_FreeCell (void* cell) {
@@ -148,7 +156,7 @@ critcl::class::define ::struct::stack {
 	return cstack_size (instance);
     }
 
-    method get proc {} Tcl_Obj* {
+    method get proc {} sTcl_Obj* {
 	Tcl_Obj* result;
 	int      n = cstack_size (instance);
 
@@ -159,7 +167,7 @@ critcl::class::define ::struct::stack {
 	}
     }
 
-    method getr proc {} Tcl_Obj* {
+    method getr proc {} sTcl_Obj* {
 	Tcl_Obj* result;
 	int n = cstack_size (instance);
 
@@ -238,7 +246,7 @@ critcl::class::define ::struct::stack {
 	return TCL_OK;
     }
 
-    method trim proc {stacksize n} Tcl_Obj* {
+    method trim proc {stacksize n} sTcl_Obj* {
 	int len = cstack_size (instance);
 
 	if (n < len) {
