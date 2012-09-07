@@ -1,22 +1,18 @@
 # stackc.tcl --
 #
 #       Implementation of a stack data structure for Tcl.
-#       This code based on critcl v3.1, API compatible to the PTI [x].
-#       [x] Pure Tcl Implementation.
-#
-# Demonstrates not just the stubs import and meta data declaration,
-# but also the utility package for the creation of classes and objects
-# in C, with both claaes and their instances represented as Tcl
-# commands.
+#       This code based on critcl v3.1
+#	API compatible with the implementation in Tcl (8.5+OO)
 #
 # Copyright (c) 2012 Andreas Kupries <andreas_kupries@users.sourceforge.net>
 #
 # See the file "license.terms" for information on usage and redistribution
 # of this file, and for a DISCLAIMER OF ALL WARRANTIES.
-#
-# RCS: @(#) $Id: stackc.tcl,v 1.1 2008/06/19 23:03:35 andreas_kupries Exp $
 
-package require Tcl 8.4
+# # ## ### ##### ######## ############# #####################
+## Requisites
+
+package require Tcl 8.5
 package require critcl 3.1
 
 critcl::buildrequirement {
@@ -31,9 +27,8 @@ critcl::license {Andreas Kupries} {BSD licensed}
 critcl::summary {Stack objects for Tcl.}
 
 critcl::description {
-    This package implements stack objects
-    for Tcl. It uses the abstract data type
-    provided by package 'cstack' for actual
+    This package implements stack objects for Tcl. It uses the
+    abstract data type provided by package 'cstack' to handle actual
     storage and operations.
 }
 
@@ -43,21 +38,96 @@ critcl::subject structure
 critcl::subject {abstract data structure}
 critcl::subject {generic data structure}
 
+critcl::api import c::slice 1
+critcl::api import c::stack 1
+
 # # ## ### ##### ######## ############# #####################
-## Configuration and implementation.
+## Implementation
 
-critcl::api import cstack 1
+critcl::argtype stacksize {
+    if (Tcl_GetIntFromObj (interp, @@, &@A) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    if (@A < 0) {
+	Tcl_AppendResult (interp, "invalid size ",
+			  Tcl_GetString (@@),
+			  NULL);
+	return TCL_ERROR;
+    }
+} int int
 
-critcl::cheaders stackc/*.h ; # Method declarations and implementation,
-critcl::csources stackc/*.c ; # outside of this main file.
+critcl::class::define ::struct::stack {
+    # # ## ### ##### ######## ############# #####################
 
-critcl::class::define ::stackc {
-    include m.h                  ; # Method function declarations.
-    include cstack/cstackDecls.h ; # API of the generic CSTACK we are binding to.
+    include c_slice/c_sliceDecls.h ; # API of the generic CSLICE used by CSTACK.
+    include c_stack/c_stackDecls.h ; # API of the generic CSTACK we are binding to.
     type    CSTACK
 
+    support {
+	/* * ** *** ***** ******** ************* ********************* */
+	/* Cell liefcycle, release */
+
+	static void
+	StructStackC_FreeCell (void* cell) {
+	    Tcl_DecrRefCount ((Tcl_Obj*) cell);
+	}
+
+	/* * ** *** ***** ******** ************* ********************* */
+	/* Common code for peek, peekr, and pop */
+
+	static int
+	StructStackC_GetN (CSTACK instance, Tcl_Interp* interp,
+			   int objc, Tcl_Obj*const* objv, int* n) {
+
+	    if ((objc != 2) && (objc != 3)) {
+		Tcl_WrongNumArgs (interp, 2, objv, "?n?");
+		return TCL_ERROR;
+	    }
+
+	    if (objc == 3) {
+		if (Tcl_GetIntFromObj(interp, objv[2], n) != TCL_OK) {
+		    return TCL_ERROR;
+		} else if (*n < 1) {
+		    Tcl_AppendResult (interp, "invalid item count ",
+				      Tcl_GetString (objv[2]),
+				      NULL);
+		    return TCL_ERROR;
+		}
+	    }
+
+	    if (*n > cstack_size (instance)) {
+		Tcl_AppendResult (interp,
+			  "insufficient items on stack to fulfill request",
+			  NULL);
+		return TCL_ERROR;
+	    }
+
+	    return TCL_OK;
+	}
+
+	static Tcl_Obj*
+	StructStackC_Elements (CSTACK instance, int n, CSLICE_DIRECTION dir) {
+	    CSLICE s = cstack_get (instance, n, dir);
+	    void** cells;
+	    long int ln;
+	    Tcl_Obj* result;
+
+	    cslice_get (s, &cells, &ln);
+	    if (n == 1) {
+		result = (Tcl_Obj*) cells [0];
+	    } else {
+		result = Tcl_NewListObj (ln, (Tcl_Obj**) cells);
+	    }
+	    cslice_delete (s);
+	    return result;
+	}
+    }
+
+    # # ## ### ##### ######## ############# #####################
+    ## Lifecycle management.
+
     constructor {
-	instance = cstack_new (StackcFreeCell, 0);
+	instance = cstack_create (StructStackC_FreeCell, 0);
     } {
 	/* Set back reference from CSTACK instance to instance command */
 	cstack_clientdata_set (instance, (ClientData) cmd);
@@ -65,31 +135,130 @@ critcl::class::define ::stackc {
 
     destructor {
 	/* Release the whole stack. */
-	cstack_del (instance);
+	cstack_destroy (instance);
     }
 
-    method clear   as stm_CLEAR
-    method destroy as stm_DESTROY
-    method peek    as stm_PEEK 0 0
-    method peekr   as stm_PEEK 0 1
-    method pop     as stm_PEEK 1 0
-    method push    as stm_PUSH
-    method rotate  as stm_ROTATE
-    method size    as stm_SIZE
-    method get     as stm_GET 0
-    method getr    as stm_GET 1
-    method trim    as stm_TRIM 1
-    method trimv   as stm_TRIM 0
+    method destroy proc {} void {
+	Tcl_DeleteCommandFromToken(interp, (Tcl_Command) cstack_clientdata_get (instance));
+    }
 
-    support {
-	static void
-	StackcFreeCell (void* cell) {
-	    /* Release the cell. */
-	    Tcl_DecrRefCount ((Tcl_Obj*) cell);
+    # # ## ### ##### ######## ############# #####################
+
+    method size proc {} int {
+	return cstack_size (instance);
+    }
+
+    method get proc {} Tcl_Obj* {
+	Tcl_Obj* result;
+	int      n = cstack_size (instance);
+
+	if (!n) {
+	    return Tcl_NewListObj (0,NULL);
+	} else {
+	    return StructStackC_Elements (instance, n, cslice_normal);
 	}
     }
+
+    method getr proc {} Tcl_Obj* {
+	Tcl_Obj* result;
+	int n = cstack_size (instance);
+
+	if (!n) {
+	    return Tcl_NewListObj (0,NULL);
+	} else {
+	    return StructStackC_Elements (instance, n, cslice_revers);
+	}
+    }
+
+    method peek command {?n?} {
+	int n = 1;
+
+	if (StructStackC_GetN (instance, interp, objc, objv, &n) != TCL_OK) {
+	    return TCL_ERROR;
+	}
+
+	Tcl_SetObjResult (interp, StructStackC_Elements (instance, n, cslice_normal));
+	return TCL_OK;
+    }
+
+    method peekr command {?n?} {
+	int n = 1;
+
+	if (StructStackC_GetN (instance, interp, objc, objv, &n) != TCL_OK) {
+	    return TCL_ERROR;
+	}
+
+	Tcl_SetObjResult (interp, StructStackC_Elements (instance, n, cslice_revers));
+	return TCL_OK;
+    }
+
+    method pop command {?n?} {
+	int n = 1;
+
+	if (StructStackC_GetN (instance, interp, objc, objv, &n) != TCL_OK) {
+	    return TCL_ERROR;
+	}
+
+	Tcl_SetObjResult (interp, StructStackC_Elements (instance, n, cslice_normal));
+	cstack_pop (instance, n);
+	return TCL_OK;
+    }
+
+    # # ## ### ##### ######## ############# #####################
+
+    method clear proc {} void {
+	cstack_pop (instance, cstack_size (instance));
+    }
+
+    method push command {item ?item...?} {
+	int i;
+
+	if (objc < 3) {
+	    Tcl_WrongNumArgs (interp, 2, objv, "item ?item ...?");
+	    return TCL_ERROR;
+	}
+
+	for (i = 2; i < objc; i++) {
+	    cstack_push (instance, objv[i]);
+	    Tcl_IncrRefCount (objv[i]);
+	}
+
+	return TCL_OK;
+    }
+
+    method rotate proc {int n int steps} ok {
+	if (n > cstack_size (instance)) {
+	    Tcl_AppendResult (interp,
+		      "insufficient items on stack to perform request",
+		      NULL);
+	    return TCL_ERROR;
+	}
+
+	cstack_rol (instance, n, steps);
+	return TCL_OK;
+    }
+
+    method trim proc {stacksize n} Tcl_Obj* {
+	int len = cstack_size (instance);
+
+	if (n < len) {
+	    Tcl_Obj* result = StructStackC_Elements (instance, len-n, cslice_normal);
+	    cstack_trim (instance, n);
+	    return result;
+	}
+
+	return Tcl_NewListObj (0,NULL);
+    }
+
+    method trim* proc {stacksize n} void {
+	if (n < cstack_size (instance)) {
+	    cstack_trim (instance, n);
+	}
+    }
+
+    # # ## ### ##### ######## ############# #####################
 }
 
-# ### ### ### ######### ######### #########
+# # ## ### ##### ######## ############# #####################
 ## Ready
-package provide stackc 1
+package provide struct::stack 2
