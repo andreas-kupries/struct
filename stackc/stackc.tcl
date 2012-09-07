@@ -126,7 +126,7 @@ critcl::class::define ::struct::stack {
 	    } else {
 		result = Tcl_NewListObj (ln, (Tcl_Obj**) cells);
 	    }
-	    cslice_delete (s);
+	    cslice_destroy (s);
 	    return result;
 	}
     }
