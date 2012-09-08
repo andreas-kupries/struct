@@ -16,7 +16,7 @@ package require Tcl 8.5
 package require critcl 3.1
 
 critcl::buildrequirement {
-    package require critcl::class ; # DSL, easy spec of Tcl class/object commands.
+    package require critcl::class 1.0.1 ; # DSL, easy spec of Tcl class/object commands.
 }
 
 # # ## ### ##### ######## ############# #####################

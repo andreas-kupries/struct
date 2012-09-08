@@ -1,0 +1,140 @@
+[comment {-*- text -*- ........ - - -- --- ----- -------- -------------}]
+[comment {--- doctools --- manpage}]
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[manpage_begin c::stack n 1]
+[include ../include/general.inc]
+[titledesc {Create and manipulate stacks}]
+[require c::slice [opt 1]]
+[require c::stack [opt 1]]
+[keywords  stack lifo]
+[description]
+[include ../include/welcome.inc]
+
+[para] This package provides a basic C API for the creation and use of
+stacks. It does provide neither Tcl commands nor other items visible
+at script level.
+
+[para] The package is meant to be used by other C level data structure
+packages, either internally, or providing a Tcl level API to it. An
+example of the latter is the C implementation of package
+[package struct::stack].
+
+[para] To support this the package provides its C API by means of a
+stubs table which can be imported.
+
+[section API]
+[list_begin definitions]
+
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call [type CSTACK] [fun cstack_create] ( [type CSTACK_CELL_FREE] [arg fun], \
+      [type void*] [arg clientdata] )]
+
+This function creates and initializes a new stack object and returns
+its handle. The client-data is simply stored and available upon
+request, see function [fun cstack_clientdata_get] below.
+
+[para] The free function [fun fun] is for the release of memory
+associated with the cells of the new stack. It may be NULL.
+
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call void [fun cstack_destroy] ( [type CSTACK] [arg s] )]
+
+This function destroys the specified stack object, releasing all
+allocated memory.
+
+[para] The cell release function is called for all cells left in the
+stack.
+
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call [type {long int}] [fun cstack_size] ( [type CSTACK] [arg s] )]
+
+This function returns the number of cells in the stack.
+
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call void [fun cstack_top] ( [type CSTACK] [arg s] )]
+
+This function returns the topmost cell in the stack.
+
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call void [fun cstack_get] ( [type CSTACK] [arg s], \
+      [type {long int}] [arg n], \
+      [type CSLICE_DIRECTION] [arg dir] )]
+
+This function returns the [arg n] topmost cells in the stack as a
+slice, with the topmost cell either as first or last element of the
+slice, depending on [arg dir].
+
+[para] [const cslice_normal] <==> topmost is first.
+[para] [const cslice_revers] <==> topmost is last.
+
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call void [fun cstack_push] ( [type CSTACK] [arg s], \
+      [type void*] [arg item] )]
+
+This function pushes the [arg item] onto the stack.
+
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call void [fun cstack_pop] ( [type CSTACK] [arg s], \
+      [type {long int}] [arg n] )]
+
+This function removes the [arg n] topmost cells from the stack.
+
+[para] The cell release function is called for all removed cells.
+This is in contrast to function [fun cstack_drop] below.
+
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call void [fun cstack_trim] ( [type CSTACK] [arg s], \
+      [type {long int}] [arg n] )]
+
+This function removes cells until the stack contains only [arg n]
+cells. If the stack had less cells to begin with nothing is done.
+
+[para] The cell release function is called for all removed cells.
+
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call void [fun cstack_drop] ( [type CSTACK] [arg s], \
+      [type {long int}] [arg n] )]
+
+This function removes the [arg n] topmost cells from the stack.
+
+[para] [emph Note:] The cell release function is [emph not] called for
+the removed cells. This is in contrast to function [fun cstack_pop]
+above.
+
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call void [fun cstack_rol] ( [type CSTACK] [arg s], \
+      [type {long int}] [arg n], \
+      [type {long int}] [arg step] )]
+
+This function rotates the [arg n] topmost cells in the stack by
+[arg step] elements.
+
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call void [fun cstack_move] ( [type CSTACK] [arg s], \
+      [type CSTACK] [arg src] )]
+
+This function moves all cells in the stack [arg src] to the stack.
+After the operation [arg src] is empty.
+
+As the cells are not destroyed the release function is not called.
+
+[para] As a basic precaution the release functions of both stack are
+compared, and have to match. The code will assert this and panic if
+the condition is not true.
+
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call void [fun cstack_clientdata_set] ( [type CSTACK] [arg s], \
+      [type void*] [arg clientdata] )]
+
+This function sets new client data into the stack.
+
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call void* [fun cstack_clientdata_get] ( [type CSTACK] [arg s] )]
+
+This function returns the client data currently stored in the stack.
+
+[list_end]
+
+[include ../include/license.inc]
+[include ../include/feedback.inc]
+[manpage_end]
