@@ -266,7 +266,7 @@ The package is meant to be used by other C level data structure
 packages, as a means to provide access to parts of their internal
 data, assuming that they are (conceptually) an array.
 .PP
-To support this the package provide its C API by means of a
+To support this the package provides its C API by means of a
 stubs table which can be imported.
 .SH API
 .TP
@@ -276,7 +276,7 @@ specified slice of an array of cells. The return value of the function
 is the handle of the new slice object.
 .TP
 void \fBcslice_destroy\fR ( \fBCSLICE\fR \fIs\fR )
-This function destroy the specified slice object, releasing all
+This function destroys the specified slice object, releasing all
 allocated memory.
 .TP
 void \fBcslice_get\fR ( \fBCSLICE\fR \fIs\fR, \fBvoid***\fR \fIcells\fR, \fBint*\fR \fIn\fR )

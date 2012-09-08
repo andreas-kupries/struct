@@ -137,7 +137,7 @@ proc _install {{ldir {}}} {
     foreach p $packages {
 	puts ""
 
-	set src     $::myself/$p.tcl
+	set src     $::mydir/$p.tcl
 	set version [version $src]
 
 	file delete -force             [pwd]/BUILD
@@ -176,7 +176,7 @@ proc _debug {{ldir {}}} {
     foreach p $packages {
 	puts ""
 
-	set src     $::myself/$p.tcl
+	set src     $::mydir/$p.tcl
 	set version [version $src]
 
 	file delete -force             [pwd]/BUILD.$p
@@ -276,7 +276,7 @@ proc _wrap4tea {{dst {}}} {
     package require critcl::app
 
     foreach p $packages {
-	set src     $::myself/$p.tcl
+	set src     $::mydir/$p.tcl
 	set version [version $src]
 
 	file delete -force             [pwd]/BUILD
@@ -310,7 +310,7 @@ proc _drop {{dst {}}} {
 	}
 
 	if {$vfile ne {}} {
-	    set version  [version $::myself/$vfile]
+	    set version  [version $::mydir/$vfile]
 	} else {
 	    set version {}
 	}

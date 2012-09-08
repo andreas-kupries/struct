@@ -140,7 +140,7 @@ items visible at script level.</p>
 <p>The package is meant to be used by other C level data structure
 packages, as a means to provide access to parts of their internal
 data, assuming that they are (conceptually) an array.</p>
-<p>To support this the package provide its C API by means of a
+<p>To support this the package provides its C API by means of a
 stubs table which can be imported.</p>
 </div>
 <div id="section2" class="section"><h2><a name="section2">API</a></h2>
@@ -150,7 +150,7 @@ stubs table which can be imported.</p>
 specified slice of an array of cells. The return value of the function
 is the handle of the new slice object.</p></dd>
 <dt><a name="2">void <b class="function">cslice_destroy</b> ( <b class="type">CSLICE</b> <i class="arg">s</i> )</a></dt>
-<dd><p>This function destroy the specified slice object, releasing all
+<dd><p>This function destroys the specified slice object, releasing all
 allocated memory.</p></dd>
 <dt><a name="3">void <b class="function">cslice_get</b> ( <b class="type">CSLICE</b> <i class="arg">s</i>, <b class="type">void***</b> <i class="arg">cells</i>, <b class="type">int*</b> <i class="arg">n</i> )</a></dt>
 <dd><p>This function provides access to the slice of cells contained in the
