@@ -1,0 +1,6 @@
+[comment {-*- tcl -*- --- !doctools --- manpage}]
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[moddesc   {Tcl Data Structures}]
+[category  {Data structures}]
+[keywords  {data structures}]
+[require Tcl 8.5]
