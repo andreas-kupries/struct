@@ -1,7 +1,9 @@
 #!/bin/sh
 # -*- tcl -*- \
 exec tclsh "$0" ${1+"$@"}
-set me [file normalize [info script]]
+set me     [file normalize [info script]]
+set mydir  [file dirname $me]
+set topdir [file dirname $mydir]
 set packages {
     cslice
 }
@@ -135,7 +137,7 @@ proc _install {{ldir {}}} {
     foreach p $packages {
 	puts ""
 
-	set src     [file dirname $::me]/$p.tcl
+	set src     $::myself/$p.tcl
 	set version [version $src]
 
 	file delete -force             [pwd]/BUILD
@@ -174,7 +176,7 @@ proc _debug {{ldir {}}} {
     foreach p $packages {
 	puts ""
 
-	set src     [file dirname $::me]/$p.tcl
+	set src     $::myself/$p.tcl
 	set version [version $src]
 
 	file delete -force             [pwd]/BUILD.$p
@@ -274,7 +276,7 @@ proc _wrap4tea {{dst {}}} {
     package require critcl::app
 
     foreach p $packages {
-	set src     [file dirname $::me]/$p.tcl
+	set src     $::myself/$p.tcl
 	set version [version $src]
 
 	file delete -force             [pwd]/BUILD
@@ -308,7 +310,7 @@ proc _drop {{dst {}}} {
 	}
 
 	if {$vfile ne {}} {
-	    set version  [version [file dirname $::me]/$vfile]
+	    set version  [version $::myself/$vfile]
 	} else {
 	    set version {}
 	}
@@ -317,11 +319,10 @@ proc _drop {{dst {}}} {
 	puts "Removed package:     $dstl/$name$version"
     }
 }
-
-
 proc Hdoc {} { return "?destination?\n\t(Re)Generate the embedded documentation." }
-proc _doc {{dst {../embedded}}} {
-    cd [file dirname $::me]/doc
+proc _doc {{dst {../../embedded/slice}}} {
+
+    cd $::topdir/doc/slice
 
     puts "Removing old documentation..."
     file delete -force $dst/man
@@ -332,8 +333,10 @@ proc _doc {{dst {../embedded}}} {
 
     puts "Generating man pages..."
     exec 2>@ stderr >@ stdout dtplite -ext n -o $dst/man nroff .
-    puts "Generating html..."
-    exec 2>@ stderr >@ stdout dtplite        -o $dst/www html .
+    puts "Generating 1st html..."
+    exec 2>@ stderr >@ stdout dtplite -merge -o $dst/www html .
+    puts "Generating 2nd html, resolving cross-references..."
+    exec 2>@ stderr >@ stdout dtplite -merge -o $dst/www html .
 
     cd  $dst/man
     file delete -force .idxdoc .tocdoc
@@ -346,7 +349,7 @@ proc Htextdoc {} { return "destination\n\tGenerate plain text documentation in s
 proc _textdoc {dst} {
     set destination [file normalize $dst]
 
-    cd [file dirname $::me]/doc
+    cd $::topdir/doc/slice
 
     puts "Removing old text documentation at ${dst}..."
     file delete -force $destination
@@ -363,7 +366,7 @@ proc _textdoc {dst} {
 }
 if 0 {proc Hfigures {} { return "\n\t(Re)Generate the figures and diagrams for the documentation." }
 proc _figures {} {
-    cd [file dirname $::me]/doc/figures
+    cd $::topdir/doc/slice/figures
 
     puts "Generating (tklib) diagrams..."
     eval [linsert [glob *.dia] 0 exec 2>@ stderr >@ stdout dia convert -t -o . png]

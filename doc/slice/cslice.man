@@ -1,0 +1,47 @@
+[comment {-*- text -*- ........ - - -- --- ----- -------- -------------}]
+[comment {--- doctools --- manpage}]
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[manpage_begin c::slice n 1]
+[include ../include/general.inc]
+[titledesc {Create and manipulate slices}]
+[require c::slice [opt 1]]
+[keywords  slice {array slice}]
+[description]
+[include ../include/welcome.inc]
+
+[para] This package provides a basic C API for the creation and use of
+continous array slices. It does provide neither Tcl commands nor other
+items visible at script level.
+
+[para] The package is meant to be used by other C level data structure
+packages, as a means to provide access to parts of their internal
+data, assuming that they are (conceptually) an array.
+
+[para] To support this the package provide its C API by means of a
+stubs table which can be imported.
+
+[section API]
+[list_begin definitions]
+
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call [type CSLICE] [fun cslice_create] ( [type CSLICE_DIRECTION] [arg dir], [type void**] [arg cells], [type int] [arg n] )]
+
+This function creates and initializes a slice object with the
+specified slice of an array of cells. The return value of the function
+is the handle of the new slice object.
+
+[call void [fun cslice_destroy] ( [type CSLICE] [arg s] )]
+
+This function destroy the specified slice object, releasing all
+allocated memory.
+
+[call void [fun cslice_get] ( [type CSLICE] [arg s], [type void***] [arg cells], [type int*] [arg n] )]
+
+This function provides access to the slice of cells contained in the
+specified slice object.
+
+[list_end]
+
+[include ../include/license.inc]
+[include ../include/feedback.inc]
+[manpage_end]
