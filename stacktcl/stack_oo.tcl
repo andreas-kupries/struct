@@ -1,47 +1,41 @@
-# stack.tcl --
+## stack.tcl --
+# # ## ### ##### ######## ############# #####################
 #
-#	Stack implementation for Tcl 8.6+, or 8.5 + TclOO
+#	Stack implementation for Tcl 8.5+TclOO
 #
-# Copyright (c) 2010 Andreas Kupries
-#
-# See the file "license.terms" for information on usage and redistribution
-# of this file, and for a DISCLAIMER OF ALL WARRANTIES.
-# 
-# RCS: @(#) $Id: stack_oo.tcl,v 1.4 2010/09/10 17:31:04 andreas_kupries Exp $
+# Copyright (c) 2010-2012 Andreas Kupries
 
-package require TclOO 0.6.1
+# # ## ### ##### ######## ############# #####################
 
-# Cleanup first
-catch {namespace delete ::struct::stack::stack_oo}
-catch {rename           ::struct::stack::stack_oo {}}
+package require Tcl 8.5
+package require TclOO
 
-oo::class create ::struct::stack::stack_oo {
+# # ## ### ##### ######## ############# #####################
+
+oo::class create ::struct::stack {
+    # # ## ### ##### ######## ############# #####################
+    ## Instance state.
+
+    # - The list of elements.
+    #   Grows to the right.
+    #   The topmost element is stored last.
 
     variable mystack
+
+    # # ## ### ##### ######## ############# #####################
+    ## Lifecycle management.
 
     constructor {} {
 	set mystack {}
 	return
     }
 
-    # clear --
-    #
-    #	Clear a stack.
-    #
-    # Results:
-    #	None.
+    # # ## ### ##### ######## ############# #####################
+    ## Accessors
 
-    method clear {} {
-	set mystack {}
-	return
+    method size {} {
+	return [llength $mystack]
     }
-
-    # get --
-    #
-    #	Retrieve the whole contents of the stack.
-    #
-    # Results:
-    #	items	list of all items in the stack.
 
     method get {} {
 	return [lreverse $mystack]
@@ -51,141 +45,66 @@ oo::class create ::struct::stack::stack_oo {
 	return $mystack
     }
 
-    # peek --
-    #
-    #	Retrieve the value of an item on the stack without popping it.
-    #
-    # Arguments:
-    #	count	number of items to pop; defaults to 1
-    #
-    # Results:
-    #	items	top count items from the stack; if there are not enough items
-    #		to fulfill the request, throws an error.
-
-    method peek {{count 1}} {
-	if { $count < 1 } {
+    method peek {{n 1}} {
+	if {$n < 1} {
 	    return -code error "invalid item count $count"
-	} elseif { $count > [llength $mystack] } {
-	    return -code error "insufficient items on stack to fill request"
 	}
 
-	if { $count == 1 } {
-	    # Handle this as a special case, so single item peeks are not
-	    # listified
+	if {$n > [llength $mystack]} {
+	    return -code error "insufficient items on stack to fullfill request"
+	}
+
+	if {$n == 1} {
+	    # Handle this as a special case
+	    # Single item peeks are not listified
 	    return [lindex $mystack end]
 	}
 
 	# Otherwise, return a list of items
-	incr count -1
-	return [lreverse [lrange $mystack end-$count end]]
+	incr n -1
+	return [lreverse [lrange $mystack end-$n end]]
     }
 
-    method peekr {{count 1}} {
-	if { $count < 1 } {
+    method peekr {{n 1}} {
+	if {$n < 1} {
 	    return -code error "invalid item count $count"
-	} elseif { $count > [llength $mystack] } {
-	    return -code error "insufficient items on stack to fill request"
 	}
 
-	if { $count == 1 } {
-	    # Handle this as a special case, so single item peeks are not
-	    # listified
+	if {$n > [llength $mystack]} {
+	    return -code error "insufficient items on stack to fulfill request"
+	}
+
+	if {$n == 1} {
+	    # Handle this as a special case.
+	    # Single item peeks are not listified
 	    return [lindex $mystack end]
 	}
 
 	# Otherwise, return a list of items, in reversed order.
-	incr count -1
-	return [lrange $mystack end-$count end]
+	incr n -1
+	return [lrange $mystack end-$n end]
     }
 
-    # trim --
-    #
-    #	Pop items off a stack until a maximum size is reached.
-    #
-    # Arguments:
-    #	count	requested size of the stack.
-    #
-    # Results:
-    #	item	List of items trimmed, may be empty.
+    # # ## ### ##### ######## ############# #####################
+    ## Manipulators
 
-    method trim {newsize} {
-	if { ![string is integer -strict $newsize]} {
-	    return -code error "expected integer but got \"$newsize\""
-	} elseif { $newsize < 0 } {
-	    return -code error "invalid size $newsize"
-	} elseif { $newsize >= [llength $mystack] } {
-	    # Stack is smaller than requested, do nothing.
-	    return {}
+    method pop {{n 1}} {
+	if { $n < 1 } {
+	    return -code error "invalid item count $n"
 	}
 
-	# newsize < [llength $mystack]
-	# pop '[llength $mystack]' - newsize elements.
+	set size [llength $mystack]
 
-	if {!$newsize} {
-	    set result [lreverse [my K $mystack [unset mystack]]]
-	    set mystack {}
-	} else {
-	    set result  [lreverse [lrange $mystack $newsize end]]
-	    set mystack [lreplace [my K $mystack [unset mystack]] $newsize end]
+	if {$n > $size} {
+	    return -code error "insufficient items on stack to fulfill request"
 	}
 
-	return $result
-    }
-
-    method trim* {newsize} {
-	if { ![string is integer -strict $newsize]} {
-	    return -code error "expected integer but got \"$newsize\""
-	} elseif { $newsize < 0 } {
-	    return -code error "invalid size $newsize"
-	}
-
-	if { $newsize >= [llength $mystack] } {
-	    # Stack is smaller than requested, do nothing.
-	    return
-	}
-
-	# newsize < [llength $mystack]
-	# pop '[llength $mystack]' - newsize elements.
-
-	# No results, compared to trim. 
-
-	if {!$newsize} {
-	    set mystack {}
-	} else {
-	    set mystack [lreplace [my K $mystack [unset mystack]] $newsize end]
-	}
-
-	return
-    }
-
-    # pop --
-    #
-    #	Pop an item off a stack.
-    #
-    # Arguments:
-    #	count	number of items to pop; defaults to 1
-    #
-    # Results:
-    #	item	top count items from the stack; if the stack is empty, 
-    #		returns a list of count nulls.
-
-    method pop {{count 1}} {
-	if { $count < 1 } {
-	    return -code error "invalid item count $count"
-	}
-
-	set ssize [llength $mystack]
-
-	if { $count > $ssize } {
-	    return -code error "insufficient items on stack to fill request"
-	}
-
-	if { $count == 1 } {
-	    # Handle this as a special case, so single item pops are not
-	    # listified
+	if {$n == 1} {
+	    # Handle this as a special case.
+	    # Single item pops are not listified
 	    set item [lindex $mystack end]
-	    if {$count == $ssize} {
-		set mystack [list]
+	    if {$n == $size} {
+		set mystack {}
 	    } else {
 		set mystack [lreplace [my K $mystack [unset mystack]] end end]
 	    }
@@ -194,51 +113,31 @@ oo::class create ::struct::stack::stack_oo {
 
 	# Otherwise, return a list of items, and remove the items from the
 	# stack.
-	if {$count == $ssize} {
+	if {$n == $size} {
 	    set result  [lreverse [my K $mystack [unset mystack]]]
-	    set mystack [list]
+	    set mystack {}
 	} else {
-	    incr count -1
-	    set result  [lreverse [lrange $mystack end-$count end]]
-	    set mystack [lreplace [my K $mystack [unset mystack]] end-$count end]
+	    incr n -1
+	    set result  [lreverse [lrange $mystack end-$n end]]
+	    set mystack [lreplace [my K $mystack [unset mystack]] end-$n end]
 	}
 	return $result
     }
 
-    # push --
-    #
-    #	Push an item onto a stack.
-    #
-    # Arguments:
-    #	args	items to push.
-    #
-    # Results:
-    #	None.
-
-    method push {args} {
-	if {![llength $args]} {
-	    return -code error "wrong # args: should be \"[self] push item ?item ...?\""
-	}
-
-	lappend mystack {*}$args
+    method clear {} {
+	set mystack {}
 	return
     }
 
-    # rotate --
-    #
-    #	Rotate the top count number of items by step number of steps.
-    #
-    # Arguments:
-    #	count	number of items to rotate.
-    #	steps	number of steps to rotate.
-    #
-    # Results:
-    #	None.
+    method push {item args} {
+	lappend mystack $item {*}$args
+	return
+    }
 
-    method rotate {count steps} {
+    method rotate {n steps} {
 	set len [llength $mystack]
-	if { $count > $len } {
-	    return -code error "insufficient items on stack to fill request"
+	if {$n > $len} {
+	    return -code error "insufficient items on stack to perform request"
 	}
 
 	# Rotation algorithm:
@@ -247,8 +146,8 @@ oo::class create ::struct::stack::stack_oo {
 	#   Move the end item to the insertion point
 	# repeat $steps times
 
-	set start [expr {$len - $count}]
-	set steps [expr {$steps % $count}]
+	set start [expr {$len - $n}]
+	set steps [expr {$steps % $n}]
 
 	if {$steps == 0} return
 
@@ -262,34 +161,79 @@ oo::class create ::struct::stack::stack_oo {
 	return
     }
 
-    # size --
-    #
-    #	Return the number of objects on a stack.
-    #
-    # Results:
-    #	count	number of items on the stack.
+    method trim {n} {
+	if { ![string is integer -strict $n]} {
+	    return -code error "expected integer but got \"$n\""
+	} elseif { $n < 0 } {
+	    return -code error "invalid size $n"
+	} elseif { $n >= [llength $mystack] } {
+	    # Stack is smaller than requested, do nothing.
+	    return {}
+	}
 
-    method size {} {
-	return [llength $mystack]
+	# n < [llength $mystack]
+	# pop '[llength $mystack]' - n elements.
+
+	if {!$n} {
+	    set result [lreverse [my K $mystack [unset mystack]]]
+	    set mystack {}
+	} else {
+	    set result  [lreverse [lrange $mystack $n end]]
+	    set mystack [lreplace [my K $mystack [unset mystack]] $n end]
+	}
+
+	return $result
     }
 
-    # ### ### ### ######### ######### #########
+    method trim* {n} {
+	if { ![string is integer -strict $n]} {
+	    return -code error "expected integer but got \"$n\""
+	} elseif { $n < 0 } {
+	    return -code error "invalid size $n"
+	}
+
+	if { $n >= [llength $mystack] } {
+	    # Stack is smaller than requested, do nothing.
+	    return
+	}
+
+	# n < [llength $mystack]
+	# pop '[llength $mystack]' - n elements.
+
+	# No results, compared to trim. 
+
+	if {!$n} {
+	    set mystack {}
+	} else {
+	    set mystack [lreplace [my K $mystack [unset mystack]] $n end]
+	}
+
+	return
+    }
+
+    # # ## ### ##### ######## ############# #####################
+    ## Internal helper to manage refcounts.
 
     method K {x y} { set x }
 }
 
-# ### ### ### ######### ######### #########
-## Ready
+# # ## ### ##### ######## ############# #####################
+## Tcl level policy settings.
+#
+## Make the main class command available as method under the
+## larger namespace.
+
+package require Tcl 8.5
 
 namespace eval ::struct {
-    # Get 'stack::stack' into the general structure namespace for
-    # pickup by the main management.
-
-    proc stack_tcl {args} {
-	if {[llength $args]} {
-	    uplevel 1 [::list ::struct::stack::stack_oo create {*}$args]
-	} else {
-	    uplevel 1 [::list ::struct::stack::stack_oo new]
-	}
-    }
+    namespace export stack
+    namespace ensemble create
 }
+
+# # ## ### ##### ######## ############# #####################
+## Ready
+
+package provide struct::stack 2
+return
+
+# # ## ### ##### ######## ############# #####################
