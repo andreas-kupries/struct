@@ -145,7 +145,7 @@ they are listed.
 
 [comment {= = == === ===== ======== ============= =====================}]
 [section {Implementations}]
-[subsection {critcl v3.1, critcl::class 1.0.1}]
+[subsection {critcl v3.1.1, critcl::class 1.0.2}]
 
 This is a C implementation of the API depending on the packages
 [package c::slice] and [package c::stack].
