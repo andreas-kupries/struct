@@ -12,14 +12,13 @@
 
 # # ## ### ##### ######## ############# #####################
 
-# Disabled. Something wrong with critcl::class, and or my stackc codce, or both.
-test stack-1.0.1 {new, wrong#args, too many} -constraints {stack_c bad} -body {
+test stack-1.0.1 {new, wrong#args, too many} -constraints stack_c -body {
     struct stack new X
 } -returnCodes error -result {wrong # args: should be "struct stack new"}
 
-test stack-1.1.0 {create, wrong#args, too many} -constraints {stack_c bad} -body {
+test stack-1.1.0 {create, wrong#args, too many} -constraints stack_c -body {
     struct stack create foo X
-} -returnCodes error -result {wrong # args: should be "struct stack create foo"}
+} -returnCodes error -result {wrong # args: should be "::struct::stack create foo"}
 
 ## !! Note how we are not using the ensemble.
 ## Tcl generates a broken error message if we do.

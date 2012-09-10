@@ -16,7 +16,7 @@ package require Tcl 8.5
 package require critcl 3.1.1
 
 critcl::buildrequirement {
-    package require critcl::class 1.0.2 ; # DSL, easy spec of Tcl class/object commands.
+    package require critcl::class 1.0.3 ; # DSL, easy spec of Tcl class/object commands.
 }
 
 # # ## ### ##### ######## ############# #####################
@@ -137,6 +137,11 @@ critcl::class::define ::struct::stack {
     ## Lifecycle management.
 
     constructor {
+        if (objc > 0) {
+	    Tcl_WrongNumArgs (interp, objcskip, objv-objcskip, NULL);
+	    goto error;
+        }
+
 	instance = cstack_create (StructStackC_FreeCell, 0);
     } {
 	/* Set back reference from CSTACK instance to instance command */
