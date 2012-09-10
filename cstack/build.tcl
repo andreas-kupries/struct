@@ -326,8 +326,8 @@ proc _test {{config {}}} {
     puts {No tests available}
 }
 proc Hdoc {} { return "?destination?\n\t(Re)Generate the embedded documentation." }
-proc _doc {{dst {../../embedded/stack}}} {
-    cd $::topdir/doc/stack
+proc _doc {{dst {../../embedded/cstack}}} {
+    cd $::topdir/doc/cstack
 
     puts "Removing old documentation..."
     file delete -force $dst/man

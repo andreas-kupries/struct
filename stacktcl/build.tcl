@@ -257,7 +257,7 @@ proc _test {{config {}}} {
     # Then run the tests...
     set log [open LOG.stacktcl w]
 
-    cd $::topdir/tests/stack/tcl
+    cd $::topdir/tests/stacktcl
 
     # options for tcltest. (l => line information for failed tests).
     # Note: See tcllib's sak.tcl for a more mature and featureful system of
@@ -274,7 +274,7 @@ proc _test {{config {}}} {
     set cskipped 0
     set cfailed  0
 
-    set pipe [open "|[info nameofexecutable] ../../all.tcl -verbose bpstenl |& cat"]
+    set pipe [open "|[info nameofexecutable] ../all.tcl -verbose bpstenl |& cat"]
 
     while {![eof $pipe]} {
 	if {[gets $pipe line] < 0} continue
@@ -323,8 +323,8 @@ proc _test {{config {}}} {
     return
 }
 proc Hdoc {} { return "?destination?\n\t(Re)Generate the embedded documentation." }
-proc _doc {{dst {../../embedded/stack}}} {
-    cd $::topdir/doc/stack
+proc _doc {{dst {../../embedded/stacktcl}}} {
+    cd $::topdir/doc/stacktcl
 
     puts "Removing old documentation..."
     file delete -force $dst/man

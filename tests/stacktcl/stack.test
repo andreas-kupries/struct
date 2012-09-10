@@ -1,0 +1,36 @@
+# -*- tcl -*-
+# # ## ### ##### ######## ############# #####################
+## stack.test:  tests for the stack package.
+
+source [file dirname [file dirname [file dirname [file normalize [info script]]]]]/testutilities.tcl
+
+testsNeedTcl     8.5
+testsNeedTcltest 2 ; # 8.5 does not have tcltest 1.x
+
+support {
+    useC n/a TclOO
+}
+testing {
+    use stacktcl/stack.tcl struct::stack
+}
+
+# # ## ### ##### ######## ############# #####################
+
+proc already {cmd} {
+    return "can't create object \"$cmd\": command already exists with that name"
+}
+
+proc badmethod {m real} {
+    set real [string map {{, or} { or}} [linsert [join $real {, }] end-1 or]]
+    return "unknown method \"$m\": must be $real"
+}
+
+::tcltest::testConstraint stack_c   0
+::tcltest::testConstraint stack_tcl 1
+
+# # ## ### ##### ######## ############# #####################
+
+source [localPath ../include/stack.tests]
+
+# # ## ### ##### ######## ############# #####################
+testsuiteCleanup
