@@ -2,6 +2,8 @@
 # -*- tcl -*- \
 exec tclsh "$0" ${1+"$@"}
 set me [file normalize [info script]]
+set mydir  [file dirname $me]
+set topdir [file dirname $mydir]
 set packages {
     stackc
 }
@@ -135,7 +137,7 @@ proc _install {{ldir {}}} {
     foreach p $packages {
 	puts ""
 
-	set src     [file dirname $::me]/$p.tcl
+	set src     $::mydir/$p.tcl
 	set version [version $src]
 
 	file delete -force             [pwd]/BUILD
@@ -174,7 +176,7 @@ proc _debug {{ldir {}}} {
     foreach p $packages {
 	puts ""
 
-	set src     [file dirname $::me]/$p.tcl
+	set src     $::mydir/$p.tcl
 	set version [version $src]
 
 	file delete -force             [pwd]/BUILD.$p
@@ -274,7 +276,7 @@ proc _wrap4tea {{dst {}}} {
     package require critcl::app
 
     foreach p $packages {
-	set src     [file dirname $::me]/$p.tcl
+	set src     $::mydir/$p.tcl
 	set version [version $src]
 
 	file delete -force             [pwd]/BUILD
@@ -307,7 +309,7 @@ proc _drop {{dst {}}} {
 	}
 
 	if {$vfile ne {}} {
-	    set version  [version [file dirname $::me]/$vfile]
+	    set version  [version $::mydir/$vfile]
 	} else {
 	    set version {}
 	}
@@ -317,8 +319,8 @@ proc _drop {{dst {}}} {
     }
 }
 proc Hdoc {} { return "?destination?\n\t(Re)Generate the embedded documentation." }
-proc _doc {{dst {../embedded}}} {
-    cd [file dirname $::me]/doc
+proc _doc {{dst {../../embedded/stack}}} {
+    cd $::topdir/doc/stack
 
     puts "Removing old documentation..."
     file delete -force $dst/man
@@ -343,7 +345,7 @@ proc Htextdoc {} { return "destination\n\tGenerate plain text documentation in s
 proc _textdoc {dst} {
     set destination [file normalize $dst]
 
-    cd [file dirname $::me]/doc
+    cd $::topdir/doc/stack
 
     puts "Removing old text documentation at ${dst}..."
     file delete -force $destination
@@ -360,7 +362,7 @@ proc _textdoc {dst} {
 }
 if 0 {proc Hfigures {} { return "\n\t(Re)Generate the figures and diagrams for the documentation." }
 proc _figures {} {
-    cd [file dirname $::me]/doc/figures
+    cd $::topdir/doc/stack/figures
 
     puts "Generating (tklib) diagrams..."
     eval [linsert [glob *.dia] 0 exec 2>@ stderr >@ stdout dia convert -t -o . png]
