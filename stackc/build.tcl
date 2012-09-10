@@ -5,7 +5,7 @@ set me [file normalize [info script]]
 set mydir  [file dirname $me]
 set topdir [file dirname $mydir]
 set packages {
-    stackc
+    {struct_stack_c stackc.tcl}
 }
 proc main {} {
     global argv tcl_platform tag
@@ -132,12 +132,12 @@ proc _install {{ldir {}} {config {}}} {
     file mkdir $idir
     file mkdir $ldir
 
-    package require critcl::app
-
     foreach p $packages {
 	puts ""
 
-	set src     $::mydir/$p.tcl
+	lassign $p p vfile
+
+	set src     $::mydir/$vfile
 	set version [version $src]
 
 	file delete -force             [pwd]/BUILD.$p
@@ -181,7 +181,9 @@ proc _debug {{ldir {}}} {
     foreach p $packages {
 	puts ""
 
-	set src     $::mydir/$p.tcl
+	lassign $p p vfile
+
+	set src     $::mydir/$vfile
 	set version [version $src]
 
 	file delete -force             [pwd]/BUILD.$p
@@ -307,7 +309,7 @@ proc _drop {{dst {}}} {
 	# Package: /name/
 
 	if {[llength $item] == 2} {
-	    lassign $item vfile name
+	    lassign $item  name vfile
 	} else {
 	    lassign $item name
 	    set vfile ${name}.tcl
@@ -424,8 +426,10 @@ proc _doc {{dst {../../embedded/stack}}} {
 
     puts "Generating man pages..."
     exec 2>@ stderr >@ stdout dtplite -ext n -o $dst/man nroff .
-    puts "Generating html..."
-    exec 2>@ stderr >@ stdout dtplite        -o $dst/www html .
+    puts "Generating 1st html..."
+    exec 2>@ stderr >@ stdout dtplite -merge -o $dst/www html .
+    puts "Generating 2nd html, resolving cross-references..."
+    exec 2>@ stderr >@ stdout dtplite -merge -o $dst/www html .
 
     cd  $dst/man
     file delete -force .idxdoc .tocdoc

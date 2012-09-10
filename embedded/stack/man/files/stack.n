@@ -376,7 +376,7 @@ If more than one \fIitem\fR is given, they will be pushed in the order
 they are listed.
 .PP
 .SH IMPLEMENTATIONS
-.SS "CRITCL V3.1, CRITCL::CLASS 1.0.1"
+.SS "CRITCL V3.1.1, CRITCL::CLASS 1.0.2"
 This is a C implementation of the API depending on the packages
 \fBc::slice\fR and \fBc::stack\fR.
 .SS "PURE TCL"

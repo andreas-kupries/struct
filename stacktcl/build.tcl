@@ -5,7 +5,7 @@ set me [file normalize [info script]]
 set mydir  [file dirname $me]
 set topdir [file dirname $mydir]
 set packages {
-    cstack
+    {struct_stack_tcl stack.tcl}
 }
 proc main {} {
     global argv tcl_platform tag
@@ -119,84 +119,42 @@ proc _recipes {} {
     return
 }
 proc Hinstall {} { return "?destination?\n\tInstall all packages.\n\tdestination = path of package directory, default \[info library\]." }
-proc _install {{ldir {}} {config {}}} {
+proc _install {{ldir {}}} {
     global packages
     if {[llength [info level 0]] < 2} {
 	set ldir [info library]
-	set idir [file dirname [file dirname $ldir]]/include
-    } else {
-	set idir [file dirname $ldir]/include
     }
 
     # Create directories, might not exist.
-    file mkdir $idir
     file mkdir $ldir
 
     foreach p $packages {
+	lassign $p pdir vfile
+
 	puts ""
 
-	set src     $::mydir/$p.tcl
+	set src     $::mydir/$vfile
 	set version [version $src]
 
-	file delete -force             [pwd]/BUILD.$p
+	file mkdir $ldir/$pdir
 
-	if {$config ne {}} {
-	    RunCritcl -target $config -cache [pwd]/BUILD.$p -libdir $ldir -includedir $idir -pkg $src
-	} else {
-	    RunCritcl -cache [pwd]/BUILD.$p -libdir $ldir -includedir $idir -pkg $src
-	}
-
-	if {![file exists $ldir/$p]} {
-	    set ::NOTE {warn {DONE, with FAILURES}}
-	    break
-	}
-
-	file delete -force $ldir/$p$version
-	file rename        $ldir/$p $ldir/$p$version
+	file copy -force $::mydir/$vfile       $ldir/$pdir
+	file copy -force $::mydir/pkgIndex.tcl $ldir/$pdir
+	file delete -force             $ldir/$pdir$version
+	file rename        $ldir/$pdir $ldir/$pdir$version
 
 	puts -nonewline "Installed package:     "
 	tag ok
-	puts $ldir/$p$version
+	puts $ldir/$pdir$version
     }
     return
 }
 proc Hdebug {} { return "?destination?\n\tInstall all packages, build for debugging.\n\tdestination = path of package directory, default \[info library\]." }
 proc _debug {{ldir {}}} {
-    global packages
     if {[llength [info level 0]] < 2} {
 	set ldir [info library]
-	set idir [file dirname [file dirname $ldir]]/include
-    } else {
-	set idir [file dirname $ldir]/include
     }
-
-    # Create directories, might not exist.
-    file mkdir $idir
-    file mkdir $ldir
-
-    package require critcl::app
-
-    foreach p $packages {
-	puts ""
-
-	set src     $::mydir/$p.tcl
-	set version [version $src]
-
-	file delete -force             [pwd]/BUILD.$p
-	critcl::app::main [list -keep -debug symbols -cache [pwd]/BUILD.$p -libdir $ldir -includedir $idir -pkg $src]
-
-	if {![file exists $ldir/$p]} {
-	    set ::NOTE {warn {DONE, with FAILURES}}
-	    break
-	}
-
-	file delete -force $ldir/$p$version
-	file rename        $ldir/$p $ldir/$p$version
-
-	puts -nonewline "Installed package:     "
-	tag ok
-	puts $ldir/$p$version
-    }
+    _install $ldir
     return
 }
 proc Hgui {} { return "\n\tInstall all packages, and application.\n\tDone from a small GUI." }
@@ -268,27 +226,7 @@ proc Install {} {
 }
 proc Hwrap4tea {} { return "?destination?\n\tGenerate a source package with TEA-based build system wrapped around critcl.\n\tdestination = path of source package directory, default is sub-directory 'tea' of the CWD." }
 proc _wrap4tea {{dst {}}} {
-    global packages
-
-    if {[llength [info level 0]] < 2} {
-	set dst [file join [pwd] tea]
-    }
-
-    file mkdir $dst
-
-    package require critcl::app
-
-    foreach p $packages {
-	set src     $::mydir/$p.tcl
-	set version [version $src]
-
-	file delete -force             [pwd]/BUILD
-	critcl::app::main [list -cache [pwd]/BUILD -libdir $dst -tea $src]
-	file delete -force         $dst/$p$version
-	file rename        $dst/$p $dst/$p$version
-
-	puts "Wrapped package:     $dst/$p$version"
-    }
+    puts "Not applicable"
     return
 }
 proc Hdrop {} { return "?destination?\n\tRemove packages.\n\tdestination = path of package directory, default \[info library\]." }
@@ -303,27 +241,86 @@ proc _drop {{dst {}}} {
 
     foreach item $packages {
 	# Package: /name/
+	lassign $item pdir vfile
 
-	if {[llength $item] == 2} {
-	    lassign $item vfile name
-	} else {
-	    lassign $item name
-	    set vfile ${name}.tcl
-	}
+	set version  [version $::mydir/$vfile]
 
-	if {$vfile ne {}} {
-	    set version  [version $::mydir/$vfile]
-	} else {
-	    set version {}
-	}
-
-	file delete -force $dstl/$name$version
-	puts "Removed package:     $dstl/$name$version"
+	file delete -force $dstl/$pdir$version
+	puts "Removed package:     $dstl/$pdir$version"
     }
 }
+
 proc Htest {} { return "\n\tRun the package testsuites." }
 proc _test {{config {}}} {
-    puts {No tests available}
+    # Build and install in a transient location for the testing, if necessary.
+
+    # Then run the tests...
+    set log [open LOG w]
+
+    cd $::topdir/tests/stacktcl
+
+    # options for tcltest. (l => line information for failed tests).
+    # Note: See tcllib's sak.tcl for a more mature and featureful system of
+    # running a testsuite and postprocessing results.
+
+    package require struct::matrix
+
+    struct::matrix M
+    M add columns 5
+    M add row {File Total Passed Skipped Failed}
+
+    set ctotal   0
+    set cpassed  0
+    set cskipped 0
+    set cfailed  0
+
+    set pipe [open "|[info nameofexecutable] ../stack/all.tcl -verbose bpstenl"]
+
+    while {![eof $pipe]} {
+	if {[gets $pipe line] < 0} continue
+
+	puts $log $line ; # Full log.
+
+	if {[string match "++++*" $line] ||
+	    [string match "----*start" $line]} {
+	    # Flash report of activity...
+	    puts -nonewline "\r$line                                  "
+	    flush stdout
+	    continue
+	}
+
+	# Failed tests are reported immediately, in full.
+	if {[string match {*error: test failed*} $line]} {
+	    # shorten the shown path for the test file.
+	    set r [lassign [split $line :] path]
+	    set line [join [linsert $r 0 [file tail $path]] :]
+	    set line [string map {{error: test } {}} $line]
+	    puts \r$line\t\t
+	    continue
+	}
+
+	# Collect the statistics (per .test file).
+	if {![string match *Total* $line]} continue
+	lassign $line file _ total _ passed _ skipped _ failed
+	if {$failed}  { set failed  " $failed"  } ; # indent, stand out.
+	if {$skipped} { set skipped " $skipped" } ; # indent, stand out.
+	M add row [list $file $total $passed $skipped $failed]
+
+	incr ctotal   $total
+	incr cpassed  $passed
+	incr cskipped $skipped
+	incr cfailed  $failed
+    }
+
+
+    M add row {File Total Passed Skipped Failed}
+    M add row [list {} $ctotal $cpassed $cskipped $cfailed]
+
+    puts "\n"
+    puts [M format 2string]
+    puts ""
+
+    return
 }
 proc Hdoc {} { return "?destination?\n\t(Re)Generate the embedded documentation." }
 proc _doc {{dst {../../embedded/stack}}} {
@@ -378,48 +375,4 @@ proc _figures {} {
 
     return
 }}
-
-proc RunCritcl {args} {
-    #puts [info level 0]
-    if {![catch {
-	package require critcl::app 3.1
-    }]} {
-	#puts "......... [package ifneeded critcl::app [package present critcl::app]]"
-	critcl::app::main $args
-	return
-    } else {
-	foreach cmd {
-	    critcl3 critcl3.kit critcl3.tcl critcl3.exe
-	    critcl critcl.kit critcl.tcl critcl.exe
-	} {
-	    # Locate the candidate.
-	    set cmd [auto_execok $cmd]
-
-	    # Ignore applications which were not found.
-	    if {![llength $cmd]} continue
-
-	    # Proper native path needed, especially on windows. On
-	    # windows this also works (best) with a starpack for
-	    # critcl, instead of a starkit.
-
-	    set cmd [file nativename [lindex [auto_execok $cmd] 0]]
-
-	    # Ignore applications which are too old to support
-	    # -v|--version, or are too old as per their returned
-	    # version.
-	    if {[catch {
-		set v [eval [list exec $cmd --version]]
-	    }] || ([package vcompare $v 3.1] < 0)} continue
-
-	    # Perform the requested action.
-	    set cmd [list exec 2>@ stderr >@ stdout $cmd {*}$args]
-	    #puts "......... $cmd"
-	    eval $cmd
-	    return
-	}
-    }
-
-    puts "Unable to find a usable critcl 3.1 application (package). Stop."
-    ::exit 1
-}
 main
