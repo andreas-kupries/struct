@@ -12,112 +12,161 @@
 
 # # ## ### ##### ######## ############# #####################
 
-test stack-0.1 {stack errors} {
-    struct stack create mystack
-    catch {struct stack create mystack} msg
-    mystack destroy
-    set msg
-} [already mystack]
+# Disabled. Something wrong with critcl::class, and or my stackc codce, or both.
+test stack-1.0.1 {new, wrong#args, too many} -constraints {stack_c bad} -body {
+    struct stack new X
+} -returnCodes error -result {wrong # args: should be "struct stack new"}
 
-test stack-0.2.0 {stack errors} stack_c {
+test stack-1.1.0 {create, wrong#args, too many} -constraints {stack_c bad} -body {
+    struct stack create foo X
+} -returnCodes error -result {wrong # args: should be "struct stack create foo"}
+
+## !! Note how we are not using the ensemble.
+## Tcl generates a broken error message if we do.
+test stack-1.0.1 {new, wrong#args, too many} -constraints stack_tcl -body {
+    struct::stack new X
+} -returnCodes error -result {wrong # args: should be "struct::stack new"}
+
+test stack-1.1.1 {create, wrong#args, too many} -constraints stack_tcl -body {
+    struct::stack create foo X
+} -returnCodes error -result {wrong # args: should be "struct::stack create foo"}
+
+test stack-1.2 {constructor, create, existing command} -setup {
+    struct stack create mystack
+} -body {
+    struct stack create mystack
+} -cleanup {
+    mystack destroy
+} -returnCodes error -result [already mystack]
+
+test stack-1.3 {constructor, create, existing command} -body {
+    struct stack create set
+} -returnCodes error -result [already set]
+
+test stack-1.4 {constructor, create} -setup {
+    set result {}
+} -body {
+    lappend result [struct stack create mystack]
+    lappend result [info commands ::mystack]
+    lappend result [mystack size]
+} -cleanup {
+    mystack destroy
+    unset result
+} -result {::mystack ::mystack 0}
+
+test stack-1.5.0 {constructor, new} -constraints stack_c -setup {
+    set result {}
+} -body {
+    lappend result [set foo [struct stack new]]
+    lappend result [info commands ::$foo]
+    lappend result [$foo size]
+} -cleanup {
+    $foo destroy
+    unset result foo
+} -match glob -result {::struct::stack* ::struct::stack* 0}
+
+test stack-1.5.1 {constructor, new} -constraints stack_tcl -setup {
+    set result {}
+} -body {
+    lappend result [set foo [struct stack new]]
+    lappend result [info commands ::$foo]
+    lappend result [$foo size]
+} -cleanup {
+    $foo destroy
+    unset result foo
+} -match glob -result {::oo::Obj* ::oo::Obj* 0}
+
+# # ## ### ##### ######## ############# #####################
+
+test stack-2.0.0 {instance, no method} stack_c {
     struct stack create mystack
     catch {mystack} msg
     mystack destroy
     set msg
 } {wrong # args: should be "mystack option ?arg arg ...?"}
 
-test stack-0.2.1 {stack errors} stack_tcl {
+test stack-2.0.1 {instance, no method} stack_tcl {
     struct stack create mystack
     catch {mystack} msg
     mystack destroy
     set msg
 } {wrong # args: should be "mystack method ?arg ...?"}
 
-test stack-0.3 {stack errors} {
+test stack-2.1 {instance, bad method name} {
     struct stack create mystack
     catch {mystack foo} msg
     mystack destroy
     set msg
 } [badmethod foo {clear destroy get getr peek peekr pop push rotate size trim trim*}]
 
-test stack-0.4 {stack errors} {
-    catch {struct stack create set} msg
-    set msg
-} [already set]
-
 # # ## ### ##### ######## ############# #####################
 
-test stack-1.1 {stack creation} {
-    set foo [struct stack create mystack]
-    set cmd [info commands ::mystack]
-    set size [mystack size]
-    mystack destroy
-    list $foo $cmd $size
-} {::mystack ::mystack 0}
-
-test stack-1.2.0 {stack creation} stack_c {
-    set foo [struct stack new]
-    set cmd [info commands ::$foo]
-    set size [$foo size]
-    $foo destroy
-    list $foo $cmd $size
-} {::struct::stack1 ::struct::stack1 0}
-
-test stack-1.2.1 {stack creation} stack_tcl {
-    set foo [struct stack new]
-    set cmd [info commands ::$foo]
-    set size [$foo size]
-    $foo destroy
-    string match [list ::oo::Obj* ::oo::Obj* 0] [list $foo $cmd $size]
-} 1
-
-# # ## ### ##### ######## ############# #####################
-
-test stack-2.1 {stack destroy} {
+test stack-3.0 {destroy, wrong#args, too many} -setup {
     struct stack create mystack
+} -body {
+    mystack destroy X
+} -cleanup {
+    mystack destroy
+} -returnCodes error -result {wrong # args: should be "mystack destroy"}
+
+test stack-3.1 {destroy} -setup {
+    struct stack create mystack
+} -body {
     mystack destroy
     info commands ::mystack
-} {}
+} -result {}
 
 # # ## ### ##### ######## ############# #####################
 
-test stack-3.2 {size operation} {
+test stack-4.0 {size, wrong#args, too many} -setup {
+    struct stack create mystack
+} -body {
+    mystack size X
+} -cleanup {
+    mystack destroy
+} -returnCodes error -result {wrong # args: should be "mystack size"}
+
+test stack-4.1 {size} -setup {
     struct stack create mystack
     mystack push a b c d e f g
-    set size [mystack size]
+} -body {
+    mystack size
+} -cleanup {
     mystack destroy
-    set size
-} 7
+} -result 7
 
-test stack-3.3 {size operation} {
+test stack-4.2 {size} -setup {
     struct stack create mystack
     mystack push a b c d e f g
     mystack pop 3
-    set size [mystack size]
+} -body {
+   mystack size
+} -cleanup {
     mystack destroy
-    set size
-} 4
+} -result 4
 
-test stack-3.4 {size operation} {
+test stack-4.3 {size} -setup {
     struct stack create mystack
     mystack push a b c d e f g
     mystack pop 3
     mystack peek 3
-    set size [mystack size]
+} -body {
+  mystack size
+} -cleanup {
     mystack destroy
-    set size
-} 4
+} -result 4
 
 # # ## ### ##### ######## ############# #####################
+## todo 4 and up --> increment
     
-test stack-4.1 {push operation} {
+test stack-4.1 {push} {
     struct stack create mystack
     catch {mystack push} msg
     mystack destroy
     set msg
 } "wrong # args: should be \"mystack push item ...\""
 
-test stack-4.2 {push operation, singleton items} {
+test stack-4.2 {push, singleton items} {
     struct stack create mystack
     mystack push a
     mystack push b
@@ -127,7 +176,7 @@ test stack-4.2 {push operation, singleton items} {
     set result
 } {c b a}
 
-test stack-4.3 {push operation, multiple items} {
+test stack-4.3 {push, multiple items} {
     struct stack create mystack
     mystack push a b c
     set result [list [mystack pop] [mystack pop] [mystack pop]]
@@ -135,7 +184,7 @@ test stack-4.3 {push operation, multiple items} {
     set result
 } {c b a}
 
-test stack-4.4 {push operation, spaces in items} {
+test stack-4.4 {push, spaces in items} {
     struct stack create mystack
     mystack push a b "foo bar"
     set result [list [mystack pop] [mystack pop] [mystack pop]]
@@ -143,7 +192,7 @@ test stack-4.4 {push operation, spaces in items} {
     set result
 } {{foo bar} b a}
 
-test stack-4.5 {push operation, bad chars in items} {
+test stack-4.5 {push, bad chars in items} {
     struct stack create mystack
     mystack push a b \{
     set result [list [mystack pop] [mystack pop] [mystack pop]]
@@ -153,7 +202,7 @@ test stack-4.5 {push operation, bad chars in items} {
 
 # # ## ### ##### ######## ############# #####################
 
-test stack-5.1 {pop operation} {
+test stack-5.1 {pop} {
     struct stack create mystack
     mystack push a
     mystack push b
@@ -163,7 +212,7 @@ test stack-5.1 {pop operation} {
     set result
 } {c b a}
 
-test stack-5.2 {pop operation, multiple items} {
+test stack-5.2 {pop, multiple items} {
     struct stack create mystack
     mystack push a
     mystack push b
@@ -175,7 +224,7 @@ test stack-5.2 {pop operation, multiple items} {
 
 # # ## ### ##### ######## ############# #####################
 
-test stack-6.1 {peek operation} {
+test stack-6.1 {peek} {
     struct stack create mystack
     mystack push a
     mystack push b
@@ -185,28 +234,28 @@ test stack-6.1 {peek operation} {
     set result
 } {c c c}
 
-test stack-6.2 {peek operation} {
+test stack-6.2 {peek} {
     struct stack create mystack
     catch {mystack peek 0} msg
     mystack destroy
     set msg
 } {invalid item count 0}
 
-test stack-6.3 {peek operation} {
+test stack-6.3 {peek} {
     struct stack create mystack
     catch {mystack peek -1} msg
     mystack destroy
     set msg
 } {invalid item count -1}
 
-test stack-6.4 {peek operation} {
+test stack-6.4 {peek} {
     struct stack create mystack
     catch {mystack peek} msg
     mystack destroy
     set msg
 } {insufficient items on stack to fulfill request}
 
-test stack-6.5 {peek operation} {
+test stack-6.5 {peek} {
     struct stack create mystack
     mystack push a
     catch {mystack peek 2} msg
@@ -214,7 +263,7 @@ test stack-6.5 {peek operation} {
     set msg
 } {insufficient items on stack to fulfill request}
 
-test stack-6.11 {peek operation} {
+test stack-6.11 {peek} {
     struct stack create mystack
     mystack push a
     mystack push b
@@ -227,7 +276,7 @@ test stack-6.11 {peek operation} {
 
 # # ## ### ##### ######## ############# #####################
 
-test stack-6.6 {pop operation, multiple items} {
+test stack-6.6 {pop, multiple items} {
     struct stack create mystack
     mystack push a
     mystack push b
@@ -237,28 +286,28 @@ test stack-6.6 {pop operation, multiple items} {
     set result
 } {{c b a} {c b a}}
 
-test stack-6.7 {pop operation} {
+test stack-6.7 {pop} {
     struct stack create mystack
     catch {mystack pop 0} msg
     mystack destroy
     set msg
 } {invalid item count 0}
 
-test stack-6.8 {pop operation} {
+test stack-6.8 {pop} {
     struct stack create mystack
     catch {mystack pop -1} msg
     mystack destroy
     set msg
 } {invalid item count -1}
 
-test stack-6.9 {pop operation} {
+test stack-6.9 {pop} {
     struct stack create mystack
     catch {mystack pop} msg
     mystack destroy
     set msg
 } {insufficient items on stack to fulfill request}
 
-test stack-6.10 {pop operation} {
+test stack-6.10 {pop} {
     struct stack create mystack
     mystack push a
     catch {mystack pop 2} msg
@@ -268,21 +317,32 @@ test stack-6.10 {pop operation} {
 
 # # ## ### ##### ######## ############# #####################
 
-test stack-7.1 {clear operation} {
+test stack-7.0 {clear, wrong#args, too many} -setup {
+    struct stack create mystack
+} -body {
+    mystack clear X
+} -cleanup {
+    mystack destroy
+} -returnCodes error -result {wrong # args: should be "mystack clear"}
+
+test stack-7.1 {clear} -setup {
     struct stack create mystack
     mystack push a
     mystack push b
     mystack push c
-    set result [list [mystack peek 3]]
+    set result {}
+} -body {
+    lappend result [mystack size]
     mystack clear
     lappend result [mystack size]
-    mystack destroy
     set result
-} {{c b a} 0}
+} -cleanup {
+    mystack destroy
+} -result {3 0}
 
 # # ## ### ##### ######## ############# #####################
 
-test stack-8.1 {rotate operation} {
+test stack-8.1 {rotate} {
     struct stack create mystack
     mystack push a b c d e f g h
     mystack rotate 3 1
@@ -291,7 +351,7 @@ test stack-8.1 {rotate operation} {
     set result
 } {g f h e d c b a}
 
-test stack-8.2 {rotate operation} {
+test stack-8.2 {rotate} {
     struct stack create mystack
     mystack push a b c d e f g h
     mystack rotate 3 2
@@ -300,7 +360,7 @@ test stack-8.2 {rotate operation} {
     set result
 } {f h g e d c b a}
 
-test stack-8.3 {rotate operation} {
+test stack-8.3 {rotate} {
     struct stack create mystack
     mystack push a b c d e f g h
     mystack rotate 3 5
@@ -309,7 +369,7 @@ test stack-8.3 {rotate operation} {
     set result
 } {f h g e d c b a}
 
-test stack-8.4 {rotate operation} {
+test stack-8.4 {rotate} {
     struct stack create mystack
     mystack push a b c d e f g h
     mystack rotate 8 1
@@ -318,7 +378,7 @@ test stack-8.4 {rotate operation} {
     set result
 } {g f e d c b a h}
 
-test stack-8.5 {rotate operation} {
+test stack-8.5 {rotate} {
     struct stack create mystack
     mystack push a b c d e f g h
     mystack rotate 8 -1
@@ -327,14 +387,14 @@ test stack-8.5 {rotate operation} {
     set result
 } {a h g f e d c b}
 
-test stack-8.6 {rotate operation} {
+test stack-8.6 {rotate} {
     struct stack create mystack
     catch {mystack rotate 8 -1} msg
     mystack destroy
     set msg
 } {insufficient items on stack to perform request}
 
-test stack-8.7 {rotate operation} {
+test stack-8.7 {rotate} {
     struct stack create mystack
     mystack push a b c d
     catch {mystack rotate 8 -1} msg
@@ -344,21 +404,21 @@ test stack-8.7 {rotate operation} {
 
 # # ## ### ##### ######## ############# #####################
 
-test stack-9.0 {get operation, wrong args, too many} {
+test stack-9.0 {get, wrong args, too many} {
     struct stack create mystack
     catch {mystack get X} msg
     mystack destroy
     set msg
 } [tcltest::tooManyArgs "mystack get" {}]
 
-test stack-9.1 {get operation, empty stack} {
+test stack-9.1 {get, empty stack} {
     struct stack create mystack
     set result [mystack get]
     mystack destroy
     set result
 } {}
 
-test stack-9.2 {get operation} {
+test stack-9.2 {get} {
     struct stack create mystack
     mystack push a b c d
     set result [mystack get]
@@ -366,7 +426,7 @@ test stack-9.2 {get operation} {
     set result
 } {d c b a}
 
-test stack-9.3 {get operation} {
+test stack-9.3 {get} {
     struct stack create mystack
     mystack push a
     mystack push b
@@ -379,35 +439,35 @@ test stack-9.3 {get operation} {
 
 # # ## ### ##### ######## ############# #####################
 
-test stack-10.0 {trim operation, wrong args, not enough} {
+test stack-10.0 {trim, wrong args, not enough} {
     struct stack create mystack
     catch {mystack trim} msg
     mystack destroy
     set msg
 } [tcltest::wrongNumArgs "mystack trim" {n} 0]
 
-test stack-10.1 {trim operation, wrong args, too many} {
+test stack-10.1 {trim, wrong args, too many} {
     struct stack create mystack
     catch {mystack trim X Y} msg
     mystack destroy
     set msg
 } [tcltest::tooManyArgs "mystack trim" {n}]
 
-test stack-10.2 {trim operation, bad argument} {
+test stack-10.2 {trim, bad argument} {
     struct stack create mystack
     catch {mystack trim X} msg
     mystack destroy
     set msg
 } {expected integer but got "X"}
 
-test stack-10.3 {trim operation, bad argument} {
+test stack-10.3 {trim, bad argument} {
     struct stack create mystack
     catch {mystack trim -4} msg
     mystack destroy
     set msg
 } {invalid size -4}
 
-test stack-10.4 {trim operation, empty stack} {
+test stack-10.4 {trim, empty stack} {
     struct stack create mystack
     set     result [mystack size]
     lappend result [mystack trim 1]
@@ -416,7 +476,7 @@ test stack-10.4 {trim operation, empty stack} {
     set result
 } {0 {} 0}
 
-test stack-10.5 {trim operation} {
+test stack-10.5 {trim} {
     struct stack create mystack
     mystack push a b c d
     set     result [mystack size]
@@ -426,7 +486,7 @@ test stack-10.5 {trim operation} {
     set result
 } {4 {d c b} 1}
 
-test stack-10.6 {trim operation} {
+test stack-10.6 {trim} {
     struct stack create mystack
     mystack push a
     mystack push b
@@ -439,7 +499,7 @@ test stack-10.6 {trim operation} {
     set result
 } {4 {d c b} 1}
 
-test stack-10.7 {trim operation} {
+test stack-10.7 {trim} {
     struct stack create mystack
     mystack push a b c d
     set     result [mystack size]
@@ -451,21 +511,21 @@ test stack-10.7 {trim operation} {
 
 # # ## ### ##### ######## ############# #####################
 
-test stack-11.0 {getr operation, wrong args, too many} {
+test stack-11.0 {getr, wrong args, too many} {
     struct stack create mystack
     catch {mystack getr X} msg
     mystack destroy
     set msg
 } [tcltest::tooManyArgs "mystack getr" {}]
 
-test stack-11.1 {getr operation, empty stack} {
+test stack-11.1 {getr, empty stack} {
     struct stack create mystack
     set result [mystack getr]
     mystack destroy
     set result
 } {}
 
-test stack-11.2 {getr operation} {
+test stack-11.2 {getr} {
     struct stack create mystack
     mystack push a b c d
     set result [mystack getr]
@@ -473,7 +533,7 @@ test stack-11.2 {getr operation} {
     set result
 } {a b c d}
 
-test stack-11.3 {getr operation} {
+test stack-11.3 {getr} {
     struct stack create mystack
     mystack push a
     mystack push b
@@ -486,35 +546,35 @@ test stack-11.3 {getr operation} {
 
 # # ## ### ##### ######## ############# #####################
 
-test stack-12.0 {trim* operation, wrong args, not enough} {
+test stack-12.0 {trim*, wrong args, not enough} {
     struct stack create mystack
     catch {mystack trim*} msg
     mystack destroy
     set msg
 } [tcltest::wrongNumArgs "mystack trim*" {n} 0]
 
-test stack-12.1 {trim* operation, wrong args, too many} {
+test stack-12.1 {trim*, wrong args, too many} {
     struct stack create mystack
     catch {mystack trim* X Y} msg
     mystack destroy
     set msg
 } [tcltest::tooManyArgs "mystack trim*" {n}]
 
-test stack-12.2 {trim* operation, bad argument} {
+test stack-12.2 {trim*, bad argument} {
     struct stack create mystack
     catch {mystack trim* X} msg
     mystack destroy
     set msg
 } {expected integer but got "X"}
 
-test stack-12.3 {trim* operation, bad argument} {
+test stack-12.3 {trim*, bad argument} {
     struct stack create mystack
     catch {mystack trim* -4} msg
     mystack destroy
     set msg
 } {invalid size -4}
 
-test stack-12.4 {trim* operation, empty stack} {
+test stack-12.4 {trim*, empty stack} {
     struct stack create mystack
     set     result [mystack size]
     lappend result [mystack trim* 1]
@@ -523,7 +583,7 @@ test stack-12.4 {trim* operation, empty stack} {
     set result
 } {0 {} 0}
 
-test stack-12.5 {trim* operation} {
+test stack-12.5 {trim*} {
     struct stack create mystack
     mystack push a b c d
     set     result [mystack size]
@@ -533,7 +593,7 @@ test stack-12.5 {trim* operation} {
     set result
 } {4 {} 1}
 
-test stack-12.6 {trim* operation} {
+test stack-12.6 {trim*} {
     struct stack create mystack
     mystack push a
     mystack push b
@@ -546,7 +606,7 @@ test stack-12.6 {trim* operation} {
     set result
 } {4 {} 1}
 
-test stack-12.7 {trim* operation} {
+test stack-12.7 {trim*} {
     struct stack create mystack
     mystack push a b c d
     set     result [mystack size]
@@ -558,7 +618,7 @@ test stack-12.7 {trim* operation} {
 
 # # ## ### ##### ######## ############# #####################
 
-test stack-13.1 {peekr operation} {
+test stack-13.1 {peekr} {
     struct stack create mystack
     mystack push a
     mystack push b
@@ -568,28 +628,28 @@ test stack-13.1 {peekr operation} {
     set result
 } {c c c}
 
-test stack-13.2 {peekr operation} {
+test stack-13.2 {peekr} {
     struct stack create mystack
     catch {mystack peekr 0} msg
     mystack destroy
     set msg
 } {invalid item count 0}
 
-test stack-13.3 {peekr operation} {
+test stack-13.3 {peekr} {
     struct stack create mystack
     catch {mystack peekr -1} msg
     mystack destroy
     set msg
 } {invalid item count -1}
 
-test stack-13.4 {peekr operation} {
+test stack-13.4 {peekr} {
     struct stack create mystack
     catch {mystack peekr} msg
     mystack destroy
     set msg
 } {insufficient items on stack to fulfill request}
 
-test stack-13.5 {peekr operation} {
+test stack-13.5 {peekr} {
     struct stack create mystack
     mystack push a
     catch {mystack peekr 2} msg
@@ -597,7 +657,7 @@ test stack-13.5 {peekr operation} {
     set msg
 } {insufficient items on stack to fulfill request}
 
-test stack-13.6 {peekr operation} {
+test stack-13.6 {peekr} {
     struct stack create mystack
     mystack push a
     mystack push b
