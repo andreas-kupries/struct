@@ -12,7 +12,7 @@ support {
     useC _local/lib/cstack* c::stack
 }
 testing {
-    useC _test/lib/stackc* struct::stack
+    useC _local/lib/stackc* struct::stack
 }
 
 # # ## ### ##### ######## ############# #####################
