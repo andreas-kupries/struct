@@ -329,7 +329,7 @@ proc _drop {{dst {}}} {
 proc Htest {} { return "\n\tRun the package testsuites." }
 proc _test {{config {}}} {
     # Build and install in a transient location for the testing, if necessary.
-    set testpkg $::topdir/tests/stack/_test
+    set testpkg $::topdir/tests/stack/c/_local
     if {![file exists $testpkg]} {
 	puts ""
 	puts "Generating binaries for testing, in transient directory"
@@ -342,13 +342,14 @@ proc _test {{config {}}} {
 
 	exec 2>@ stderr >@ stdout [info nameofexecutable] $::topdir/cslice/build.tcl install $testpkg/lib $config
 	exec 2>@ stderr >@ stdout [info nameofexecutable] $::topdir/cstack/build.tcl install $testpkg/lib $config
+	#exec 2>@ stderr >@ stdout [info nameofexecutable] $::topdir/stackc/build.tcl install $testpkg/lib $config
 	_install $testpkg/lib $config
     }
 
     # Then run the tests...
-    set log [open LOG w]
+    set log [open LOG.stackc w]
 
-    cd $::topdir/tests/stack
+    cd $::topdir/tests/stack/c
 
     # options for tcltest. (l => line information for failed tests).
     # Note: See tcllib's sak.tcl for a more mature and featureful system of
@@ -365,7 +366,7 @@ proc _test {{config {}}} {
     set cskipped 0
     set cfailed  0
 
-    set pipe [open "|[info nameofexecutable] all.tcl -verbose bpstenl"]
+    set pipe [open "|[info nameofexecutable] ../../all.tcl -verbose bpstenl"]
 
     while {![eof $pipe]} {
 	if {[gets $pipe line] < 0} continue

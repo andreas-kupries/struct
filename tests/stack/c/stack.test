@@ -1,0 +1,37 @@
+# -*- tcl -*-
+# # ## ### ##### ######## ############# #####################
+## stack.test:  tests for the stack package.
+
+source [file dirname [file dirname [file dirname [file normalize [info script]]]]]/testutilities.tcl
+
+testsNeedTcl     8.5
+testsNeedTcltest 2 ; # 8.5 does not have tcltest 1.x
+
+support {
+    useC _local/lib/cslice* c::slice
+    useC _local/lib/cstack* c::stack
+}
+testing {
+    useC _test/lib/stackc* struct::stack
+}
+
+# # ## ### ##### ######## ############# #####################
+
+proc already {cmd} {
+    return "command \"::$cmd\" already exists, unable to create ::struct::stack instance"
+}
+
+proc badmethod {m real} {
+    set real [linsert [join $real {, }] end-1 or]
+    return "bad option \"$m\": must be $real"
+}
+
+::tcltest::testConstraint stack_c   1
+::tcltest::testConstraint stack_tcl 0
+
+# # ## ### ##### ######## ############# #####################
+
+source [localPath ../stack.testsuite]
+
+# # ## ### ##### ######## ############# #####################
+testsuiteCleanup

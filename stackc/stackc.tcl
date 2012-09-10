@@ -220,11 +220,11 @@ critcl::class::define ::struct::stack {
 	cstack_pop (instance, cstack_size (instance));
     }
 
-    method push command {item ?item...?} {
+    method push command {item ?item ...?} {
 	int i;
 
 	if (objc < 3) {
-	    Tcl_WrongNumArgs (interp, 2, objv, "item ?item ...?");
+	    Tcl_WrongNumArgs (interp, 2, objv, "item ...");
 	    return TCL_ERROR;
 	}
 

@@ -47,11 +47,11 @@ oo::class create ::struct::stack {
 
     method peek {{n 1}} {
 	if {$n < 1} {
-	    return -code error "invalid item count $count"
+	    return -code error "invalid item count $n"
 	}
 
 	if {$n > [llength $mystack]} {
-	    return -code error "insufficient items on stack to fullfill request"
+	    return -code error "insufficient items on stack to fulfill request"
 	}
 
 	if {$n == 1} {
@@ -67,7 +67,7 @@ oo::class create ::struct::stack {
 
     method peekr {{n 1}} {
 	if {$n < 1} {
-	    return -code error "invalid item count $count"
+	    return -code error "invalid item count $n"
 	}
 
 	if {$n > [llength $mystack]} {

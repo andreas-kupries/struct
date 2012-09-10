@@ -255,9 +255,9 @@ proc _test {{config {}}} {
     # Build and install in a transient location for the testing, if necessary.
 
     # Then run the tests...
-    set log [open LOG w]
+    set log [open LOG.stacktcl w]
 
-    cd $::topdir/tests/stacktcl
+    cd $::topdir/tests/stack/tcl
 
     # options for tcltest. (l => line information for failed tests).
     # Note: See tcllib's sak.tcl for a more mature and featureful system of
@@ -274,7 +274,7 @@ proc _test {{config {}}} {
     set cskipped 0
     set cfailed  0
 
-    set pipe [open "|[info nameofexecutable] ../stack/all.tcl -verbose bpstenl"]
+    set pipe [open "|[info nameofexecutable] ../../all.tcl -verbose bpstenl"]
 
     while {![eof $pipe]} {
 	if {[gets $pipe line] < 0} continue
