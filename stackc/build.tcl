@@ -119,7 +119,7 @@ proc _recipes {} {
     return
 }
 proc Hinstall {} { return "?destination?\n\tInstall all packages.\n\tdestination = path of package directory, default \[info library\]." }
-proc _install {{ldir {}}} {
+proc _install {{ldir {}} {config {}}} {
     global packages
     if {[llength [info level 0]] < 2} {
 	set ldir [info library]
@@ -140,8 +140,13 @@ proc _install {{ldir {}}} {
 	set src     $::mydir/$p.tcl
 	set version [version $src]
 
-	file delete -force             [pwd]/BUILD
-	critcl::app::main [list -cache [pwd]/BUILD -libdir $ldir -includedir $idir -pkg $src]
+	file delete -force             [pwd]/BUILD.$p
+
+	if {$config ne {}} {
+	    RunCritcl -target $config -cache [pwd]/BUILD.$p -libdir $ldir -includedir $idir -pkg $src
+	} else {
+	    RunCritcl -cache [pwd]/BUILD.$p -libdir $ldir -includedir $idir -pkg $src
+	}
 
 	if {![file exists $ldir/$p]} {
 	    set ::NOTE {warn {DONE, with FAILURES}}
@@ -318,6 +323,94 @@ proc _drop {{dst {}}} {
 	puts "Removed package:     $dstl/$name$version"
     }
 }
+
+proc Htest {} { return "\n\tRun the package testsuites." }
+proc _test {{config {}}} {
+    # Build and install in a transient location for the testing, if necessary.
+    set testpkg $::topdir/tests/stack/_test
+    if {![file exists $testpkg]} {
+	puts ""
+	puts "Generating binaries for testing, in transient directory"
+	puts "\t$testpkg"
+	puts ""
+
+	set h [pwd]
+
+	# We need c::slice and c::stack also.
+
+	exec 2>@ stderr >@ stdout [info nameofexecutable] $::topdir/cslice/build.tcl install $testpkg/lib $config
+	exec 2>@ stderr >@ stdout [info nameofexecutable] $::topdir/cstack/build.tcl install $testpkg/lib $config
+	_install $testpkg/lib $config
+    }
+
+    # Then run the tests...
+    set log [open LOG w]
+
+    cd $::topdir/tests/stack
+
+    # options for tcltest. (l => line information for failed tests).
+    # Note: See tcllib's sak.tcl for a more mature and featureful system of
+    # running a testsuite and postprocessing results.
+
+    package require struct::matrix
+
+    struct::matrix M
+    M add columns 5
+    M add row {File Total Passed Skipped Failed}
+
+    set ctotal   0
+    set cpassed  0
+    set cskipped 0
+    set cfailed  0
+
+    set pipe [open "|[info nameofexecutable] all.tcl -verbose bpstenl"]
+
+    while {![eof $pipe]} {
+	if {[gets $pipe line] < 0} continue
+
+	puts $log $line ; # Full log.
+
+	if {[string match "++++*" $line] ||
+	    [string match "----*start" $line]} {
+	    # Flash report of activity...
+	    puts -nonewline "\r$line                                  "
+	    flush stdout
+	    continue
+	}
+
+	# Failed tests are reported immediately, in full.
+	if {[string match {*error: test failed*} $line]} {
+	    # shorten the shown path for the test file.
+	    set r [lassign [split $line :] path]
+	    set line [join [linsert $r 0 [file tail $path]] :]
+	    set line [string map {{error: test } {}} $line]
+	    puts \r$line\t\t
+	    continue
+	}
+
+	# Collect the statistics (per .test file).
+	if {![string match *Total* $line]} continue
+	lassign $line file _ total _ passed _ skipped _ failed
+	if {$failed}  { set failed  " $failed"  } ; # indent, stand out.
+	if {$skipped} { set skipped " $skipped" } ; # indent, stand out.
+	M add row [list $file $total $passed $skipped $failed]
+
+	incr ctotal   $total
+	incr cpassed  $passed
+	incr cskipped $skipped
+	incr cfailed  $failed
+    }
+
+
+    M add row {File Total Passed Skipped Failed}
+    M add row [list {} $ctotal $cpassed $cskipped $cfailed]
+
+    puts "\n"
+    puts [M format 2string]
+    puts ""
+
+    return
+}
 proc Hdoc {} { return "?destination?\n\t(Re)Generate the embedded documentation." }
 proc _doc {{dst {../../embedded/stack}}} {
     cd $::topdir/doc/stack
@@ -369,4 +462,48 @@ proc _figures {} {
 
     return
 }}
+
+proc RunCritcl {args} {
+    #puts [info level 0]
+    if {![catch {
+	package require critcl::app 3.1
+    }]} {
+	#puts "......... [package ifneeded critcl::app [package present critcl::app]]"
+	critcl::app::main $args
+	return
+    } else {
+	foreach cmd {
+	    critcl3 critcl3.kit critcl3.tcl critcl3.exe
+	    critcl critcl.kit critcl.tcl critcl.exe
+	} {
+	    # Locate the candidate.
+	    set cmd [auto_execok $cmd]
+
+	    # Ignore applications which were not found.
+	    if {![llength $cmd]} continue
+
+	    # Proper native path needed, especially on windows. On
+	    # windows this also works (best) with a starpack for
+	    # critcl, instead of a starkit.
+
+	    set cmd [file nativename [lindex [auto_execok $cmd] 0]]
+
+	    # Ignore applications which are too old to support
+	    # -v|--version, or are too old as per their returned
+	    # version.
+	    if {[catch {
+		set v [eval [list exec $cmd --version]]
+	    }] || ([package vcompare $v 3.1] < 0)} continue
+
+	    # Perform the requested action.
+	    set cmd [list exec 2>@ stderr >@ stdout $cmd {*}$args]
+	    #puts "......... $cmd"
+	    eval $cmd
+	    return
+	}
+    }
+
+    puts "Unable to find a usable critcl 3.1 application (package). Stop."
+    ::exit 1
+}
 main
