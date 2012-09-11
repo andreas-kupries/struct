@@ -12,9 +12,7 @@ multiple methods for the creation of stack objects. These are:
 
 This class method creates a new stack instance with an associated
 global Tcl command and returns the fully qualified name of this
-command. The name is auto-generated and of the form
-[const ::struct::stack][var N] where [var N] is a random integer
-number.
+command. The name is auto-generated.
 
 [comment {- - -- --- ----- -------- ------------- ---------------------}]
 [call [cmd {::struct stack}] [method create] [arg name]]
@@ -40,7 +38,7 @@ support the following API:
 This method destroys the stack instance and the associated Tcl
 command, releasing any associated resurces.
 
-[para] The method returns the empty as its result.
+[para] The method returns the empty string as its result.
 
 [comment {- - -- --- ----- -------- ------------- ---------------------}]
 [call [arg stackObj] [method size]]
@@ -105,6 +103,8 @@ elements to satisfy the request, i.e. less than [arg count] elements.
 
 This method removes all elements from the stack.
 
+[para] The method returns the empty string as its result.
+
 [comment {- - -- --- ----- -------- ------------- ---------------------}]
 [call [arg stackObj] [method trim] [opt [arg newsize]]]
 
@@ -126,7 +126,10 @@ This method pushes the specified [arg item] or items onto the stack.
 If more than one [arg item] is given, they will be pushed in the order
 they are listed.
 
+[para] The method returns the empty string as its result.
+
 [list_end]
 
+[comment {= = == === ===== ======== ============= =====================}]
 [include license.inc]
 [include feedback.inc]
