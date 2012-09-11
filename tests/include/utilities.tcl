@@ -4,8 +4,8 @@
 
 namespace eval ::testutils {
     variable version 1.2
-    variable self    [file normalize [file dirname [file join [pwd] [info script]]]]
-    variable main    [file normalize [file dirname $self]]
+    variable self    [file dirname [file normalize [info script]]]
+    variable main    [file dirname [file dirname $self]]
     variable tag     ""
     variable theEnv  ; # Saved environment.
 }

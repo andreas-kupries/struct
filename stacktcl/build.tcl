@@ -274,7 +274,7 @@ proc _test {{config {}}} {
     set cskipped 0
     set cfailed  0
 
-    set pipe [open "|[info nameofexecutable] ../all.tcl -verbose bpstenl |& cat"]
+    set pipe [open "|[info nameofexecutable] ../include/all.tcl -verbose bpstenl |& cat"]
 
     while {![eof $pipe]} {
 	if {[gets $pipe line] < 0} continue

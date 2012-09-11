@@ -2,7 +2,7 @@
 # # ## ### ##### ######## ############# #####################
 ## stack.test:  tests for the stack package.
 
-source [file dirname [file dirname [file dirname [file normalize [info script]]]]]/testutilities.tcl
+source [file dirname [file dirname [file normalize [info script]]]]/include/utilities.tcl
 
 testsNeedTcl     8.5
 testsNeedTcltest 2 ; # 8.5 does not have tcltest 1.x

@@ -329,7 +329,7 @@ proc _drop {{dst {}}} {
 proc Htest {} { return "\n\tRun the package testsuites." }
 proc _test {{config {}}} {
     # Build and install in a transient location for the testing, if necessary.
-    set testpkg $::topdir/tests/stack/c/_local
+    set testpkg $::topdir/tests/stackc/_local
     if {![file exists $testpkg]} {
 	puts ""
 	puts "Generating binaries for testing, in transient directory"
@@ -366,7 +366,7 @@ proc _test {{config {}}} {
     set cskipped 0
     set cfailed  0
 
-    set pipe [open "|[info nameofexecutable] ../all.tcl -verbose bpstenl |& cat"]
+    set pipe [open "|[info nameofexecutable] ../include/all.tcl -verbose bpstenl |& cat"]
 
     while {![eof $pipe]} {
 	if {[gets $pipe line] < 0} continue
