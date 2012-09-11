@@ -1,19 +1,4 @@
-[manpage_begin struct::stack n 2]
-[include ../include/general.inc]
-[titledesc {Create and manipulate stacks}]
-[require struct::stack [opt 2]]
-[keywords  stack lifo]
-[description]
-[include ../include/welcome.inc]
-[comment {= = == === ===== ======== ============= =====================}]
-
-This manpage documents the API used by all implementations of the
-[package struct::stack] commands for the creation and handling of
-stack objects.
-
-[para] The various implementations may depend on different packages
-however, although Tcl version 8.5 or higher is a minimum requirement
-for all.
+[keywords stack lifo]
 
 [comment {= = == === ===== ======== ============= =====================}]
 [section {Class API}]
@@ -143,18 +128,5 @@ they are listed.
 
 [list_end]
 
-[comment {= = == === ===== ======== ============= =====================}]
-[section {Implementations}]
-[subsection {critcl v3.1.1, critcl::class 1.0.3}]
-
-This is a C implementation of the API depending on the packages
-[package c::slice] and [package c::stack].
-
-[subsection {pure Tcl}]
-
-This is a pure Tcl implementation of the API depending on the package
-[package TclOO].
-
-[include ../include/license.inc]
-[include ../include/feedback.inc]
-[manpage_end]
+[include license.inc]
+[include feedback.inc]

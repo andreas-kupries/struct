@@ -243,4 +243,4 @@ stackc
 .RS
 .TP
 \fBstruct::stack\fR
-\fIfiles/struct_stack_c.n\fR: Create and manipulate stacks
+\fIfiles/struct_stack_c.n\fR: Create and manipulate stacks, C

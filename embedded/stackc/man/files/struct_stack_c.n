@@ -1,5 +1,5 @@
 '\"
-'\" Generated from file '/net/nas/data/andreask/Dev/Struct/struct/embedded/stackc/man/files/struct_stack_c.n' by tcllib/doctools with format 'nroff'
+'\" Generated from file '/home/aku/Projects/Struct/struct/embedded/stackc/man/files/struct_stack_c.n' by tcllib/doctools with format 'nroff'
 '\"
 '\" The definitions below are for supplemental macros used in Tcl/Tk
 '\" manual entries.
@@ -240,9 +240,13 @@ Database Class:	\\fB\\$3\\fR
 .TH "struct::stack" n 2 stackc "Tcl Data Structures"
 .BS
 .SH NAME
-struct::stack \- Create and manipulate stacks
+struct::stack \- Create and manipulate stacks, C
 .SH SYNOPSIS
 package require \fBTcl  8.5\fR
+.sp
+package require \fBc::slice  ?1?\fR
+.sp
+package require \fBc::stack  ?1?\fR
 .sp
 package require \fBstruct::stack  ?2?\fR
 .sp
@@ -277,13 +281,11 @@ package require \fBstruct::stack  ?2?\fR
 .PP
 Welcome to Struct, a set of packages providing various data structures
 to Tcl, and additional operations for existing Tcl structures.
-This manpage documents the API used by all implementations of the
-\fBstruct::stack\fR commands for the creation and handling of
-stack objects.
 .PP
-The various implementations may depend on different packages
-however, although Tcl version 8.5 or higher is a minimum requirement
-for all.
+This manpage documents the C implementation of the
+\fBstruct::stack\fR package. It provides the same API as the Tcl
+implementation, although details like the exact wording of error
+messages may differ.
 .SH "CLASS API"
 The \fB::struct\fR namespace contains a single command with
 multiple methods for the creation of stack objects. These are:
@@ -375,13 +377,6 @@ This method pushes the specified \fIitem\fR or items onto the stack.
 If more than one \fIitem\fR is given, they will be pushed in the order
 they are listed.
 .PP
-.SH IMPLEMENTATIONS
-.SS "CRITCL V3.1.1, CRITCL::CLASS 1.0.3"
-This is a C implementation of the API depending on the packages
-\fBc::slice\fR and \fBc::stack\fR.
-.SS "PURE TCL"
-This is a pure Tcl implementation of the API depending on the package
-\fBTclOO\fR.
 .SH LICENSE
 This package, written by Andreas Kupries, is BSD licensed.
 .SH "BUGS, IDEAS, FEEDBACK"

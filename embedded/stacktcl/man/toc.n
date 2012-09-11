@@ -243,4 +243,4 @@ stacktcl
 .RS
 .TP
 \fBstruct::stack\fR
-\fIfiles/struct_stack_tcl.n\fR: Create and manipulate stacks
+\fIfiles/struct_stack_tcl.n\fR: Create and manipulate stacks, Tcl
