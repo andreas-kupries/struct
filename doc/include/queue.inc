@@ -1,106 +1,107 @@
-[comment {-*- tcl -*-}]
-[manpage_begin struct::queue n 1.4.2]
-[moddesc   {Tcl Data Structures}]
-[titledesc {Create and manipulate queue objects}]
-[category  {Data structures}]
-[require Tcl 8.4]
-[require struct::queue [opt 1.4.2]]
-[description]
+[keywords fifo queue]
 
-The [namespace ::struct] namespace contains a commands for processing
-finite queues.
+[comment {= = == === ===== ======== ============= =====================}]
+[section {Class API}]
 
-[para]
-
-It exports a single command, [cmd ::struct::queue]. All functionality
-provided here can be reached through a subcommand of this command.
-
-[para]
-
-[emph Note:] As of version 1.4.1 of this package a critcl based C
-implementation is available. This implementation however requires Tcl
-8.4 to run.
-
-[para]
-
-The [cmd ::struct::queue] command creates a new queue object with an
-associated global Tcl command whose name is [emph queueName].  This
-command may be used to invoke various operations on the queue.  It has
-the following general form:
+The [namespace ::struct] namespace contains a single command with
+multiple methods for the creation of queue objects. These are:
 
 [list_begin definitions]
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call [cmd {::struct queue}] [method new]]
 
-[call [arg queueName] [cmd option] [opt [arg "arg arg ..."]]]
+This class method creates a new queue instance with an associated
+global Tcl command and returns the fully qualified name of this
+command. The name is auto-generated.
 
-[arg Option] and the [arg arg]s determine the exact behavior of the
-command.  The following commands are possible for queue objects:
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call [cmd {::struct queue}] [method create] [arg name]]
 
-
-[call [arg queueName] [cmd clear]]
-
-Remove all items from the queue.
-
-
-[call [arg queueName] [cmd destroy]]
-
-Destroy the queue, including its storage space and associated command.
-
-
-[call [arg queueName] [cmd get] [opt "[arg count]"]]
-
-Return the front [arg count] items of the queue and remove them from
-the queue.  If [arg count] is not specified, it defaults to 1.  If
-[arg count] is 1, the result is a simple string; otherwise, it is a
-list.  If specified, [arg count] must be greater than or equal to 1.
-
-If there are not enough items in the queue to fulfull the request,
-this command will throw an error.
-
-
-[call [arg queueName] [cmd peek] [opt "[arg count]"]]
-
-Return the front [arg count] items of the queue, without removing them
-from the queue.  If [arg count] is not specified, it defaults to 1.
-If [arg count] is 1, the result is a simple string; otherwise, it is a
-list.  If specified, [arg count] must be greater than or equal to 1.
-
-If there are not enough items in the queue to fulfull the request,
-this command will throw an error.
-
-
-[call [arg queueName] [cmd put] [arg item] [opt "[arg "item ..."]"]]
-
-Put the [arg item] or items specified into the queue.  If more than
-one [arg item] is given, they will be added in the order they are
-listed.
-
-
-[call [arg queueName] [cmd unget] [arg item]]
-
-Put the [arg item] into the queue, at the front, i.e. before any other
-items already in the queue. This makes this operation the complement
-to the method [method get].
-
-
-[call [arg queueName] [cmd size]]
-
-Return the number of items in the queue.
-
+This class method creates a new queue instance with an associated
+global Tcl command and returns the fully qualified name of this
+command. The [arg name] is chosen by the user and provided as the
+argument of the method.
 
 [list_end]
 
-[section {BUGS, IDEAS, FEEDBACK}]
+[comment {= = == === ===== ======== ============= =====================}]
+[section {Instance API}]
 
-This document, and the package it describes, will undoubtedly contain
-bugs and other problems.
+All instances of queues created through the [sectref {Class API}]
+support the following API:
 
-Please report such in the category [emph {struct :: queue}] of the
-[uri {http://sourceforge.net/tracker/?group_id=12883} {Tcllib SF Trackers}].
+[list_begin definitions]
 
-Please also report any ideas for enhancements you may have for either
-package and/or documentation.
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call [arg queueObj] [cmd destroy]]
+
+This method destroys the stack instance and the associated Tcl
+command, releasing any associated resurces.
+
+[para] The method returns the empty string as its result.
+
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call [arg queueObj] [cmd size]]
+
+This method returns the number of elements stored in the queue.
 
 
-[keywords stack matrix tree graph set list prioqueue record skiplist]
-[keywords pool]
-[manpage_end]
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call [arg queueObj] [cmd peek] [opt "[arg count]"]]
+
+This method returns the front [arg count] elements of the queue, without
+removing them from the queue. The count defaults to [const 1].
+
+[para] If more than one element is requested the result will be a list
+of elements, with the front element of the queue as the first
+element of the result. If only one element is requested the result is
+that element.
+
+[para] An error will be thrown if the queue does not hold enough
+elements to satisfy the request, i.e. less than [arg count] elements.
+
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call [arg queueObj] [cmd get] [opt "[arg count]"]]
+
+This method returns the front [arg count] elements of the queue, and
+removes them from the queue. The count defaults to [const 1].
+
+[para] If more than one element is requested the result will be a list
+of elements, with the front element of the queue as the first
+element of the result. If only one element is requested the result is
+that element.
+
+[para] An error will be thrown if the queue does not hold enough
+elements to satisfy the request, i.e. less than [arg count] elements.
+
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call [arg queueObj] [cmd clear]]
+
+This method removes all elements from the queue.
+
+[para] The method returns the empty string as its result.
+
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call [arg queueObj] [cmd put] [arg item] [opt [arg ...]]]
+
+This method adds the specified [arg item] or items at the end of the queue.
+If more than one [arg item] is given, they will be added in the order
+they are listed.
+
+[para] The method returns the empty string as its result.
+
+[para] The pair of methods [method put] and [method get] manage a queue.
+
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call [arg queueObj] [cmd unget] [arg item] [opt [arg ...]]]
+
+This method is a variant of [method put] above, except that it adds the
+elements at the front of the queue.
+
+[para] The pair of methods [method unget] and [method get] manage a stack.
+
+[list_end]
+
+[comment {= = == === ===== ======== ============= =====================}]
+[include license.inc]
+[include feedback.inc]

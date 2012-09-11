@@ -415,8 +415,8 @@ proc _test {{config {}}} {
     return
 }
 proc Hdoc {} { return "?destination?\n\t(Re)Generate the embedded documentation." }
-proc _doc {{dst {../../embedded/stackc}}} {
-    cd $::topdir/doc/stackc
+proc _doc {{dst {../../embedded/queuec}}} {
+    cd $::topdir/doc/queuec
 
     puts "Removing old documentation..."
     file delete -force $dst/man
@@ -443,7 +443,7 @@ proc Htextdoc {} { return "destination\n\tGenerate plain text documentation in s
 proc _textdoc {dst} {
     set destination [file normalize $dst]
 
-    cd $::topdir/doc/stack
+    cd $::topdir/doc/queuec
 
     puts "Removing old text documentation at ${dst}..."
     file delete -force $destination
@@ -460,7 +460,7 @@ proc _textdoc {dst} {
 }
 if 0 {proc Hfigures {} { return "\n\t(Re)Generate the figures and diagrams for the documentation." }
 proc _figures {} {
-    cd $::topdir/doc/stack/figures
+    cd $::topdir/doc/queuec/figures
 
     puts "Generating (tklib) diagrams..."
     eval [linsert [glob *.dia] 0 exec 2>@ stderr >@ stdout dia convert -t -o . png]
