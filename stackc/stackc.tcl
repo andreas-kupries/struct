@@ -58,6 +58,18 @@ critcl::argtype stacksize {
     }
 } int int
 
+critcl::argtype stackindex {
+    if (Tcl_GetIntFromObj (interp, @@, &@A) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    if ((@A < 0) || (cstack_size ((CSTACK) cd) <= @A)) {
+	Tcl_AppendResult (interp, "invalid index ",
+			  Tcl_GetString (@@),
+			  NULL);
+	return TCL_ERROR;
+    }
+} int int
+
 # Custom definition.
 critcl::resulttype sTcl_Obj* {
     if (rv == NULL) { return TCL_ERROR; }
@@ -117,7 +129,7 @@ critcl::class::define ::struct::stack {
 
 	static Tcl_Obj*
 	StructStackC_Elements (CSTACK instance, int n, CSLICE_DIRECTION dir) {
-	    CSLICE s = cstack_get (instance, n, dir);
+	    CSLICE s = cstack_get (instance, 0, n, dir);
 	    void** cells;
 	    long int ln;
 	    Tcl_Obj* result;
@@ -161,6 +173,27 @@ critcl::class::define ::struct::stack {
 
     method size proc {} int {
 	return cstack_size (instance);
+    }
+
+    method top proc {} sTcl_Obj* {
+	long int n = cstack_size (instance);
+
+	if (!n) {
+	    Tcl_AppendResult (interp,
+	      "insufficient items on stack to fulfill request",
+	      NULL);
+	    return 0;
+	} else {
+	    return cstack_top (instance);
+	}
+    }
+
+    method at proc {stackindex at} sTcl_Obj* {
+	return cstack_at (instance, at);
+    }
+
+    method atr proc {stackindex at} sTcl_Obj* {
+	return cstack_atr (instance, at);
     }
 
     method get proc {} sTcl_Obj* {

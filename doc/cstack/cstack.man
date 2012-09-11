@@ -55,17 +55,61 @@ This function returns the number of cells in the stack.
 
 This function returns the topmost cell in the stack.
 
+[para] The code asserts that the stack is not empty.
+
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call void [fun cstack_at] ( [type CSTACK] [arg s] \
+      [type {long int}] [arg i])]
+
+This function returns the indexed cell in the stack.
+
+[para] The code asserts that the stack is not empty, and that the
+index is in the proper range.
+
+[para] Index [const 0]         addresses the topmost cell, whereas
+[para] index 'cstack_size()-1' addresses the bottommost cell.
+
+
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call void [fun cstack_atr] ( [type CSTACK] [arg s] \
+      [type {long int}] [arg i])]
+
+This function is a variant of function [fun cstack_at] above,
+returning the indexed cell in the stack.
+
+[para] In contrast to the former the indexing is reversed. I.e.:
+[para] Index 'cstack_size()-1' addresses the topmost cell, whereas
+[para] index [const 0]         addresses the bottommost cell.
+
 [comment {- - -- --- ----- -------- ------------- ---------------------}]
 [call void [fun cstack_get] ( [type CSTACK] [arg s], \
+      [type {long int}] [arg at], \
       [type {long int}] [arg n], \
       [type CSLICE_DIRECTION] [arg dir] )]
 
-This function returns the [arg n] topmost cells in the stack as a
-slice, with the topmost cell either as first or last element of the
-slice, depending on [arg dir].
+This function returns the [arg n] cells starting at index [arg at] in
+the stack as a slice, with the topmost cell of the slice either as
+first or last element of the slice, depending on [arg dir].
 
 [para] [const cslice_normal] <==> topmost is first.
 [para] [const cslice_revers] <==> topmost is last.
+
+[para] The indexing is the same as for function [cstack_at] above.
+[para] Index [const 0]         addresses the topmost cell, whereas
+[para] index 'cstack_size()-1' addresses the bottommost cell.
+
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call void [fun cstack_getr] ( [type CSTACK] [arg s], \
+      [type {long int}] [arg at], \
+      [type {long int}] [arg n], \
+      [type CSLICE_DIRECTION] [arg dir] )]
+
+This function is a variant of function [fun cstack_get] above,
+returning the indexed slice in the stack.
+
+[para] In contrast to the former the indexing is reversed. I.e.:
+[para] Index 'cstack_size()-1' addresses the topmost cell, whereas
+[para] index [const 0]         addresses the bottommost cell.
 
 [comment {- - -- --- ----- -------- ------------- ---------------------}]
 [call void [fun cstack_push] ( [type CSTACK] [arg s], \

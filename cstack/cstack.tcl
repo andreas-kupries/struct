@@ -24,6 +24,7 @@ critcl::description {
 }
 
 critcl::subject stack
+critcl::subject lifo
 critcl::subject {data structure}
 critcl::subject structure
 critcl::subject {abstract data structure}
@@ -44,11 +45,14 @@ critcl::cheaders   cstackInt.h
 critcl::api function CSTACK     cstack_create  {CSTACK_CELL_FREE freeCell void* clientdata}
 critcl::api function void       cstack_destroy {CSTACK s}
 
-# Accessors. Stack size, topmost element, slice of elements.
+# Accessors. Stack size, topmost element, indexed element, slice of elements.
 
 critcl::api function {long int} cstack_size {CSTACK s}
 critcl::api function void*      cstack_top  {CSTACK s}
-critcl::api function CSLICE     cstack_get  {CSTACK s {long int} n CSLICE_DIRECTION dir}
+critcl::api function void*      cstack_at   {CSTACK s {long int} i}
+critcl::api function void*      cstack_atr  {CSTACK s {long int} i}
+critcl::api function CSLICE     cstack_get  {CSTACK s {long int} at {long int} n CSLICE_DIRECTION dir}
+critcl::api function CSLICE     cstack_getr {CSTACK s {long int} at {long int} n CSLICE_DIRECTION dir}
 
 # Modifiers.
 #  - push -- Item allocation is responsibility of caller.

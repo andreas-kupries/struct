@@ -37,6 +37,33 @@ oo::class create ::struct::stack {
 	return [llength $mystack]
     }
 
+    method top {} {
+	if {![llength $mystack]} {
+	    return -code error "insufficient items on stack to fulfill request"
+	}
+	return [lindex $mystack end]
+    }
+
+    method at {at} {
+	if {![string is int -strict $at]} {
+	    return -code error "expected integer but got \"$at\""
+	}
+	if {($at < 0) || ([llength $mystack] <= $at)} {
+	    return -code error "invalid index $at"
+	}
+	return [lindex $mystack end-$at]
+    }
+
+    method atr {at} {
+	if {![string is int -strict $at]} {
+	    return -code error "expected integer but got \"$at\""
+	}
+	if {($at < 0) || ([llength $mystack] <= $at)} {
+	    return -code error "invalid index $at"
+	}
+	return [lindex $mystack $at]
+    }
+
     method get {} {
 	return [lreverse $mystack]
     }

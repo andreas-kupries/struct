@@ -21,9 +21,15 @@ typedef struct CSTACK_ {
 			    * array === Index of the _next_ cell to use
 			    * === Size of the stack. */
     CSTACK_CELL_FREE freeCell; 
-    void*           clientData;
+    void*            clientData;
 
     void**          cell;  /* Array of the stack cells. */
+
+    /*
+     * Note: The stack grows from index 0 (bottom element) up to top-1
+     * (topmost element). 'top' is the index of the first unused element.
+     * The array is allocated from 0 to max-1.
+     */
 } CSTACK_;
 
 /*

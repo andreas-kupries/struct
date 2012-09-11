@@ -102,7 +102,7 @@ test stack-2.1 {instance, bad method name} -setup {
 } -cleanup {
     mystack destroy
 } -returnCodes error \
-    -result [badmethod foo {clear destroy get getr peek peekr pop push rotate size trim trim*}]
+    -result [badmethod foo {at atr clear destroy get getr peek peekr pop push rotate size top trim trim*}]
 
 # # ## ### ##### ######## ############# #####################
 
@@ -676,6 +676,143 @@ test stack-14.6 {peekr} {
     mystack destroy
     set result
 } {b c d}
+
+# # ## ### ##### ######## ############# #####################
+
+test stack-15.0 {at} -setup {
+    struct stack create mystack
+} -body {
+    mystack at
+} -cleanup {
+    mystack destroy
+} -returnCodes error -result {wrong # args: should be "mystack at at"}
+
+test stack-15.1 {at, wrong args, too many} -setup {
+    struct stack create mystack
+} -body {
+    mystack at X Y
+} -cleanup {
+    mystack destroy
+} -returnCodes error -result {wrong # args: should be "mystack at at"}
+
+test stack-15.2 {at, bad index, not integer} -setup {
+    struct stack create mystack
+} -body {
+    mystack at X
+} -cleanup {
+    mystack destroy
+} -returnCodes error -result {expected integer but got "X"}
+
+test stack-15.3 {at, bad index, too small} -setup {
+    struct stack create mystack
+} -body {
+    mystack at -1
+} -cleanup {
+    mystack destroy
+} -returnCodes error -result {invalid index -1}
+
+test stack-15.4 {at, bad index, too large} -setup {
+    struct stack create mystack
+} -body {
+    mystack at 0
+} -cleanup {
+    mystack destroy
+} -returnCodes error -result {invalid index 0}
+
+test stack-15.5 {at} -setup {
+    struct stack create mystack
+    mystack push a b c
+    set result {}
+} -body {
+    lappend result [mystack at 0]
+    lappend result [mystack at 1]
+    lappend result [mystack at 2]
+} -cleanup {
+    mystack destroy
+    unset result
+} -result {c b a}
+
+# # ## ### ##### ######## ############# #####################
+
+test stack-16.0 {atr, wrong args, not enough} -setup {
+    struct stack create mystack
+} -body {
+    mystack atr
+} -cleanup {
+    mystack destroy
+} -returnCodes error -result {wrong # args: should be "mystack atr at"}
+
+test stack-16.1 {atr, wrong args, too many} -setup {
+    struct stack create mystack
+} -body {
+    mystack atr X Y
+} -cleanup {
+    mystack destroy
+} -returnCodes error -result {wrong # args: should be "mystack atr at"}
+
+test stack-16.2 {atr, bad index, not integer} -setup {
+    struct stack create mystack
+} -body {
+    mystack atr X
+} -cleanup {
+    mystack destroy
+} -returnCodes error -result {expected integer but got "X"}
+
+test stack-16.3 {atr, bad index, too small} -setup {
+    struct stack create mystack
+} -body {
+    mystack atr -1
+} -cleanup {
+    mystack destroy
+} -returnCodes error -result {invalid index -1}
+
+test stack-16.4 {atr, bad index, too large} -setup {
+    struct stack create mystack
+} -body {
+    mystack atr 0
+} -cleanup {
+    mystack destroy
+} -returnCodes error -result {invalid index 0}
+
+test stack-16.5 {atr} -setup {
+    struct stack create mystack
+    mystack push a b c
+    set result {}
+} -body {
+    lappend result [mystack atr 0]
+    lappend result [mystack atr 1]
+    lappend result [mystack atr 2]
+} -cleanup {
+    mystack destroy
+    unset result
+} -result {a b c}
+
+# # ## ### ##### ######## ############# #####################
+
+test stack-17.0 {top, wrong args, too many} -setup {
+    struct stack create mystack
+} -body {
+    mystack top X
+} -cleanup {
+    mystack destroy
+} -returnCodes error -result {wrong # args: should be "mystack top"}
+
+test stack-17.1 {top, empty} -setup {
+    struct stack create mystack
+} -body {
+    mystack top
+} -cleanup {
+    mystack destroy
+} -returnCodes error -result {insufficient items on stack to fulfill request}
+
+test stack-17.3 {top} -setup {
+    struct stack create mystack
+    mystack push a b c
+} -body {
+    mystack top
+} -cleanup {
+    mystack destroy
+} -result c
 
 # # ## ### ##### ######## ############# #####################
 
