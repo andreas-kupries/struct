@@ -61,6 +61,11 @@ critcl::api function void cslice_get {
     {long int *} n
 }
 
+critcl::api function CSLICE cslice_concat {
+    CSLICE a
+    CSLICE b
+}
+
 # # ## ### ##### ######## ############# #####################
 ## Implementation. Inlined.
 
@@ -86,7 +91,8 @@ critcl::ccode {
 
 	} else if (dir == cslice_revers) {
 	    /* For the reverse direction we have make our own copy of
-	     * the input.
+	     * the input. Can't use memcpy :(
+	     * Is there a standard reverse memcpy ?
 	     */
 
 	    long int i;
@@ -120,6 +126,32 @@ critcl::ccode {
     {
 	*cells = s->cell;
 	*n     = s->n;
+    }
+
+    CSLICE
+    cslice_concat (CSLICE a, CSLICE b)
+    {
+	long int n = a->n + b->n;
+
+	if (a->dynamic) {
+	    /* Extend a with b, destroy only b. */
+	    void** new = NREALLOC (n, void*, a->cell);
+	    ASSERT (new, "Reallocation failure");
+	    a->cell = new;
+	} else {
+	    /* Make a dynamic, already in larger size */
+	    void** new = NALLOC (n, void*);
+	    ASSERT (new, "Allocation failure");
+	    memcpy (new, a->cell, a->n * sizeof(void*));
+	    a->cell = new;
+	}
+
+	memcpy (a->cell + a->n, b->cell, b->n * sizeof(void*));
+	a->dynamic = 1;
+	a->n = n;
+
+	cslice_destroy (b);
+	return a;
     }
 }
 

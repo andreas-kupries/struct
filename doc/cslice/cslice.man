@@ -46,6 +46,14 @@ allocated memory.
 This function provides access to the slice of cells contained in the
 specified slice object.
 
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call void [fun cslice_concat] ( \
+      [type CSLICE] [arg a] \
+      [type CSLICE] [arg b] )]
+
+This function creates a new slice which is the concatenation of the
+two inputs. The input slices are destroyed.
+
 [list_end]
 
 [include ../include/license.inc]

@@ -20,6 +20,7 @@ typedef struct CSLICE_ {
 
 #define ALLOC(type)    (type *) ckalloc (sizeof (type))
 #define NALLOC(n,type) (type *) ckalloc ((n) * sizeof (type))
+#define NREALLOC(n,type,p) (type *) ckrealloc ((p), (n) * sizeof (type))
 
 /*
  * Assertions in general, and asserting the proper range of an array
