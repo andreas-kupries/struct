@@ -163,7 +163,7 @@ proc _install {{ldir {}} {config {}}} {
     return
 }
 proc Hdebug {} { return "?destination?\n\tInstall all packages, build for debugging.\n\tdestination = path of package directory, default \[info library\]." }
-proc _debug {{ldir {}}} {
+proc _debug {{ldir {}} {config {}}} {
     global packages
     if {[llength [info level 0]] < 2} {
 	set ldir [info library]
@@ -176,8 +176,6 @@ proc _debug {{ldir {}}} {
     file mkdir $idir
     file mkdir $ldir
 
-    package require critcl::app
-
     foreach p $packages {
 	puts ""
 
@@ -187,7 +185,12 @@ proc _debug {{ldir {}}} {
 	set version [version $src]
 
 	file delete -force             [pwd]/BUILD.$p
-	critcl::app::main [list -keep -debug symbols -cache [pwd]/BUILD.$p -libdir $ldir -includedir $idir -pkg $src]
+
+	if {$config ne {}} {
+	    RunCritcl -keep -debug all -target $config -cache [pwd]/BUILD.$p -libdir $ldir -includedir $idir -pkg $src
+	} else {
+	    RunCritcl -keep -debug all -cache [pwd]/BUILD.$p -libdir $ldir -includedir $idir -pkg $src
+	}
 
 	if {![file exists $ldir/$p]} {
 	    set ::NOTE {warn {DONE, with FAILURES}}

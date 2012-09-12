@@ -20,7 +20,9 @@ apply {{self} {
     foreach child [lsort -dict [glob -directory $selfdir */$self]] {
 	puts "[file join {*}[lrange [file split $child] end-1 end]] $sep"
 
-	exec 2>@ stderr >@ stdout $noe $child {*}$argv
+	catch {
+	    exec 2>@ stderr >@ stdout $noe $child {*}$argv
+	}
 
 	puts ""
 	puts ""
