@@ -1,5 +1,5 @@
 '\"
-'\" Generated from file '/home/aku/Projects/Struct/struct/embedded/cstack/man/files/cstack.n' by tcllib/doctools with format 'nroff'
+'\" Generated from file '/net/nas/data/andreask/Dev/Struct/struct/embedded/cstack/man/files/cstack.n' by tcllib/doctools with format 'nroff'
 '\"
 '\" The definitions below are for supplemental macros used in Tcl/Tk
 '\" manual entries.
@@ -256,19 +256,35 @@ void \fBcstack_destroy\fR ( \fBCSTACK\fR \fIs\fR )
 .sp
 void \fBcstack_top\fR ( \fBCSTACK\fR \fIs\fR )
 .sp
-void \fBcstack_get\fR ( \fBCSTACK\fR \fIs\fR, \fBlong int\fR \fIn\fR, \fBCSLICE_DIRECTION\fR \fIdir\fR )
+void \fBcstack_bottom\fR ( \fBCSTACK\fR \fIs\fR )
+.sp
+void \fBcstack_at\fR ( \fBCSTACK\fR \fIs\fR \fBlong int\fR \fIi\fR)
+.sp
+void \fBcstack_atr\fR ( \fBCSTACK\fR \fIs\fR \fBlong int\fR \fIi\fR)
+.sp
+void \fBcstack_get\fR ( \fBCSTACK\fR \fIs\fR, \fBlong int\fR \fIat\fR, \fBlong int\fR \fIn\fR )
+.sp
+void \fBcstack_getr\fR ( \fBCSTACK\fR \fIs\fR, \fBlong int\fR \fIat\fR, \fBlong int\fR \fIn\fR )
 .sp
 void \fBcstack_push\fR ( \fBCSTACK\fR \fIs\fR, \fBvoid*\fR \fIitem\fR )
 .sp
+void \fBcstack_push_slice\fR ( \fBCSTACK\fR \fIs\fR, \fBCSLICE\fR \fIsl\fR )
+.sp
 void \fBcstack_pop\fR ( \fBCSTACK\fR \fIs\fR, \fBlong int\fR \fIn\fR )
+.sp
+void \fBcstack_clear\fR ( \fBCSTACK\fR \fIs\fR )
 .sp
 void \fBcstack_trim\fR ( \fBCSTACK\fR \fIs\fR, \fBlong int\fR \fIn\fR )
 .sp
 void \fBcstack_drop\fR ( \fBCSTACK\fR \fIs\fR, \fBlong int\fR \fIn\fR )
 .sp
+void \fBcstack_drop_all\fR ( \fBCSTACK\fR \fIs\fR )
+.sp
 void \fBcstack_rol\fR ( \fBCSTACK\fR \fIs\fR, \fBlong int\fR \fIn\fR, \fBlong int\fR \fIstep\fR )
 .sp
-void \fBcstack_move\fR ( \fBCSTACK\fR \fIs\fR, \fBCSTACK\fR \fIsrc\fR )
+void \fBcstack_move\fR ( \fBCSTACK\fR \fIs\fR, \fBCSTACK\fR \fIsrc\fR, \fBlong int\fR \fIn\fR )
+.sp
+void \fBcstack_move_all\fR ( \fBCSTACK\fR \fIs\fR, \fBCSTACK\fR \fIsrc\fR )
 .sp
 void \fBcstack_clientdata_set\fR ( \fBCSTACK\fR \fIs\fR, \fBvoid*\fR \fIclientdata\fR )
 .sp
@@ -313,24 +329,77 @@ This function returns the number of cells in the stack.
 .TP
 void \fBcstack_top\fR ( \fBCSTACK\fR \fIs\fR )
 This function returns the topmost cell in the stack.
+.sp
+The code asserts that the stack is not empty.
 .TP
-void \fBcstack_get\fR ( \fBCSTACK\fR \fIs\fR, \fBlong int\fR \fIn\fR, \fBCSLICE_DIRECTION\fR \fIdir\fR )
-This function returns the \fIn\fR topmost cells in the stack as a
-slice, with the topmost cell either as first or last element of the
-slice, depending on \fIdir\fR.
+void \fBcstack_bottom\fR ( \fBCSTACK\fR \fIs\fR )
+This function returns the bottom-most cell in the stack.
 .sp
-\fBcslice_normal\fR <==> topmost is first.
+The code asserts that the stack is not empty.
+.TP
+void \fBcstack_at\fR ( \fBCSTACK\fR \fIs\fR \fBlong int\fR \fIi\fR)
+This function returns the indexed cell in the stack.
 .sp
-\fBcslice_revers\fR <==> topmost is last.
+The code asserts that the stack is not empty, and that the
+index is in the proper range.
+.sp
+Index \fB0\fR         addresses the topmost cell, whereas
+.sp
+index 'cstack_size()-1' addresses the bottommost cell.
+.TP
+void \fBcstack_atr\fR ( \fBCSTACK\fR \fIs\fR \fBlong int\fR \fIi\fR)
+This function is a variant of function \fBcstack_at\fR above,
+returning the indexed cell in the stack.
+.sp
+In contrast to the former the indexing is reversed. I.e.:
+.sp
+Index 'cstack_size()-1' addresses the topmost cell, whereas
+.sp
+index \fB0\fR         addresses the bottommost cell.
+.TP
+void \fBcstack_get\fR ( \fBCSTACK\fR \fIs\fR, \fBlong int\fR \fIat\fR, \fBlong int\fR \fIn\fR )
+This function returns the \fIn\fR cells starting at index \fIat\fR in
+the stack as a slice, with the topmost cell of the slice as the last
+element of the slice (natural internal order).
+.sp
+The indexing is the same as for function \fBcstack_at\fR above.
+.sp
+Index \fB0\fR         addresses the topmost cell, whereas
+.sp
+index 'cstack_size()-1' addresses the bottommost cell.
+.TP
+void \fBcstack_getr\fR ( \fBCSTACK\fR \fIs\fR, \fBlong int\fR \fIat\fR, \fBlong int\fR \fIn\fR )
+This function is a variant of function \fBcstack_get\fR above,
+returning the indexed slice in the stack.
+.sp
+In contrast to the former the indexing is reversed. I.e.:
+.sp
+Index 'cstack_size()-1' addresses the topmost cell, whereas
+.sp
+index \fB0\fR         addresses the bottommost cell.
+.sp
+Note that this does not affect the ordering in the slice
+itself, which has the topmost cell of the slice as the last element of
+the slice (natural internal order).
 .TP
 void \fBcstack_push\fR ( \fBCSTACK\fR \fIs\fR, \fBvoid*\fR \fIitem\fR )
 This function pushes the \fIitem\fR onto the stack.
+.TP
+void \fBcstack_push_slice\fR ( \fBCSTACK\fR \fIs\fR, \fBCSLICE\fR \fIsl\fR )
+This function pushes all items in the slice onto the stack.
+It is a convenience function reducing the number of calls
+to  \fBcstack_push\fR for bulk operations.
 .TP
 void \fBcstack_pop\fR ( \fBCSTACK\fR \fIs\fR, \fBlong int\fR \fIn\fR )
 This function removes the \fIn\fR topmost cells from the stack.
 .sp
 The cell release function is called for all removed cells.
 This is in contrast to function \fBcstack_drop\fR below.
+.TP
+void \fBcstack_clear\fR ( \fBCSTACK\fR \fIs\fR )
+This convenience function is a variant \fBcstack_pop\fR which removes
+all cells from the stack.
+After the operation \fIs\fR is empty.
 .TP
 void \fBcstack_trim\fR ( \fBCSTACK\fR \fIs\fR, \fBlong int\fR \fIn\fR )
 This function removes cells until the stack contains only \fIn\fR
@@ -345,18 +414,28 @@ This function removes the \fIn\fR topmost cells from the stack.
 the removed cells. This is in contrast to function \fBcstack_pop\fR
 above.
 .TP
+void \fBcstack_drop_all\fR ( \fBCSTACK\fR \fIs\fR )
+This convenience function is a variant of \fBcstack_drop\fR which
+drops all cells from the stack.
+After the operation \fIs\fR is empty.
+.TP
 void \fBcstack_rol\fR ( \fBCSTACK\fR \fIs\fR, \fBlong int\fR \fIn\fR, \fBlong int\fR \fIstep\fR )
 This function rotates the \fIn\fR topmost cells in the stack by
 \fIstep\fR elements.
 .TP
-void \fBcstack_move\fR ( \fBCSTACK\fR \fIs\fR, \fBCSTACK\fR \fIsrc\fR )
-This function moves all cells in the stack \fIsrc\fR to the stack.
-After the operation \fIsrc\fR is empty.
+void \fBcstack_move\fR ( \fBCSTACK\fR \fIs\fR, \fBCSTACK\fR \fIsrc\fR, \fBlong int\fR \fIn\fR )
+This function moves the topmost \fIn\fR cells in the stack \fIsrc\fR
+to the stack.
 As the cells are not destroyed the release function is not called.
 .sp
 As a basic precaution the release functions of both stack are
 compared, and have to match. The code will assert this and panic if
 the condition is not true.
+.TP
+void \fBcstack_move_all\fR ( \fBCSTACK\fR \fIs\fR, \fBCSTACK\fR \fIsrc\fR )
+This convenience function is a variant of \fBcstack_move\fR which
+moves all cells of the source to the destination. After the operation
+\fIsrc\fR is empty.
 .TP
 void \fBcstack_clientdata_set\fR ( \fBCSTACK\fR \fIs\fR, \fBvoid*\fR \fIclientdata\fR )
 This function sets new client data into the stack.

@@ -157,9 +157,7 @@ multiple methods for the creation of stack objects. These are:</p>
 <dt><a name="1"><b class="cmd">::struct stack</b> <b class="method">new</b></a></dt>
 <dd><p>This class method creates a new stack instance with an associated
 global Tcl command and returns the fully qualified name of this
-command. The name is auto-generated and of the form
-<b class="const">::struct::stack</b><b class="variable">N</b> where <b class="variable">N</b> is a random integer
-number.</p></dd>
+command. The name is auto-generated.</p></dd>
 <dt><a name="2"><b class="cmd">::struct stack</b> <b class="method">create</b> <i class="arg">name</i></a></dt>
 <dd><p>This class method creates a new stack instance with an associated
 global Tcl command and returns the fully qualified name of this
@@ -174,7 +172,7 @@ support the following API:</p>
 <dt><a name="3"><i class="arg">stackObj</i> <b class="method">destroy</b></a></dt>
 <dd><p>This method destroys the stack instance and the associated Tcl
 command, releasing any associated resurces.</p>
-<p>The method returns the empty as its result.</p></dd>
+<p>The method returns the empty string as its result.</p></dd>
 <dt><a name="4"><i class="arg">stackObj</i> <b class="method">size</b></a></dt>
 <dd><p>This method returns the number of elements stored in the stack.</p></dd>
 <dt><a name="5"><i class="arg">stackObj</i> <b class="method">get</b></a></dt>
@@ -211,7 +209,8 @@ that element.</p>
 <p>An error will be thrown if the stack does not hold enough
 elements to satisfy the request, i.e. less than <i class="arg">count</i> elements.</p></dd>
 <dt><a name="10"><i class="arg">stackObj</i> <b class="method">clear</b></a></dt>
-<dd><p>This method removes all elements from the stack.</p></dd>
+<dd><p>This method removes all elements from the stack.</p>
+<p>The method returns the empty string as its result.</p></dd>
 <dt><a name="11"><i class="arg">stackObj</i> <b class="method">trim</b> <span class="opt">?<i class="arg">newsize</i>?</span></a></dt>
 <dd><p>This method shrinks the stack to contain at most <i class="arg">newsize</i>
 elements and returns a list containing the elements which were
@@ -223,7 +222,8 @@ the removed elements, and only performs any necessary shrinking.</p></dd>
 <dt><a name="13"><i class="arg">stackObj</i> <b class="method">push</b> <i class="arg">item</i> <span class="opt">?<i class="arg">item...</i>?</span></a></dt>
 <dd><p>This method pushes the specified <i class="arg">item</i> or items onto the stack.
 If more than one <i class="arg">item</i> is given, they will be pushed in the order
-they are listed.</p></dd>
+they are listed.</p>
+<p>The method returns the empty string as its result.</p></dd>
 </dl>
 </div>
 <div id="section4" class="section"><h2><a name="section4">License</a></h2>

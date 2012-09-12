@@ -33,6 +33,14 @@ typedef struct CSTACK_ {
 } CSTACK_;
 
 /*
+ * General utilities
+ */
+
+#ifndef MAX
+#define MAX(a,b) ((a) < (b) ? (b) : (a))
+#endif
+
+/*
  * Allocation macros for common situations.
  */
 

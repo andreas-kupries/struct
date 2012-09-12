@@ -97,7 +97,7 @@ This function returns the [arg n] cells starting at index [arg at] in
 the stack as a slice, with the topmost cell of the slice as the last
 element of the slice (natural internal order).
 
-[para] The indexing is the same as for function [cstack_at] above.
+[para] The indexing is the same as for function [fun cstack_at] above.
 [para] Index [const 0]         addresses the topmost cell, whereas
 [para] index 'cstack_size()-1' addresses the bottommost cell.
 
@@ -124,6 +124,14 @@ the slice (natural internal order).
 This function pushes the [arg item] onto the stack.
 
 [comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call void [fun cstack_push_slice] ( [type CSTACK] [arg s], \
+      [type CSLICE] [arg sl] )]
+
+This function pushes all items in the slice onto the stack.
+It is a convenience function reducing the number of calls
+to  [fun cstack_push] for bulk operations.
+
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
 [call void [fun cstack_pop] ( [type CSTACK] [arg s], \
       [type {long int}] [arg n] )]
 
@@ -131,6 +139,14 @@ This function removes the [arg n] topmost cells from the stack.
 
 [para] The cell release function is called for all removed cells.
 This is in contrast to function [fun cstack_drop] below.
+
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call void [fun cstack_clear] ( [type CSTACK] [arg s] )]
+
+This convenience function is a variant [fun cstack_pop] which removes
+all cells from the stack.
+
+After the operation [arg s] is empty.
 
 [comment {- - -- --- ----- -------- ------------- ---------------------}]
 [call void [fun cstack_trim] ( [type CSTACK] [arg s], \
@@ -152,6 +168,14 @@ the removed cells. This is in contrast to function [fun cstack_pop]
 above.
 
 [comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call void [fun cstack_drop_all] ( [type CSTACK] [arg s] )]
+
+This convenience function is a variant of [fun cstack_drop] which
+drops all cells from the stack.
+
+After the operation [arg s] is empty.
+
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
 [call void [fun cstack_rol] ( [type CSTACK] [arg s], \
       [type {long int}] [arg n], \
       [type {long int}] [arg step] )]
@@ -161,16 +185,25 @@ This function rotates the [arg n] topmost cells in the stack by
 
 [comment {- - -- --- ----- -------- ------------- ---------------------}]
 [call void [fun cstack_move] ( [type CSTACK] [arg s], \
-      [type CSTACK] [arg src] )]
+      [type CSTACK] [arg src], \
+      [type {long int}] [arg n] )]
 
-This function moves all cells in the stack [arg src] to the stack.
-After the operation [arg src] is empty.
+This function moves the topmost [arg n] cells in the stack [arg src]
+to the stack.
 
 As the cells are not destroyed the release function is not called.
 
 [para] As a basic precaution the release functions of both stack are
 compared, and have to match. The code will assert this and panic if
 the condition is not true.
+
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call void [fun cstack_move_all] ( [type CSTACK] [arg s], \
+      [type CSTACK] [arg src] )]
+
+This convenience function is a variant of [fun cstack_move] which
+moves all cells of the source to the destination. After the operation
+[arg src] is empty.
 
 [comment {- - -- --- ----- -------- ------------- ---------------------}]
 [call void [fun cstack_clientdata_set] ( [type CSTACK] [arg s], \

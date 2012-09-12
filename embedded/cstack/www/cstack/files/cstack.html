@@ -130,15 +130,23 @@
 <li><a href="#2">void <b class="function">cstack_destroy</b> ( <b class="type">CSTACK</b> <i class="arg">s</i> )</a></li>
 <li><a href="#3"><b class="type">long int</b> <b class="function">cstack_size</b> ( <b class="type">CSTACK</b> <i class="arg">s</i> )</a></li>
 <li><a href="#4">void <b class="function">cstack_top</b> ( <b class="type">CSTACK</b> <i class="arg">s</i> )</a></li>
-<li><a href="#5">void <b class="function">cstack_get</b> ( <b class="type">CSTACK</b> <i class="arg">s</i>, <b class="type">long int</b> <i class="arg">n</i>, <b class="type">CSLICE_DIRECTION</b> <i class="arg">dir</i> )</a></li>
-<li><a href="#6">void <b class="function">cstack_push</b> ( <b class="type">CSTACK</b> <i class="arg">s</i>, <b class="type">void*</b> <i class="arg">item</i> )</a></li>
-<li><a href="#7">void <b class="function">cstack_pop</b> ( <b class="type">CSTACK</b> <i class="arg">s</i>, <b class="type">long int</b> <i class="arg">n</i> )</a></li>
-<li><a href="#8">void <b class="function">cstack_trim</b> ( <b class="type">CSTACK</b> <i class="arg">s</i>, <b class="type">long int</b> <i class="arg">n</i> )</a></li>
-<li><a href="#9">void <b class="function">cstack_drop</b> ( <b class="type">CSTACK</b> <i class="arg">s</i>, <b class="type">long int</b> <i class="arg">n</i> )</a></li>
-<li><a href="#10">void <b class="function">cstack_rol</b> ( <b class="type">CSTACK</b> <i class="arg">s</i>, <b class="type">long int</b> <i class="arg">n</i>, <b class="type">long int</b> <i class="arg">step</i> )</a></li>
-<li><a href="#11">void <b class="function">cstack_move</b> ( <b class="type">CSTACK</b> <i class="arg">s</i>, <b class="type">CSTACK</b> <i class="arg">src</i> )</a></li>
-<li><a href="#12">void <b class="function">cstack_clientdata_set</b> ( <b class="type">CSTACK</b> <i class="arg">s</i>, <b class="type">void*</b> <i class="arg">clientdata</i> )</a></li>
-<li><a href="#13">void* <b class="function">cstack_clientdata_get</b> ( <b class="type">CSTACK</b> <i class="arg">s</i> )</a></li>
+<li><a href="#5">void <b class="function">cstack_bottom</b> ( <b class="type">CSTACK</b> <i class="arg">s</i> )</a></li>
+<li><a href="#6">void <b class="function">cstack_at</b> ( <b class="type">CSTACK</b> <i class="arg">s</i> <b class="type">long int</b> <i class="arg">i</i>)</a></li>
+<li><a href="#7">void <b class="function">cstack_atr</b> ( <b class="type">CSTACK</b> <i class="arg">s</i> <b class="type">long int</b> <i class="arg">i</i>)</a></li>
+<li><a href="#8">void <b class="function">cstack_get</b> ( <b class="type">CSTACK</b> <i class="arg">s</i>, <b class="type">long int</b> <i class="arg">at</i>, <b class="type">long int</b> <i class="arg">n</i> )</a></li>
+<li><a href="#9">void <b class="function">cstack_getr</b> ( <b class="type">CSTACK</b> <i class="arg">s</i>, <b class="type">long int</b> <i class="arg">at</i>, <b class="type">long int</b> <i class="arg">n</i> )</a></li>
+<li><a href="#10">void <b class="function">cstack_push</b> ( <b class="type">CSTACK</b> <i class="arg">s</i>, <b class="type">void*</b> <i class="arg">item</i> )</a></li>
+<li><a href="#11">void <b class="function">cstack_push_slice</b> ( <b class="type">CSTACK</b> <i class="arg">s</i>, <b class="type">CSLICE</b> <i class="arg">sl</i> )</a></li>
+<li><a href="#12">void <b class="function">cstack_pop</b> ( <b class="type">CSTACK</b> <i class="arg">s</i>, <b class="type">long int</b> <i class="arg">n</i> )</a></li>
+<li><a href="#13">void <b class="function">cstack_clear</b> ( <b class="type">CSTACK</b> <i class="arg">s</i> )</a></li>
+<li><a href="#14">void <b class="function">cstack_trim</b> ( <b class="type">CSTACK</b> <i class="arg">s</i>, <b class="type">long int</b> <i class="arg">n</i> )</a></li>
+<li><a href="#15">void <b class="function">cstack_drop</b> ( <b class="type">CSTACK</b> <i class="arg">s</i>, <b class="type">long int</b> <i class="arg">n</i> )</a></li>
+<li><a href="#16">void <b class="function">cstack_drop_all</b> ( <b class="type">CSTACK</b> <i class="arg">s</i> )</a></li>
+<li><a href="#17">void <b class="function">cstack_rol</b> ( <b class="type">CSTACK</b> <i class="arg">s</i>, <b class="type">long int</b> <i class="arg">n</i>, <b class="type">long int</b> <i class="arg">step</i> )</a></li>
+<li><a href="#18">void <b class="function">cstack_move</b> ( <b class="type">CSTACK</b> <i class="arg">s</i>, <b class="type">CSTACK</b> <i class="arg">src</i>, <b class="type">long int</b> <i class="arg">n</i> )</a></li>
+<li><a href="#19">void <b class="function">cstack_move_all</b> ( <b class="type">CSTACK</b> <i class="arg">s</i>, <b class="type">CSTACK</b> <i class="arg">src</i> )</a></li>
+<li><a href="#20">void <b class="function">cstack_clientdata_set</b> ( <b class="type">CSTACK</b> <i class="arg">s</i>, <b class="type">void*</b> <i class="arg">clientdata</i> )</a></li>
+<li><a href="#21">void* <b class="function">cstack_clientdata_get</b> ( <b class="type">CSTACK</b> <i class="arg">s</i> )</a></li>
 </ul>
 </div>
 </div>
@@ -171,41 +179,83 @@ stack.</p></dd>
 <dt><a name="3"><b class="type">long int</b> <b class="function">cstack_size</b> ( <b class="type">CSTACK</b> <i class="arg">s</i> )</a></dt>
 <dd><p>This function returns the number of cells in the stack.</p></dd>
 <dt><a name="4">void <b class="function">cstack_top</b> ( <b class="type">CSTACK</b> <i class="arg">s</i> )</a></dt>
-<dd><p>This function returns the topmost cell in the stack.</p></dd>
-<dt><a name="5">void <b class="function">cstack_get</b> ( <b class="type">CSTACK</b> <i class="arg">s</i>, <b class="type">long int</b> <i class="arg">n</i>, <b class="type">CSLICE_DIRECTION</b> <i class="arg">dir</i> )</a></dt>
-<dd><p>This function returns the <i class="arg">n</i> topmost cells in the stack as a
-slice, with the topmost cell either as first or last element of the
-slice, depending on <i class="arg">dir</i>.</p>
-<p><b class="const">cslice_normal</b> &lt;==&gt; topmost is first.</p>
-<p><b class="const">cslice_revers</b> &lt;==&gt; topmost is last.</p></dd>
-<dt><a name="6">void <b class="function">cstack_push</b> ( <b class="type">CSTACK</b> <i class="arg">s</i>, <b class="type">void*</b> <i class="arg">item</i> )</a></dt>
+<dd><p>This function returns the topmost cell in the stack.</p>
+<p>The code asserts that the stack is not empty.</p></dd>
+<dt><a name="5">void <b class="function">cstack_bottom</b> ( <b class="type">CSTACK</b> <i class="arg">s</i> )</a></dt>
+<dd><p>This function returns the bottom-most cell in the stack.</p>
+<p>The code asserts that the stack is not empty.</p></dd>
+<dt><a name="6">void <b class="function">cstack_at</b> ( <b class="type">CSTACK</b> <i class="arg">s</i> <b class="type">long int</b> <i class="arg">i</i>)</a></dt>
+<dd><p>This function returns the indexed cell in the stack.</p>
+<p>The code asserts that the stack is not empty, and that the
+index is in the proper range.</p>
+<p>Index <b class="const">0</b>         addresses the topmost cell, whereas</p>
+<p>index 'cstack_size()-1' addresses the bottommost cell.</p></dd>
+<dt><a name="7">void <b class="function">cstack_atr</b> ( <b class="type">CSTACK</b> <i class="arg">s</i> <b class="type">long int</b> <i class="arg">i</i>)</a></dt>
+<dd><p>This function is a variant of function <b class="function">cstack_at</b> above,
+returning the indexed cell in the stack.</p>
+<p>In contrast to the former the indexing is reversed. I.e.:</p>
+<p>Index 'cstack_size()-1' addresses the topmost cell, whereas</p>
+<p>index <b class="const">0</b>         addresses the bottommost cell.</p></dd>
+<dt><a name="8">void <b class="function">cstack_get</b> ( <b class="type">CSTACK</b> <i class="arg">s</i>, <b class="type">long int</b> <i class="arg">at</i>, <b class="type">long int</b> <i class="arg">n</i> )</a></dt>
+<dd><p>This function returns the <i class="arg">n</i> cells starting at index <i class="arg">at</i> in
+the stack as a slice, with the topmost cell of the slice as the last
+element of the slice (natural internal order).</p>
+<p>The indexing is the same as for function <b class="function">cstack_at</b> above.</p>
+<p>Index <b class="const">0</b>         addresses the topmost cell, whereas</p>
+<p>index 'cstack_size()-1' addresses the bottommost cell.</p></dd>
+<dt><a name="9">void <b class="function">cstack_getr</b> ( <b class="type">CSTACK</b> <i class="arg">s</i>, <b class="type">long int</b> <i class="arg">at</i>, <b class="type">long int</b> <i class="arg">n</i> )</a></dt>
+<dd><p>This function is a variant of function <b class="function">cstack_get</b> above,
+returning the indexed slice in the stack.</p>
+<p>In contrast to the former the indexing is reversed. I.e.:</p>
+<p>Index 'cstack_size()-1' addresses the topmost cell, whereas</p>
+<p>index <b class="const">0</b>         addresses the bottommost cell.</p>
+<p>Note that this does not affect the ordering in the slice
+itself, which has the topmost cell of the slice as the last element of
+the slice (natural internal order).</p></dd>
+<dt><a name="10">void <b class="function">cstack_push</b> ( <b class="type">CSTACK</b> <i class="arg">s</i>, <b class="type">void*</b> <i class="arg">item</i> )</a></dt>
 <dd><p>This function pushes the <i class="arg">item</i> onto the stack.</p></dd>
-<dt><a name="7">void <b class="function">cstack_pop</b> ( <b class="type">CSTACK</b> <i class="arg">s</i>, <b class="type">long int</b> <i class="arg">n</i> )</a></dt>
+<dt><a name="11">void <b class="function">cstack_push_slice</b> ( <b class="type">CSTACK</b> <i class="arg">s</i>, <b class="type">CSLICE</b> <i class="arg">sl</i> )</a></dt>
+<dd><p>This function pushes all items in the slice onto the stack.
+It is a convenience function reducing the number of calls
+to  <b class="function">cstack_push</b> for bulk operations.</p></dd>
+<dt><a name="12">void <b class="function">cstack_pop</b> ( <b class="type">CSTACK</b> <i class="arg">s</i>, <b class="type">long int</b> <i class="arg">n</i> )</a></dt>
 <dd><p>This function removes the <i class="arg">n</i> topmost cells from the stack.</p>
 <p>The cell release function is called for all removed cells.
 This is in contrast to function <b class="function">cstack_drop</b> below.</p></dd>
-<dt><a name="8">void <b class="function">cstack_trim</b> ( <b class="type">CSTACK</b> <i class="arg">s</i>, <b class="type">long int</b> <i class="arg">n</i> )</a></dt>
+<dt><a name="13">void <b class="function">cstack_clear</b> ( <b class="type">CSTACK</b> <i class="arg">s</i> )</a></dt>
+<dd><p>This convenience function is a variant <b class="function">cstack_pop</b> which removes
+all cells from the stack.
+After the operation <i class="arg">s</i> is empty.</p></dd>
+<dt><a name="14">void <b class="function">cstack_trim</b> ( <b class="type">CSTACK</b> <i class="arg">s</i>, <b class="type">long int</b> <i class="arg">n</i> )</a></dt>
 <dd><p>This function removes cells until the stack contains only <i class="arg">n</i>
 cells. If the stack had less cells to begin with nothing is done.</p>
 <p>The cell release function is called for all removed cells.</p></dd>
-<dt><a name="9">void <b class="function">cstack_drop</b> ( <b class="type">CSTACK</b> <i class="arg">s</i>, <b class="type">long int</b> <i class="arg">n</i> )</a></dt>
+<dt><a name="15">void <b class="function">cstack_drop</b> ( <b class="type">CSTACK</b> <i class="arg">s</i>, <b class="type">long int</b> <i class="arg">n</i> )</a></dt>
 <dd><p>This function removes the <i class="arg">n</i> topmost cells from the stack.</p>
 <p><em>Note:</em> The cell release function is <em>not</em> called for
 the removed cells. This is in contrast to function <b class="function">cstack_pop</b>
 above.</p></dd>
-<dt><a name="10">void <b class="function">cstack_rol</b> ( <b class="type">CSTACK</b> <i class="arg">s</i>, <b class="type">long int</b> <i class="arg">n</i>, <b class="type">long int</b> <i class="arg">step</i> )</a></dt>
+<dt><a name="16">void <b class="function">cstack_drop_all</b> ( <b class="type">CSTACK</b> <i class="arg">s</i> )</a></dt>
+<dd><p>This convenience function is a variant of <b class="function">cstack_drop</b> which
+drops all cells from the stack.
+After the operation <i class="arg">s</i> is empty.</p></dd>
+<dt><a name="17">void <b class="function">cstack_rol</b> ( <b class="type">CSTACK</b> <i class="arg">s</i>, <b class="type">long int</b> <i class="arg">n</i>, <b class="type">long int</b> <i class="arg">step</i> )</a></dt>
 <dd><p>This function rotates the <i class="arg">n</i> topmost cells in the stack by
 <i class="arg">step</i> elements.</p></dd>
-<dt><a name="11">void <b class="function">cstack_move</b> ( <b class="type">CSTACK</b> <i class="arg">s</i>, <b class="type">CSTACK</b> <i class="arg">src</i> )</a></dt>
-<dd><p>This function moves all cells in the stack <i class="arg">src</i> to the stack.
-After the operation <i class="arg">src</i> is empty.
+<dt><a name="18">void <b class="function">cstack_move</b> ( <b class="type">CSTACK</b> <i class="arg">s</i>, <b class="type">CSTACK</b> <i class="arg">src</i>, <b class="type">long int</b> <i class="arg">n</i> )</a></dt>
+<dd><p>This function moves the topmost <i class="arg">n</i> cells in the stack <i class="arg">src</i>
+to the stack.
 As the cells are not destroyed the release function is not called.</p>
 <p>As a basic precaution the release functions of both stack are
 compared, and have to match. The code will assert this and panic if
 the condition is not true.</p></dd>
-<dt><a name="12">void <b class="function">cstack_clientdata_set</b> ( <b class="type">CSTACK</b> <i class="arg">s</i>, <b class="type">void*</b> <i class="arg">clientdata</i> )</a></dt>
+<dt><a name="19">void <b class="function">cstack_move_all</b> ( <b class="type">CSTACK</b> <i class="arg">s</i>, <b class="type">CSTACK</b> <i class="arg">src</i> )</a></dt>
+<dd><p>This convenience function is a variant of <b class="function">cstack_move</b> which
+moves all cells of the source to the destination. After the operation
+<i class="arg">src</i> is empty.</p></dd>
+<dt><a name="20">void <b class="function">cstack_clientdata_set</b> ( <b class="type">CSTACK</b> <i class="arg">s</i>, <b class="type">void*</b> <i class="arg">clientdata</i> )</a></dt>
 <dd><p>This function sets new client data into the stack.</p></dd>
-<dt><a name="13">void* <b class="function">cstack_clientdata_get</b> ( <b class="type">CSTACK</b> <i class="arg">s</i> )</a></dt>
+<dt><a name="21">void* <b class="function">cstack_clientdata_get</b> ( <b class="type">CSTACK</b> <i class="arg">s</i> )</a></dt>
 <dd><p>This function returns the client data currently stored in the stack.</p></dd>
 </dl>
 </div>

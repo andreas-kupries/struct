@@ -69,12 +69,16 @@ critcl::api function CSLICE     cstack_getr   {CSTACK s {long int} at {long int}
 #  - drop -- Like pop, but doesn't free, assumes that caller
 #            is taking ownership of the pointer.
 
-critcl::api function void  cstack_push {CSTACK s void*      item}
-critcl::api function void  cstack_pop  {CSTACK s {long int} n}
-critcl::api function void  cstack_trim {CSTACK s {long int} n}
-critcl::api function void  cstack_drop {CSTACK s {long int} n}
-critcl::api function void  cstack_rol  {CSTACK s {long int} n {long int} step}
-critcl::api function void  cstack_move {CSTACK s CSTACK src}
+critcl::api function void  cstack_push       {CSTACK s void*      item}
+critcl::api function void  cstack_push_slice {CSTACK s CSLICE sl}
+critcl::api function void  cstack_pop        {CSTACK s {long int} n}
+critcl::api function void  cstack_clear      {CSTACK s}
+critcl::api function void  cstack_trim       {CSTACK s {long int} n}
+critcl::api function void  cstack_drop       {CSTACK s {long int} n}
+critcl::api function void  cstack_drop_all   {CSTACK s}
+critcl::api function void  cstack_rol        {CSTACK s {long int} n {long int} step}
+critcl::api function void  cstack_move       {CSTACK s CSTACK src {long int} n}
+critcl::api function void  cstack_move_all   {CSTACK s CSTACK src}
 
 # # ## ### ##### ######## ############# #####################
 ## User data management. Set and retrieve.
