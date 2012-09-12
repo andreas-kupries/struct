@@ -4,36 +4,62 @@
 #include "c_queue/c_queueDecls.h"
 
 /*
- * Actual type of the queue data structure. Used only inside of the
- * package.
+ * Actual type of the queue data structure.
+ * Used only inside of the package.
+ * The outside only seeq opaque CQUEUE handles.
  */
 
 typedef struct CQUEUE_ {
     /*
-     * We are using a Banker's queue to keep the memory we use limited and
-     * return of elements still fast (by index). All fields can be NULL or 0,
-     * i.e. are allocated only when needed.
-     *
-     * The logical organization and ordering of the stack making up the queue
-     * is:
-     *
-     * |unget.| |result| |append|
-     * |<-----| |----->| |----->|
-     * |T    B| |B  ^ T| |B    T|
-     *              at
-     *
-     * The arrows above point in the direction of growth, i.e. bottom to top.
+     * Cell release function, and queue clientdata.
      */
-
-    CSTACK   unget;  /* Stack of unget'ed elements */
-    CSTACK   result; /* Buffer of elements to return */
-    CSTACK   append; /* Stack of newly added elements */
-    long int at;     /* Index of the next element to return, in result */
 
     CQUEUE_CELL_FREE freeCell; 
     void*            clientData;
 
-    CSTACK hold; /* Saved from destruction for reuse */
+    /*
+     * The queue is managed via several stacks holding the elements added at
+     * the two sides and the middle.
+     *
+     * The logical organization and ordering of the stacks making up the queue
+     * is shown below. The arrows point in the logical direction of growth,
+     * i.e. from bottom to top.
+     *
+     * |HEAD..| |MIDDLE| |TAIL..|
+     * |<-----| |----->| |----->|
+     * |T    B| |B  ^ T| |B    T|
+     *              AT - index into the middle.
+     *
+     * The HEAD contains all elements "prepend"ed to the front and not yet
+     * removed from the front ("(remove|drop)_head").
+     *
+     * The TAIL contains all elements "append"ed to the end and not yet
+     * removed from the end ("(remove|drop)_tail").
+     *
+     * The MIDDLE is filled from the TAIL when either HEAD or MIDDLE run out
+     * of data taken from the front. To make removal fast (1) the index AT is
+     * used to access it. It holds the location of the _next_ element to
+     * return. Index 0 is bottom.
+     *
+     * (Ad 1): In the naive implementation we would shift the array of
+     * elements down after removing from the bottom, making this an O(n)
+     * operation, and repeated use O(n**2). With the index we avoid that, and
+     * defer the actual release of cells to when the MIDDLE has been processed
+     * completely.
+     */
+
+    CSTACK   head;
+    CSTACK   middle;
+    CSTACK   tail;
+    long int at;
+
+    /*
+     * This field holds a stack slated for destruction, defering actual action
+     * in the hope of reusing it again for one of the other stacks above.
+     */
+
+    CSTACK   hold;
+
 } CQUEUE_;
 
 /*

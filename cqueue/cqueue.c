@@ -2,34 +2,16 @@
 
 /*
  * = = == === ===== ======== ============= =====================
+ * == Declaraction of helper internal function.
+ * == Management of the hold field.
  */
 
-static CSTACK
-NewStack (CQUEUE q) {
-    CSTACK result;
-    if (q->hold) {
-	result = q->hold;
-	q->hold = 0;
-    } else {
-	result = cstack_create (q->freeCell, 0);
-    }
-    return result;
-}
-
-static void
-HoldStack (CQUEUE q, CSTACK* s) {
-    CSTACK result;
-    if (q->hold) {
-	cstack_destroy (*s);
-    } else {
-	q->hold = *s;
-	cstack_clear (*s);
-    }
-    *s = 0;
-}
+static CSTACK NewStack  (CQUEUE q);
+static void   HoldStack (CQUEUE q, CSTACK* s);
 
 /*
  * = = == === ===== ======== ============= =====================
+ * == Lifecycle management.
  */
 
 CQUEUE
@@ -37,12 +19,12 @@ cqueue_create (CQUEUE_CELL_FREE freeCell, void* clientdata)
 {
     CQUEUE q = ALLOC (CQUEUE_);
 
-    q->unget      = 0;
-    q->result     = 0;
-    q->append     = 0;
-    q->at         = 0;
     q->freeCell   = freeCell;
     q->clientData = clientdata;
+    q->head       = 0;
+    q->middle     = 0;
+    q->tail       = 0;
+    q->at         = 0;
     q-> hold      = 0;
 
     return q;
@@ -51,41 +33,42 @@ cqueue_create (CQUEUE_CELL_FREE freeCell, void* clientdata)
 void
 cqueue_destroy (CQUEUE q)
 {
-    if (q->unget)  cstack_destroy (q->unget);
-    if (q->result) cstack_destroy (q->result);
-    if (q->append) cstack_destroy (q->append);
+    if (q->head)   cstack_destroy (q->head);
+    if (q->middle) cstack_destroy (q->middle);
+    if (q->tail)   cstack_destroy (q->tail);
     if (q->hold)   cstack_destroy (q->hold);
 
     ckfree ((char*) q);
 }
-
+
 /*
  * = = == === ===== ======== ============= =====================
+ * Accessors.
  */
 
 long int
 cqueue_size (CQUEUE q)
 {
     return
-	(q->unget  ? cstack_size (q->unget)  : 0) +
-	(q->result ? cstack_size (q->result) : 0) +
-	(q->append ? cstack_size (q->append) : 0) -
+	(q->head   ? cstack_size (q->head)   : 0) +
+	(q->middle ? cstack_size (q->middle) : 0) +
+	(q->tail   ? cstack_size (q->tail)   : 0) -
 	q->at;
 }
 
 void*
-cqueue_head (CQUEUE q)
+cqueue_first (CQUEUE q)
 {
-    if (q->unget) {
-	ASSERT (cstack_size (q->unget) > 0, "non-null unget is empty");
-	return cstack_top (q->unget);
+    if (q->head) {
+	ASSERT (cstack_size (q->head) > 0, "non-null head is empty");
+	return cstack_top (q->head);
     }
-    if (q->result && (q->at < cstack_size (q->result))) {
-	return cstack_atr (q->result, q->at);
+    if (q->middle && (q->at < cstack_size (q->middle))) {
+	return cstack_atr (q->middle, q->at);
     }
-    if (q->append) {
-	ASSERT (cstack_size (q->append) > 0, "non-null append is empty");
-	return cstack_atr (q->append, 0); /* bottom */
+    if (q->tail) {
+	ASSERT (cstack_size (q->tail) > 0, "non-null tail is empty");
+	return cstack_bottom (q->tail);
     }
 
     ASSERT (0, "Not enough elements in the cqueue");
@@ -93,18 +76,18 @@ cqueue_head (CQUEUE q)
 }
 
 void*
-cqueue_tail (CQUEUE q)
+cqueue_last (CQUEUE q)
 {
-    if (q->append) {
-	ASSERT (cstack_size (q->append) > 0, "non-null append is empty");
-	return cstack_top (q->append);
+    if (q->tail) {
+	ASSERT (cstack_size (q->tail) > 0, "non-null tail is empty");
+	return cstack_top (q->tail);
     }
-    if (q->result && (q->at < cstack_size (q->result))) {
-	return cstack_top (q->result);
+    if (q->middle && (q->at < cstack_size (q->middle))) {
+	return cstack_top (q->middle);
     }
-    if (q->unget) {
-	ASSERT (cstack_size (q->unget) > 0, "non-null unget is empty");
-	return cstack_atr (q->unget, 0); /* bottom */
+    if (q->head) {
+	ASSERT (cstack_size (q->head) > 0, "non-null head is empty");
+	return cstack_bottom (q->head);
     }
 
     ASSERT (0, "Not enough elements in the cqueue");
@@ -112,51 +95,186 @@ cqueue_tail (CQUEUE q)
 }
 
 CSLICE
-cqueue_get (CQUEUE q, long int n, CSLICE_DIRECTION dir)
+cqueue_head (CQUEUE q, long int take)
 {
     CSLICE result = 0;
-    ASSERT (n <= cqueue_size (q), "Not enough elements in the cqueue");
-    ASSERT (n >= 0, "Bad get count");
+    ASSERT (take <= cqueue_size (q), "Not enough elements in the cqueue");
+    ASSERT (take > 0, "Bad get count");
 
-    /* The result slice is incrementally built by taking the necessary slices
-     * of the various stacks until the request is fulfilled.
+    /* The result is incrementally built by taking the necessary slices of the
+     * various stacks until the request is fulfilled.
      */
 
-    /* XXX n == 0 -- empty slice, or fail ? */
+    if (q->head) {
+	long int pull, size = cstack_size (q->head);
 
-    if (q->unget) {
-	long int k    = cstack_size (q->unget);
-	long int take = MIN (n, k);
+	ASSERT (size > 0, "non-null head is empty");
+	pull = MIN (take, size);
 
-	n -= take;
-	result = cstack_get (q->unget, 0, take, !dir);
+	take -= pull;
+	result = cslice_reverse (cstack_get (q->head, 0, pull));
+
+	if (!take) return result;
     }
 
-    if (n && q->result && (q->at < cstack_size (q->result))) {
+    if (q->middle && (q->at < cstack_size (q->middle))) {
 	CSLICE tmp;
-	long int k    = cstack_size (q->result) - q->at;
-	long int take = MIN (n, k);
+	long int size = cstack_size (q->middle) - q->at;
+	long int pull = MIN (take, size);
 
-	n -= take;
-	tmp = cstack_getr (q->unget, q->at, take, dir);
+	take -= pull;
+	tmp = cstack_getr (q->head, q->at, pull);
 	result = (!result)
 	    ? tmp
 	    : cslice_concat (result, tmp);
+
+	if (!take) return result;
     }
 
-    if (n && q->append) {
+    if (q->tail) {
+	long int pull, size = cstack_size (q->tail);
 	CSLICE tmp;
-	long int k    = cstack_size (q->append);
-	long int take = MIN (n, k);
 
-	n -= take;
-	tmp = cstack_getr (q->append, 0, take, dir);
+	ASSERT (size > 0, "non-null tail is empty");
+	pull = MIN (take, size);
+
+	take -= pull;
+	tmp = cstack_getr (q->tail, 0, pull);
         result = (!result)
 	    ? tmp
 	    : cslice_concat (result, tmp);
     }
 
-    ASSERT (n == 0, "Bad retrieval");
+    ASSERT (take == 0, "Bad retrieval");
+    return result;
+}
+
+CSLICE
+cqueue_tail (CQUEUE q, long int take)
+{
+    CSLICE result = 0;
+    ASSERT (take <= cqueue_size (q), "Not enough elements in the cqueue");
+    ASSERT (take > 0, "Bad get count");
+
+    /* The result is incrementally built by taking the necessary slices of the
+     * various stacks until the request is fulfilled.
+     */
+
+    if (q->tail) {
+	long int pull, size = cstack_size (q->tail);
+	CSLICE tmp;
+
+	ASSERT (size > 0, "non-null tail is empty");
+	pull = MIN (take, size);
+
+	take -= pull;
+	result = cstack_get (q->tail, pull-1, pull);
+
+	if (!take) return result;
+    }
+
+    if (q->middle && (q->at < cstack_size (q->middle))) {
+	CSLICE tmp;
+	long int size = cstack_size (q->middle) - q->at;
+	long int pull = MIN (take, size);
+
+	take -= pull;
+	tmp = cstack_get (q->head, pull-1, pull);
+	result = (!result)
+	    ? tmp
+	    : cslice_concat (tmp, result);
+
+	if (!take) return result;
+    }
+
+    if (q->head) {
+	long int pull, size = cstack_size (q->head);
+	CSLICE tmp;
+
+	ASSERT (size > 0, "non-null head is empty");
+	pull = MIN (take, size);
+
+	take -= pull;
+	tmp = cslice_reverse (cstack_getr (q->head, 0, pull));
+        result = (!result)
+	    ? tmp
+	    : cslice_concat (tmp, result);
+    }
+
+    ASSERT (take == 0, "Bad retrieval");
+    return result;
+}
+
+CSLICE
+cqueue_get (CQUEUE q, long int at, long int take)
+{
+    /* A variant of cqueue_head, coded to skip over 'at-1' elements from the
+     * beginning before starting to accumulate the slice.
+     */
+
+    CSLICE result = 0;
+    ASSERT (at+take <= cqueue_size (q), "Not enough elements in the cqueue");
+    ASSERT (take > 0, "Bad get count");
+
+    /* The result is incrementally built by taking the necessary slices of the
+     * various stacks until the request is fulfilled.
+     */
+
+    if (q->head) {
+	long int sz, pull, size = cstack_size (q->head);
+
+	ASSERT (size > 0, "non-null head is empty");
+
+	sz = size - at;
+	if (sz > 0) {
+	    pull = MIN (take, sz);
+
+	    take -= pull;
+	    result = cslice_reverse (cstack_get (q->head, at, pull));
+
+	    if (!take) return result;
+	}
+	at -= size;
+    }
+
+
+    if (q->middle && (q->at < cstack_size (q->middle))) {
+	CSLICE tmp;
+	long int pull, size = cstack_size (q->middle) - q->at;
+	long int sz = size - at;
+
+	if (sz > 0) {
+	    pull = MIN (take, sz);
+
+	    take -= pull;
+	    tmp = cstack_getr (q->head, q->at, pull);
+	    result = (!result)
+		? tmp
+		: cslice_concat (result, tmp);
+
+	    if (!take) return result;
+	}
+	at -= size;
+    }
+
+    if (q->tail) {
+	long int sz, pull, size = cstack_size (q->tail);
+	CSLICE tmp;
+
+	ASSERT (size > 0, "non-null tail is empty");
+	sz = size - at;
+	if (sz > 0) {
+	    pull = MIN (take, size);
+
+	    take -= pull;
+	    tmp = cstack_getr (q->tail, 0, pull);
+	    result = (!result)
+		? tmp
+		: cslice_concat (result, tmp);
+	}
+    }
+
+    ASSERT (take == 0, "Bad retrieval");
     return result;
 }
 
@@ -165,135 +283,255 @@ cqueue_get (CQUEUE q, long int n, CSLICE_DIRECTION dir)
  */
 
 void
-cqueue_put (CQUEUE q, void* item)
+cqueue_append (CQUEUE q, void* item)
 {
-    if (!q->append) {
-	q->append = NewStack (q);
+    if (!q->tail) {
+	q->tail = NewStack (q);
     }
-    cstack_push (q->append, item);
+    cstack_push (q->tail, item);
 }
 
 void
-cqueue_unget (CQUEUE q, void* item)
+cqueue_prepend (CQUEUE q, void* item)
 {
-    if (!q->unget) {
-	q->unget = NewStack (q);
+    if (!q->head) {
+	q->head = NewStack (q);
     }
-    cstack_push (q->unget, item);
+    cstack_push (q->head, item);
 }
 
 void
-cqueue_remove (CQUEUE q, long int n)
+cqueue_remove_head (CQUEUE q, long int take)
 {
-    ASSERT (n <= cqueue_size (q), "Not enough elements in the cqueue");
-    ASSERT (n >= 0, "Bad removal count");
-    if (n == 0) return;
+    ASSERT (take <= cqueue_size (q), "Not enough elements in the cqueue");
+    ASSERT (take >= 0, "Bad removal count");
 
-    if (q->unget) {
-	long int k    = cstack_size (q->unget);
-	long int take = MIN (n, k);
+    if (take == 0) return;
 
-	if (take == k) {
-	    HoldStack (q, &q->unget);
+    if (q->head) {
+	long int size = cstack_size (q->head);
+	long int drop = MIN (take, size);
+
+	if (drop == size) {
+	    /* drop == size <= take --> take-drop >= 0, continue */
+	    HoldStack (q, &q->head);
+	    take -= drop;
+	    if (!take) return;
 	} else {
-	    cstack_pop (q->unget, take);
+	    /* drop == take < size ---> take-drop == 0, stop. */
+	    cstack_pop (q->head, drop);
+	    return;
 	}
-
-	n -= take;
-	if (!n) return
     }
 
  again:
-    if (n && q->result && (q->at < cstack_size (q->result))) {
-	long int k    = cstack_size (q->result) - q->at;
-	long int take = MIN (n, k);
+    if (q->middle && (q->at < cstack_size (q->middle))) {
+	long int size = cstack_size (q->middle) - q->at;
+	long int drop = MIN (take, size);
 
-	n -= take; /* Before looping via again */
-	if (take == k) {
-	    HoldStack (q, &q->result);
+	if (drop == size) {
+	    /* drop == size <= take --> take-drop >= 0, continue */
+	    HoldStack (q, &q->middle);
 	    q->at = 0;
-	    if (q->append) {
-		/* Shift append into result. The result stack was already
-		 * cleared, and saved for future use by append, unget.
-		 */
-		q->result = q->append;
-		q->append = 0; /* This ensures that again is run only once! */
-		goto again;
-	    }
+
+	    /* Shift expected tail into middle. The middle is already cleared,
+	     * and held for future use.
+	     */
+	    ASSERT (q->tail,"Tail expected, missing");
+	    q->middle = q->tail;
+	    q->tail   = 0; /* This ensures that again is run only once! */
+	    take     -= drop; /* Before looping via again */
+	    if (!take) return;
+	    goto again;
+	}
+
+	/* drop == take < size ---> take-drop == 0, stop. */
+	q->at += drop;
+	return;
+    }
+
+    /* We are not accessing tail, because this has been done already,
+     * implicitly, due to the shift tail -> middle above, see 'again'.
+     */
+
+    ASSERT (take == 0, "Bad removal");
+}
+
+void
+cqueue_remove_tail (CQUEUE q, long int take)
+{
+    ASSERT (take <= cqueue_size (q), "Not enough elements in the cqueue");
+    ASSERT (take >= 0, "Bad removal count");
+
+    if (take == 0) return;
+
+    if (q->tail) {
+	long int size = cstack_size (q->tail);
+	long int drop = MIN (take, size);
+
+	if (drop == size) {
+	    /* drop == size <= take --> take-drop >= 0, continue */
+	    HoldStack (q, &q->tail);
+	    take -= drop;
+	    if (!take) return;
 	} else {
-	    q->at += take;
+	    /* drop == take < size ---> take-drop == 0, stop. */
+	    cstack_pop (q->tail, drop);
+	    return;
 	}
     }
 
-    /* We are not accessing append, because this has been done already,
-     * implicitly, due to the shift append -> result, see use of 'again'
-     * above.
+ again:
+    if (q->middle && (q->at < cstack_size (q->middle))) {
+	long int size = cstack_size (q->middle) - q->at;
+	long int drop = MIN (take, size);
+
+	if (drop == size) {
+	    /* drop == size <= take --> take-drop >= 0, continue */
+	    HoldStack (q, &q->middle);
+	    q->at = 0;
+	    take -= drop;
+	    if (!take) return;
+	} else {
+	    /* drop == take < size ---> take-drop == 0, stop. */
+	    cstack_pop (q->middle, drop);
+	    return;
+	}
+    }
+
+    /* Handling head is a bit more complex now, because it is oriented in the
+     * reverse direction, compared to the others. We now move it into the
+     * middle. We can assume that the middle is gone. Simply creating it and
+     * moving things over does the necessary reversal, and then we drop
+     * elements as needed, reusing the previous section.
      */
 
-    ASSERT (n == 0, "Bad removal");
-}
-
-void
-cqueue_trim (CQUEUE q, long int n)
-{
-    ASSERT (n >= 0, "Bad removal count");
-    long int remove = cqueue_size (q) - n;
-
-    if (remove > 0) {
-	cqueue_remove (q, remove);
+    if (q->head) {
+	q->middle = NewStack (q);
+	cstack_move (q->middle, q->head);
+	HoldStack (q, &q->head);
+	goto again;
     }
+
+    ASSERT (take == 0, "Bad removal");
 }
 
 void
-cqueue_drop (CQUEUE q, long int n)
+cqueue_drop_head (CQUEUE q, long int take)
 {
     CSTACK tmp;
 
-    ASSERT (n >= 0, "Bad removal count");
-    if (n == 0) return;
+    ASSERT (take <= cqueue_size (q), "Not enough elements in the cqueue");
+    ASSERT (take >= 0, "Bad drop count");
+    if (take == 0) return;
 
-    ASSERT (n <= cqueue_size (q), "Not enough elements in the cqueue");
-    ASSERT (n >= 0, "Bad drop count");
-    if (n == 0) return;
+    if (q->head) {
+	long int size = cstack_size (q->head);
+	long int drop = MIN (take, size);
 
-    if (q->unget) {
-	long int k = cstack_size (q->unget);
-	long int take = MIN (n, k);
-
-	cstack_drop (q->unget, take);
-	if (take == k) {
-	    /* Because everything was dropped already the destroy will not
-	     * free anything
+	cstack_drop (q->head, drop);
+	if (drop == size) {
+	    /* drop == size <= take --> take-drop >= 0, continue */
+	    /* Because everything was dropped already from head the destroy
+	     * will not release anything (== no remove).
 	     */
-	    cstack_destroy (q->unget);
-	    q->unget = 0;
+	    HoldStack (q, &q->head);
+	    take -= drop;
+	    if (!take) return;
+	} else {
+	    /* drop == take < size ---> take-drop == 0, stop. */
+	    return;
 	}
-
-	n -= take;
-	if (!n) return;
     }
 
-    // at == size ==> all processed in result, simply destroy.
-    // These must be properly removed, and nothing to drop.
-    // Shift append over.
+    if (q->middle) {
+	long int size = cstack_size (q->head) - q->at;
+	long int drop = MIN (take, size);
 
-    while (q->result && (q->at == cstack_size (q->result))) {
-	HoldStack (q, &q->result);
-	q->result = q->append;
-	q->append = 0;
+	if (drop == size) {
+	    /* drop == size <= take --> take-drop >= 0, continue */
+
+	    /* The first part of middle has to be removed, with release, as it
+	     * has been returned in the past. And everything else must be
+	     * dropped. Then we can clean out.
+	     */
+	    cstack_drop (q->middle, drop);
+	    HoldStack (q, &q->middle);
+	    q->at = 0;
+	    take -= drop;
+	    if (!take) return;
+	} else {
+	    /* drop == take < size ---> take-drop == 0, stop. */
+
+	    /* First part must be removed. Second part dropped, and the
+	     * remainder kept?
+	     * ping/pong ?
+	     */
+
+	    XXX
+
+	    q->at = += drop; // roughly
+	    return
+	}
+    }
+
+    if (q->tail) {
+	long int size = cstack_size (q->tail);
+	long int drop = MIN (take, size);
+
+	if (drop == size) {
+	    /* drop == size < take --> take-drop > 0, continue */
+	    cstack_drop (q->middle, drop);
+	    HoldStack (q, &q->tail);
+	} else {
+	    /* drop == take < size ---> take-drop == 0, stop. */
+	    ///cstack_drop (q->tail, drop);
+	    /// drop removes from the bottom of the stack */
+	    /// we can ping/pong this - ping/revers, drop, pong/revers
+	    /* And shift remaining tail into the middle */
+	    q->middle = q->tail;
+	    q->tail = 0;
+	    return;
+	}
+
+    }
+
+
+
+
+
+    /* A small optimization before going to the next step:
+     *
+
+     * (at == size middle) ==> Everything in middle was returned already and
+     * is waiting on destruction. Do that now, and shift the tail in.
+     */
+
+    while (q->middle && (q->at == cstack_size (q->middle))) {
+	HoldStack (q, &q->middle);
+	q->middle = q->tail;
+	q->tail   = 0;
 	q->at     = 0;
     }
 
+    /* Now we can handle the middle. The topmost elements at+n...top-1
+     * (indexed from bottom) must be kept for future use. We save them to a
+     * temp stack. And in the originating stack we can drop them.
+     * However if at+n > top-1
+
+
+
+
     /*
      * The top at+n...top-1 elements must be kept for future use.
-     * We put them into a new stack to replace 'result'.
+     * We put them into a new stack to replace 'middle'.
      * In the originating stack we can then drop them.
      */
 
     {
 	void** cell;
-	long int i, sn, k = cstack_size (result) - q->at - n XXX;
-	CSLICE s          = cstack_getr (q->result, q->at+n, k, cslice_normal);
+	long int i, sn, k = cstack_size (q->middle) - q->at - n - XXX;
+	CSLICE s          = cstack_getr (q->middle, q->at+n, k, cslice_normal);
 
 	tmp = NewStack (q);
 	cslice_get (s, &cell, &sn);
@@ -301,7 +539,7 @@ cqueue_drop (CQUEUE q, long int n)
 	    cstack_push (q, cell [i]);
 	}
 	cslice_destroy (s);
-	cstack_drop (q->result, k);
+	cstack_drop (q->middle, k);
     }
 
     /*
@@ -309,7 +547,7 @@ cqueue_drop (CQUEUE q, long int n)
      * removed.
      */
 
-    cstack_drop (q->result, n);
+    cstack_drop (q->middle, n);
 
     /* n+k dropped
      * == n+(size-at-n)
@@ -320,13 +558,13 @@ cqueue_drop (CQUEUE q, long int n)
      * These must be properly removed.
      */
 
-    cstack_clear (q->result);
-    HoldStack (q, &q->result);
+    cstack_clear (q->middle);
+    HoldStack (q, &q->middle);
 
     /* Now we can put the saved elements back into place
      */
 
-    q->result = tmp;
+    q->middle = tmp;
 
 }
 
@@ -344,13 +582,14 @@ cqueue_move (CQUEUE dst, CQUEUE src)
      */
 
     while (cqueue_size(src)) {
-	cqueue_put (dst, cqueue_head (src));
+	cqueue_append (dst, cqueue_first (src));
 	cqueue_drop (src, 1);
     }
 }
 
 /*
  * = = == === ===== ======== ============= =====================
+ * Client data management.
  */
 
 void
@@ -367,8 +606,36 @@ cqueue_clientdata_get (CQUEUE q)
 
 /*
  * = = == === ===== ======== ============= =====================
+ * == Helpers. Implementation.
  */
 
+static CSTACK
+NewStack (CQUEUE q) {
+    CSTACK result;
+    if (q->hold) {
+	/* Reuse the help stack */
+	result = q->hold;
+	q->hold = 0;
+    } else {
+	/* Nothing to reuse, actually create */
+	result = cstack_create (q->freeCell, 0);
+    }
+    return result;
+}
+
+static void
+HoldStack (CQUEUE q, CSTACK* s) {
+    CSTACK result;
+    if (q->hold) {
+	/* The hold slot is full, actually destroy */
+	cstack_destroy (*s);
+    } else {
+	/* Hold the stack, only clear it. */
+	q->hold = *s;
+	cstack_clear (*s);
+    }
+    *s = 0;
+}
 
 /*
  * Local Variables:
@@ -377,3 +644,4 @@ cqueue_clientdata_get (CQUEUE q)
  * fill-column: 78
  * End:
  */
+#error X
