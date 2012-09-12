@@ -445,7 +445,7 @@ cqueue_drop_head (CQUEUE q, long int take)
     }
 
     if (q->middle) {
-	long int size = cstack_size (q->head) - q->at;
+	long int size = cstack_size (q->middle) - q->at;
 	long int drop = MIN (take, size);
 
 	if (drop == size) {
@@ -462,18 +462,29 @@ cqueue_drop_head (CQUEUE q, long int take)
 	    if (!take) return;
 	} else {
 	    /* drop == take < size ---> take-drop == 0, stop. */
-
-	    /* First part must be removed. Second part dropped, and the
-	     * remainder kept?
-	     * ping/pong ?
+	    /* Indexing from bottom:
+	     * (a) 0..at-1        -- #at          remove (or keep)
+	     * (b) at..at+drop-1  -- #drop        drop
+	     * (c) at+drop..top-1 -- #(size-drop) keep
+	     * Working from the top down
+	     * (Ad c) move #(size-drop) to tmp stack
+	     * (Ad b) drop #drop
+	     * (Ad a) pop  #at        => now empty => at==0
+	     * (----) move #(size-drop) from tmp stack, kill tmp stack.
 	     */
 
-	    XXX
-
-	    q->at = += drop; // roughly
-	    return
+	    CSTACK tmp = NewStack (q);
+	    cstack_move (tmp, q->middle, size-drop);
+	    cstack_drop (q->middle, drop);
+	    cstack_pop  (q->middle, q->at);
+	    q->at = 0;
+	    cstack_move_all (q->middle, tmp);
+	    HoldStack (q, &tmp);
+	    return;
 	}
     }
+
+    /* !middle, at == 0 */
 
     if (q->tail) {
 	long int size = cstack_size (q->tail);
