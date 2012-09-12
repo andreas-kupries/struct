@@ -262,9 +262,9 @@ void \fBcstack_at\fR ( \fBCSTACK\fR \fIs\fR \fBlong int\fR \fIi\fR)
 .sp
 void \fBcstack_atr\fR ( \fBCSTACK\fR \fIs\fR \fBlong int\fR \fIi\fR)
 .sp
-void \fBcstack_get\fR ( \fBCSTACK\fR \fIs\fR, \fBlong int\fR \fIat\fR, \fBlong int\fR \fIn\fR )
+\fBCSLICE\fR \fBcstack_get\fR ( \fBCSTACK\fR \fIs\fR, \fBlong int\fR \fIat\fR, \fBlong int\fR \fIn\fR )
 .sp
-void \fBcstack_getr\fR ( \fBCSTACK\fR \fIs\fR, \fBlong int\fR \fIat\fR, \fBlong int\fR \fIn\fR )
+\fBCSLICE\fR \fBcstack_getr\fR ( \fBCSTACK\fR \fIs\fR, \fBlong int\fR \fIat\fR, \fBlong int\fR \fIn\fR )
 .sp
 void \fBcstack_push\fR ( \fBCSTACK\fR \fIs\fR, \fBvoid*\fR \fIitem\fR )
 .sp
@@ -302,8 +302,9 @@ at script level.
 .PP
 The package is meant to be used by other C level data structure
 packages, either internally, or providing a Tcl level API to it. An
-example of the latter is the C implementation of package
-\fBstruct::stack\fR.
+example of the former is the package \fBc::queue\fR which uses
+several stacks inside of each queue. An example of the latter is the C
+implementation of package \fBstruct::stack\fR.
 .PP
 To support this the package provides its C API by means of a
 stubs table which can be imported.
@@ -357,9 +358,9 @@ Index 'cstack_size()-1' addresses the topmost cell, whereas
 .sp
 index \fB0\fR         addresses the bottommost cell.
 .TP
-void \fBcstack_get\fR ( \fBCSTACK\fR \fIs\fR, \fBlong int\fR \fIat\fR, \fBlong int\fR \fIn\fR )
+\fBCSLICE\fR \fBcstack_get\fR ( \fBCSTACK\fR \fIs\fR, \fBlong int\fR \fIat\fR, \fBlong int\fR \fIn\fR )
 This function returns the \fIn\fR cells starting at index \fIat\fR in
-the stack as a slice, with the topmost cell of the slice as the last
+the stack as a slice, with the topmost cell of the stack as the last
 element of the slice (natural internal order).
 .sp
 The indexing is the same as for function \fBcstack_at\fR above.
@@ -368,7 +369,7 @@ Index \fB0\fR         addresses the topmost cell, whereas
 .sp
 index 'cstack_size()-1' addresses the bottommost cell.
 .TP
-void \fBcstack_getr\fR ( \fBCSTACK\fR \fIs\fR, \fBlong int\fR \fIat\fR, \fBlong int\fR \fIn\fR )
+\fBCSLICE\fR \fBcstack_getr\fR ( \fBCSTACK\fR \fIs\fR, \fBlong int\fR \fIat\fR, \fBlong int\fR \fIn\fR )
 This function is a variant of function \fBcstack_get\fR above,
 returning the indexed slice in the stack.
 .sp
@@ -379,7 +380,7 @@ Index 'cstack_size()-1' addresses the topmost cell, whereas
 index \fB0\fR         addresses the bottommost cell.
 .sp
 Note that this does not affect the ordering in the slice
-itself, which has the topmost cell of the slice as the last element of
+itself, which has the topmost cell of the stack as the last element of
 the slice (natural internal order).
 .TP
 void \fBcstack_push\fR ( \fBCSTACK\fR \fIs\fR, \fBvoid*\fR \fIitem\fR )
@@ -408,7 +409,7 @@ cells. If the stack had less cells to begin with nothing is done.
 The cell release function is called for all removed cells.
 .TP
 void \fBcstack_drop\fR ( \fBCSTACK\fR \fIs\fR, \fBlong int\fR \fIn\fR )
-This function removes the \fIn\fR topmost cells from the stack.
+This function drops the \fIn\fR topmost cells from the stack.
 .sp
 \fINote:\fR The cell release function is \fInot\fR called for
 the removed cells. This is in contrast to function \fBcstack_pop\fR
@@ -424,11 +425,11 @@ This function rotates the \fIn\fR topmost cells in the stack by
 \fIstep\fR elements.
 .TP
 void \fBcstack_move\fR ( \fBCSTACK\fR \fIs\fR, \fBCSTACK\fR \fIsrc\fR, \fBlong int\fR \fIn\fR )
-This function moves the topmost \fIn\fR cells in the stack \fIsrc\fR
-to the stack.
+This function moves the \fIn\fR topmost cells in the stack \fIsrc\fR
+to the stack \fIs\fR. This reverses their order.
 As the cells are not destroyed the release function is not called.
 .sp
-As a basic precaution the release functions of both stack are
+As a basic precaution the release functions of both stacks are
 compared, and have to match. The code will assert this and panic if
 the condition is not true.
 .TP
