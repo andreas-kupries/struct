@@ -5,7 +5,7 @@ set me [file normalize [info script]]
 set mydir  [file dirname $me]
 set topdir [file dirname $mydir]
 set packages {
-    {struct_stack_c stackc.tcl}
+    {struct_queue_c queuec.tcl}
 }
 proc main {} {
     global argv tcl_platform tag
@@ -329,7 +329,7 @@ proc _drop {{dst {}}} {
 proc Htest {} { return "\n\tRun the package testsuites." }
 proc _test {{config {}}} {
     # Build and install in a transient location for the testing, if necessary.
-    set testpkg $::topdir/tests/stackc/_local
+    set testpkg $::topdir/tests/queuec/_local
     if {![file exists $testpkg]} {
 	puts ""
 	puts "Generating binaries for testing, in transient directory"
@@ -338,18 +338,19 @@ proc _test {{config {}}} {
 
 	set h [pwd]
 
-	# We need c::slice and c::stack also.
+	# We need c::slice, c::stack, and c::queue also.
 
 	exec 2>@ stderr >@ stdout [info nameofexecutable] $::topdir/cslice/build.tcl install $testpkg/lib $config
 	exec 2>@ stderr >@ stdout [info nameofexecutable] $::topdir/cstack/build.tcl install $testpkg/lib $config
-	#exec 2>@ stderr >@ stdout [info nameofexecutable] $::topdir/stackc/build.tcl install $testpkg/lib $config
+	exec 2>@ stderr >@ stdout [info nameofexecutable] $::topdir/cqueue/build.tcl install $testpkg/lib $config
+	#exec 2>@ stderr >@ stdout [info nameofexecutable] $::topdir/queuec/build.tcl install $testpkg/lib $config
 	_install $testpkg/lib $config
     }
 
     # Then run the tests...
-    set log [open LOG.stackc w]
+    set log [open LOG.queuec w]
 
-    cd $::topdir/tests/stackc
+    cd $::topdir/tests/queuec
 
     # options for tcltest. (l => line information for failed tests).
     # Note: See tcllib's sak.tcl for a more mature and featureful system of
