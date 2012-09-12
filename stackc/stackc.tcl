@@ -136,7 +136,7 @@ critcl::class::define ::struct::stack {
 
 	    if (reverse) s = cslice_reverse (s);
 
-	    cslice_get (s, &cells, &ln);
+	    cslice_get (s, &ln, &cells);
 	    if (n == 1) {
 		result = (Tcl_Obj*) cells [0];
 	    } else {

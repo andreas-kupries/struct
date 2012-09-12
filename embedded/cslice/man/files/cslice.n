@@ -246,11 +246,11 @@ package require \fBTcl  8.5\fR
 .sp
 package require \fBc::slice  ?1?\fR
 .sp
-\fBCSLICE\fR \fBcslice_create\fR ( \fBvoid**\fR \fIcells\fR, \fBint\fR \fIn\fR )
+\fBCSLICE\fR \fBcslice_create\fR ( \fBlong int\fR \fIcc\fR, \fBvoid**\fR \fIcv\fR )
 .sp
 void \fBcslice_destroy\fR ( \fBCSLICE\fR \fIs\fR )
 .sp
-void \fBcslice_get\fR ( \fBCSLICE\fR \fIs\fR, \fBvoid***\fR \fIcells\fR, \fBint*\fR \fIn\fR )
+void \fBcslice_get\fR ( \fBCSLICE\fR \fIs\fR, \fBlong int*\fR \fIcc\fR, \fBvoid***\fR \fIcv\fR )
 .sp
 void \fBcslice_revers\fR ( \fBCSLICE\fR \fIs\fR )
 .sp
@@ -274,7 +274,7 @@ To support this the package provides its C API by means of a
 stubs table which can be imported.
 .SH API
 .TP
-\fBCSLICE\fR \fBcslice_create\fR ( \fBvoid**\fR \fIcells\fR, \fBint\fR \fIn\fR )
+\fBCSLICE\fR \fBcslice_create\fR ( \fBlong int\fR \fIcc\fR, \fBvoid**\fR \fIcv\fR )
 This function creates and initializes a slice object with the
 specified slice of an array of cells. The return value of the function
 is the handle of the new slice object.
@@ -283,7 +283,7 @@ void \fBcslice_destroy\fR ( \fBCSLICE\fR \fIs\fR )
 This function destroys the specified slice object, releasing all
 allocated memory.
 .TP
-void \fBcslice_get\fR ( \fBCSLICE\fR \fIs\fR, \fBvoid***\fR \fIcells\fR, \fBint*\fR \fIn\fR )
+void \fBcslice_get\fR ( \fBCSLICE\fR \fIs\fR, \fBlong int*\fR \fIcc\fR, \fBvoid***\fR \fIcv\fR )
 This function provides access to the slice of cells contained in the
 specified slice object.
 .TP

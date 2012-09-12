@@ -88,7 +88,7 @@ cstack_get (CSTACK s, long int at, long int n)
     ASSERT_BOUNDS (at,              s->top);
     ASSERT_BOUNDS (s->top-at-1+n-1, s->top);
 
-    return cslice_create (s->cell + (s->top - at - 1), n);
+    return cslice_create (n, s->cell + (s->top - at - 1));
 }
 
 CSLICE
@@ -101,7 +101,7 @@ cstack_getr (CSTACK s, long int at, long int n)
     ASSERT_BOUNDS (at,     s->top);
     ASSERT_BOUNDS (at+n-1, s->top);
 
-    return cslice_create (s->cell + at, n);
+    return cslice_create (n, s->cell + at);
 }
 
 /*
@@ -130,7 +130,7 @@ cstack_push_slice (CSTACK s, CSLICE sl)
     void** cell;
     long int n, i, need;
 
-    cslice_get (sl, &cell, &n);
+    cslice_get (sl, &n, &cell);
     need = s->top + n;
 
     if (need >= s->max) {
