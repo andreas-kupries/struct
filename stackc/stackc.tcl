@@ -27,12 +27,12 @@ critcl::license {Andreas Kupries} {BSD licensed}
 critcl::summary {Stack objects for Tcl.}
 
 critcl::description {
-    This package implements stack objects for Tcl. It uses the
-    abstract data type provided by package 'cstack' to handle actual
-    storage and operations.
+    This package implements stack objects for Tcl. It uses the abstract
+    data type provided by package 'c::stack' to handle actual storage
+    and operations.
 }
 
-critcl::subject stack
+critcl::subject stack lifo
 critcl::subject {data structure}
 critcl::subject structure
 critcl::subject {abstract data structure}
