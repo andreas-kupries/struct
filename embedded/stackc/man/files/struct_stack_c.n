@@ -293,9 +293,7 @@ multiple methods for the creation of stack objects. These are:
 \fB::struct stack\fR \fBnew\fR
 This class method creates a new stack instance with an associated
 global Tcl command and returns the fully qualified name of this
-command. The name is auto-generated and of the form
-\fB::struct::stack\fR\fBN\fR where \fBN\fR is a random integer
-number.
+command. The name is auto-generated.
 .TP
 \fB::struct stack\fR \fBcreate\fR \fIname\fR
 This class method creates a new stack instance with an associated
@@ -311,7 +309,7 @@ support the following API:
 This method destroys the stack instance and the associated Tcl
 command, releasing any associated resurces.
 .sp
-The method returns the empty as its result.
+The method returns the empty string as its result.
 .TP
 \fIstackObj\fR \fBsize\fR
 This method returns the number of elements stored in the stack.
@@ -361,6 +359,8 @@ elements to satisfy the request, i.e. less than \fIcount\fR elements.
 .TP
 \fIstackObj\fR \fBclear\fR
 This method removes all elements from the stack.
+.sp
+The method returns the empty string as its result.
 .TP
 \fIstackObj\fR \fBtrim\fR ?\fInewsize\fR?
 This method shrinks the stack to contain at most \fInewsize\fR
@@ -376,6 +376,8 @@ the removed elements, and only performs any necessary shrinking.
 This method pushes the specified \fIitem\fR or items onto the stack.
 If more than one \fIitem\fR is given, they will be pushed in the order
 they are listed.
+.sp
+The method returns the empty string as its result.
 .PP
 .SH LICENSE
 This package, written by Andreas Kupries, is BSD licensed.

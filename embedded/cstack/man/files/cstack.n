@@ -256,7 +256,15 @@ void \fBcstack_destroy\fR ( \fBCSTACK\fR \fIs\fR )
 .sp
 void \fBcstack_top\fR ( \fBCSTACK\fR \fIs\fR )
 .sp
-void \fBcstack_get\fR ( \fBCSTACK\fR \fIs\fR, \fBlong int\fR \fIn\fR, \fBCSLICE_DIRECTION\fR \fIdir\fR )
+void \fBcstack_bottom\fR ( \fBCSTACK\fR \fIs\fR )
+.sp
+void \fBcstack_at\fR ( \fBCSTACK\fR \fIs\fR \fBlong int\fR \fIi\fR)
+.sp
+void \fBcstack_atr\fR ( \fBCSTACK\fR \fIs\fR \fBlong int\fR \fIi\fR)
+.sp
+void \fBcstack_get\fR ( \fBCSTACK\fR \fIs\fR, \fBlong int\fR \fIat\fR, \fBlong int\fR \fIn\fR )
+.sp
+void \fBcstack_getr\fR ( \fBCSTACK\fR \fIs\fR, \fBlong int\fR \fIat\fR, \fBlong int\fR \fIn\fR )
 .sp
 void \fBcstack_push\fR ( \fBCSTACK\fR \fIs\fR, \fBvoid*\fR \fIitem\fR )
 .sp
@@ -313,15 +321,58 @@ This function returns the number of cells in the stack.
 .TP
 void \fBcstack_top\fR ( \fBCSTACK\fR \fIs\fR )
 This function returns the topmost cell in the stack.
+.sp
+The code asserts that the stack is not empty.
 .TP
-void \fBcstack_get\fR ( \fBCSTACK\fR \fIs\fR, \fBlong int\fR \fIn\fR, \fBCSLICE_DIRECTION\fR \fIdir\fR )
-This function returns the \fIn\fR topmost cells in the stack as a
-slice, with the topmost cell either as first or last element of the
-slice, depending on \fIdir\fR.
+void \fBcstack_bottom\fR ( \fBCSTACK\fR \fIs\fR )
+This function returns the bottom-most cell in the stack.
 .sp
-\fBcslice_normal\fR <==> topmost is first.
+The code asserts that the stack is not empty.
+.TP
+void \fBcstack_at\fR ( \fBCSTACK\fR \fIs\fR \fBlong int\fR \fIi\fR)
+This function returns the indexed cell in the stack.
 .sp
-\fBcslice_revers\fR <==> topmost is last.
+The code asserts that the stack is not empty, and that the
+index is in the proper range.
+.sp
+Index \fB0\fR         addresses the topmost cell, whereas
+.sp
+index 'cstack_size()-1' addresses the bottommost cell.
+.TP
+void \fBcstack_atr\fR ( \fBCSTACK\fR \fIs\fR \fBlong int\fR \fIi\fR)
+This function is a variant of function \fBcstack_at\fR above,
+returning the indexed cell in the stack.
+.sp
+In contrast to the former the indexing is reversed. I.e.:
+.sp
+Index 'cstack_size()-1' addresses the topmost cell, whereas
+.sp
+index \fB0\fR         addresses the bottommost cell.
+.TP
+void \fBcstack_get\fR ( \fBCSTACK\fR \fIs\fR, \fBlong int\fR \fIat\fR, \fBlong int\fR \fIn\fR )
+This function returns the \fIn\fR cells starting at index \fIat\fR in
+the stack as a slice, with the topmost cell of the slice as the last
+element of the slice (natural internal order).
+.sp
+The indexing is the same as for function \fBcstack_at\fR above.
+.sp
+Index \fB0\fR         addresses the topmost cell, whereas
+.sp
+index 'cstack_size()-1' addresses the bottommost cell.
+.TP
+void \fBcstack_getr\fR ( \fBCSTACK\fR \fIs\fR, \fBlong int\fR \fIat\fR, \fBlong int\fR \fIn\fR )
+This function is a variant of function \fBcstack_get\fR above,
+returning the indexed slice in the stack.
+.sp
+In contrast to the former the indexing is reversed. I.e.:
+.sp
+Index 'cstack_size()-1' addresses the topmost cell, whereas
+.sp
+index \fB0\fR         addresses the bottommost cell.
+.sp
+Note that this does not affect the ordering in the slice
+itself, which has the topmost cell of the slice as the last element of
+the slice (natural internal order).
 .TP
 void \fBcstack_push\fR ( \fBCSTACK\fR \fIs\fR, \fBvoid*\fR \fIitem\fR )
 This function pushes the \fIitem\fR onto the stack.
