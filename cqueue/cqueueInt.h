@@ -63,6 +63,14 @@ typedef struct CQUEUE_ {
 } CQUEUE_;
 
 /*
+ * General utilities
+ */
+
+#ifndef MIN
+#define MIN(a,b) ((a) < (b) ? (a) : (b))
+#endif
+
+/*
  * Allocation macros for common situations.
  */
 

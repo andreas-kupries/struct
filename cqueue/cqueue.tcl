@@ -53,7 +53,7 @@ critcl::cheaders   cqueueInt.h
 ## Lifecycle management. Object creation and destruction.
 
 critcl::api function CQUEUE     cqueue_create  {CQUEUE_CELL_FREE freeCell void* clientdata}
-critcl::api function void       cqueue_destroy {CQUEUE s}
+critcl::api function void       cqueue_destroy {CQUEUE q}
 
 # # ## ### ##### ######## ############# #####################
 ## Accessors.
@@ -61,12 +61,12 @@ critcl::api function void       cqueue_destroy {CQUEUE s}
 # Slice of front elements. Slice of end elements.
 # Arbitrary slice of elements.
 
-critcl::api function {long int} cqueue_size  {CQUEUE s}
-critcl::api function void*      cqueue_first {CQUEUE s}
-critcl::api function void*      cqueue_last  {CQUEUE s}
-critcl::api function CSLICE     cqueue_head  {CQUEUE s               {long int} n}
-critcl::api function CSLICE     cqueue_tail  {CQUEUE s               {long int} n}
-critcl::api function CSLICE     cqueue_get   {CQUEUE s {long int} at {long int} n}
+critcl::api function {long int} cqueue_size  {CQUEUE q}
+critcl::api function void*      cqueue_first {CQUEUE q}
+critcl::api function void*      cqueue_last  {CQUEUE q}
+critcl::api function CSLICE     cqueue_head  {CQUEUE q               {long int} n}
+critcl::api function CSLICE     cqueue_tail  {CQUEUE q               {long int} n}
+critcl::api function CSLICE     cqueue_get   {CQUEUE q {long int} at {long int} n}
 
 # # ## ### ##### ######## ############# #####################
 ## Modifiers.
@@ -81,13 +81,18 @@ critcl::api function CSLICE     cqueue_get   {CQUEUE s {long int} at {long int} 
 # Drop   - Like remove, but doesn't free, assumes that caller
 #          is taking ownership of the cell data.
 
-critcl::api function void cqueue_append      {CQUEUE s void* item}
-critcl::api function void cqueue_prepend     {CQUEUE s void* item}
-critcl::api function void cqueue_remove_head {CQUEUE s {long int} n}
-critcl::api function void cqueue_remove_tail {CQUEUE s {long int} n}
-critcl::api function void cqueue_drop_head   {CQUEUE s {long int} n}
-critcl::api function void cqueue_drop_tail   {CQUEUE s {long int} n}
-critcl::api function void cqueue_move        {CQUEUE s CQUEUE src}
+critcl::api function void cqueue_append        {CQUEUE q void* item}
+critcl::api function void cqueue_prepend       {CQUEUE q void* item}
+critcl::api function void cqueue_append_slice  {CQUEUE q CSLICE s}
+critcl::api function void cqueue_prepend_slice {CQUEUE q CSLICE s}
+critcl::api function void cqueue_remove_head   {CQUEUE q {long int} n}
+critcl::api function void cqueue_remove_tail   {CQUEUE q {long int} n}
+critcl::api function void cqueue_clear         {CQUEUE q}
+critcl::api function void cqueue_drop_head     {CQUEUE q {long int} n}
+critcl::api function void cqueue_drop_tail     {CQUEUE q {long int} n}
+critcl::api function void cqueue_drop_all      {CQUEUE q}
+critcl::api function void cqueue_move          {CQUEUE q CQUEUE src {long int} n}
+critcl::api function void cqueue_move_all      {CQUEUE q CQUEUE src}
 
 # # ## ### ##### ######## ############# #####################
 ## User data management. Set and retrieve.
