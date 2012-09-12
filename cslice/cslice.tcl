@@ -26,7 +26,7 @@ critcl::description {
     example stacks, queues, etc.
 }
 
-critcl::subject slice
+critcl::subject {slice of array} {array slice}
 critcl::subject {data structure}
 critcl::subject structure
 critcl::subject {abstract data structure}
@@ -45,68 +45,33 @@ critcl::cheaders   csliceInt.h
 # - Dispose of a slice.
 # - Access the data in the slice.
 
-critcl::api function CSLICE cslice_create {
-    CSLICE_DIRECTION dir
-    void**           cells
-    {long int}       n
-}
-
-critcl::api function void cslice_destroy {
-    CSLICE s
-}
-
-critcl::api function void cslice_get {
-    CSLICE       s
-    void***      cell
-    {long int *} n
-}
-
-critcl::api function CSLICE cslice_concat {
-    CSLICE a
-    CSLICE b
-}
+critcl::api function CSLICE cslice_create  {void** cells {long int} n}
+critcl::api function void   cslice_destroy {CSLICE s}
+critcl::api function void   cslice_get     {CSLICE s void*** cell {long int *} n}
+critcl::api function CSLICE cslice_reverse {CSLICE s}
+critcl::api function CSLICE cslice_concat  {CSLICE a CSLICE b}
 
 # # ## ### ##### ######## ############# #####################
 ## Implementation. Inlined.
 
 critcl::ccode {
     #include <csliceInt.h>
+    #include <string.h>
 
     CSLICE
-    cslice_create ( CSLICE_DIRECTION dir,
-		    void**           cells,
+    cslice_create ( void**           cells,
 		    long int         n)
     {
 	CSLICE s = ALLOC (CSLICE_);
 	s->n = n;
 
-	if (dir == cslice_normal) {
-	    /* The slice is in the same direction as the input array.
-	     * We simply copy the pointer, and remember that it is not
-	     * allocated.
-	     */
+	/* Initial slices are always in the same direction as the
+	 * input array. We simply copy the pointer, and remember
+	 * that it is not allocated.
+	 */
 
-	    s->cell    = cells;
-	    s->dynamic = 0;
-
-	} else if (dir == cslice_revers) {
-	    /* For the reverse direction we have make our own copy of
-	     * the input. Can't use memcpy :(
-	     * Is there a standard reverse memcpy ?
-	     */
-
-	    long int i;
-
-	    s->cell = NALLOC (n, void*);
-	    s->dynamic = 1;
-
-	    for (i=0; i<n; i++) {
-		 s->cell [i] = cells [n-i-1];
-	     }
-	} else {
-	    ASSERT (0,"Bad slice direction");
-	}
-
+	s->cell    = cells;
+	s->dynamic = 0;
 	return s;
     }
 
@@ -129,6 +94,37 @@ critcl::ccode {
     }
 
     CSLICE
+    cslice_reverse (CSLICE s)
+    {
+	long int i;
+
+	if (s->n == 1) {
+	    /* A single-element slice reversed is itself. */
+	    return s;
+	}
+
+	if (s->dynamic) {
+	    for (i=0; i < (s->n)/2; i++) {
+		  void* tmp = s->cell [i];
+		  s->cell [i] = s->cell [s->n - i - 1];
+		  s->cell [s->n - i - 1] = tmp;
+	    }
+	} {
+	    void** origin = s->cell;
+
+	    s->dynamic = 1;
+	    s->cell = NALLOC (s->n, void*);
+	    ASSERT (s->cell, "Allocation failure");
+
+	    for (i=0; i < s->n; i++) {
+		 s->cell [i] = origin [s->n - i -1];
+	     }
+	}
+
+	return s;
+    }
+
+    CSLICE
     cslice_concat (CSLICE a, CSLICE b)
     {
 	long int n = a->n + b->n;
@@ -139,7 +135,7 @@ critcl::ccode {
 	    ASSERT (new, "Reallocation failure");
 	    a->cell = new;
 	} else {
-	    /* Make a dynamic, already in larger size */
+	    /* Make it dynamic, already in larger size */
 	    void** new = NALLOC (n, void*);
 	    ASSERT (new, "Allocation failure");
 	    memcpy (new, a->cell, a->n * sizeof(void*));

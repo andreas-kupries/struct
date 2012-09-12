@@ -16,16 +16,6 @@
 
 typedef struct CSLICE_* CSLICE;
 
-/*
- * Cue to 'cslice_create' where to put the first element of the given array
- * slice in the returned slice object.
- */
-
-typedef enum {
-    cslice_normal,  /* The first element is at the left/beginning/first */
-    cslice_revers   /* The first element is at the right/end/last */
-} CSLICE_DIRECTION;
-
 #endif /* CSLICE_H */
 
 /*

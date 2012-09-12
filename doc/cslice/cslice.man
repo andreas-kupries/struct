@@ -24,8 +24,7 @@ stubs table which can be imported.
 [list_begin definitions]
 
 [comment {- - -- --- ----- -------- ------------- ---------------------}]
-[call [type CSLICE] [fun cslice_create] ( [type CSLICE_DIRECTION] [arg dir], \
-	[type void**] [arg cells], \
+[call [type CSLICE] [fun cslice_create] ( [type void**] [arg cells], \
 	[type int] [arg n] )]
 
 This function creates and initializes a slice object with the
@@ -45,6 +44,12 @@ allocated memory.
 
 This function provides access to the slice of cells contained in the
 specified slice object.
+
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call void [fun cslice_revers] ( [type CSLICE] [arg s] )]
+
+This function creates a new slice which is the reverse of the input.
+The input slice is destroyed.
 
 [comment {- - -- --- ----- -------- ------------- ---------------------}]
 [call void [fun cslice_concat] ( \
