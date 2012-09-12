@@ -128,11 +128,13 @@ critcl::class::define ::struct::stack {
 	}
 
 	static Tcl_Obj*
-	StructStackC_Elements (CSTACK instance, int n, CSLICE_DIRECTION dir) {
-	    CSLICE s = cstack_get (instance, 0, n, dir);
+	StructStackC_Elements (CSTACK instance, int n, int reverse) {
+	    CSLICE s = cstack_get (instance, n-1, n);
 	    void** cells;
 	    long int ln;
 	    Tcl_Obj* result;
+
+	    if (reverse) s = cslice_reverse (s);
 
 	    cslice_get (s, &cells, &ln);
 	    if (n == 1) {
@@ -203,7 +205,7 @@ critcl::class::define ::struct::stack {
 	if (!n) {
 	    return Tcl_NewListObj (0,NULL);
 	} else {
-	    return StructStackC_Elements (instance, n, cslice_normal);
+	    return StructStackC_Elements (instance, n, 1);
 	}
     }
 
@@ -214,7 +216,7 @@ critcl::class::define ::struct::stack {
 	if (!n) {
 	    return Tcl_NewListObj (0,NULL);
 	} else {
-	    return StructStackC_Elements (instance, n, cslice_revers);
+	    return StructStackC_Elements (instance, n, 0);
 	}
     }
 
@@ -225,7 +227,7 @@ critcl::class::define ::struct::stack {
 	    return TCL_ERROR;
 	}
 
-	Tcl_SetObjResult (interp, StructStackC_Elements (instance, n, cslice_normal));
+	Tcl_SetObjResult (interp, StructStackC_Elements (instance, n, 1));
 	return TCL_OK;
     }
 
@@ -236,7 +238,7 @@ critcl::class::define ::struct::stack {
 	    return TCL_ERROR;
 	}
 
-	Tcl_SetObjResult (interp, StructStackC_Elements (instance, n, cslice_revers));
+	Tcl_SetObjResult (interp, StructStackC_Elements (instance, n, 0));
 	return TCL_OK;
     }
 
@@ -247,7 +249,7 @@ critcl::class::define ::struct::stack {
 	    return TCL_ERROR;
 	}
 
-	Tcl_SetObjResult (interp, StructStackC_Elements (instance, n, cslice_normal));
+	Tcl_SetObjResult (interp, StructStackC_Elements (instance, n, 1));
 	cstack_pop (instance, n);
 	return TCL_OK;
     }
@@ -290,7 +292,7 @@ critcl::class::define ::struct::stack {
 	int len = cstack_size (instance);
 
 	if (n < len) {
-	    Tcl_Obj* result = StructStackC_Elements (instance, len-n, cslice_normal);
+	    Tcl_Obj* result = StructStackC_Elements (instance, len-n, 1);
 	    cstack_trim (instance, n);
 	    return result;
 	}

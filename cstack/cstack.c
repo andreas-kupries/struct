@@ -50,6 +50,13 @@ cstack_top (CSTACK s)
 }
 
 void*
+cstack_bottom (CSTACK s)
+{
+    ASSERT_BOUNDS(0,s->top);
+    return s->cell [0];
+}
+
+void*
 cstack_at (CSTACK s, long int i)
 {
     /* (i == 0)     ==> top    */
@@ -73,33 +80,19 @@ cstack_atr (CSTACK s, long int i)
 }
 
 CSLICE
-cstack_get (CSTACK s, long int at, long int n, CSLICE_DIRECTION dir)
+cstack_get (CSTACK s, long int at, long int n)
 {
     /* (at == 0)     ==> top    */
     /* (at == top-1) ==> bottom */
 
-    ASSERT_BOUNDS (at,     s->top);
-    ASSERT_BOUNDS (at+n-1, s->top);
+    ASSERT_BOUNDS (at,              s->top);
+    ASSERT_BOUNDS (s->top-at-1+n-1, s->top);
 
-    /*
-     * Note the double negation below. To get the normal order of the result,
-     * the order has to be reversed. To get the reverted order, nothing is to
-     * be done. So we revers on dir == cslice_normal.
-     *
-     * An optimization: We know that the direction is irrrelevant when
-     * returning a single element, therefore we can use the code path not
-     * doing allocation.
-     */
-
-    if ((dir == cslice_revers) || (n < 2)) {
-	return cslice_create (cslice_normal, s->cell + (s->top - at - n), n);
-    } else {
-	return cslice_create (cslice_revers, s->cell + (s->top - at - n), n);
-    }
+    return cslice_create (s->cell + (s->top - at - 1), n);
 }
 
 CSLICE
-cstack_getr (CSTACK s, long int at, long int n, CSLICE_DIRECTION dir)
+cstack_getr (CSTACK s, long int at, long int n)
 {
     /* Reversed indexing */
     /* (at == top-1) ==> top    */
@@ -108,21 +101,7 @@ cstack_getr (CSTACK s, long int at, long int n, CSLICE_DIRECTION dir)
     ASSERT_BOUNDS (at,     s->top);
     ASSERT_BOUNDS (at+n-1, s->top);
 
-    /*
-     * Note the double negation below. To get the normal order of the result,
-     * the order has to be reversed. To get the reverted order, nothing is to
-     * be done. So we revers on dir == cslice_normal.
-     *
-     * An optimization: We know that the direction is irrrelevant when
-     * returning a single element, therefore we can use the code path not
-     * doing allocation.
-     */
-
-    if ((dir == cslice_revers) || (n < 2)) {
-	return cslice_create (cslice_normal, s->cell + at, n);
-    } else {
-	return cslice_create (cslice_revers, s->cell + at, n);
-    }
+    return cslice_create (s->cell + at, n);
 }
 
 /*

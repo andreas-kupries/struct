@@ -58,6 +58,13 @@ This function returns the topmost cell in the stack.
 [para] The code asserts that the stack is not empty.
 
 [comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call void [fun cstack_bottom] ( [type CSTACK] [arg s] )]
+
+This function returns the bottom-most cell in the stack.
+
+[para] The code asserts that the stack is not empty.
+
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
 [call void [fun cstack_at] ( [type CSTACK] [arg s] \
       [type {long int}] [arg i])]
 
@@ -84,15 +91,11 @@ returning the indexed cell in the stack.
 [comment {- - -- --- ----- -------- ------------- ---------------------}]
 [call void [fun cstack_get] ( [type CSTACK] [arg s], \
       [type {long int}] [arg at], \
-      [type {long int}] [arg n], \
-      [type CSLICE_DIRECTION] [arg dir] )]
+      [type {long int}] [arg n] )]
 
 This function returns the [arg n] cells starting at index [arg at] in
-the stack as a slice, with the topmost cell of the slice either as
-first or last element of the slice, depending on [arg dir].
-
-[para] [const cslice_normal] <==> topmost is first.
-[para] [const cslice_revers] <==> topmost is last.
+the stack as a slice, with the topmost cell of the slice as the last
+element of the slice (natural internal order).
 
 [para] The indexing is the same as for function [cstack_at] above.
 [para] Index [const 0]         addresses the topmost cell, whereas
@@ -101,8 +104,7 @@ first or last element of the slice, depending on [arg dir].
 [comment {- - -- --- ----- -------- ------------- ---------------------}]
 [call void [fun cstack_getr] ( [type CSTACK] [arg s], \
       [type {long int}] [arg at], \
-      [type {long int}] [arg n], \
-      [type CSLICE_DIRECTION] [arg dir] )]
+      [type {long int}] [arg n] )]
 
 This function is a variant of function [fun cstack_get] above,
 returning the indexed slice in the stack.
@@ -110,6 +112,10 @@ returning the indexed slice in the stack.
 [para] In contrast to the former the indexing is reversed. I.e.:
 [para] Index 'cstack_size()-1' addresses the topmost cell, whereas
 [para] index [const 0]         addresses the bottommost cell.
+
+[para] Note that this does not affect the ordering in the slice
+itself, which has the topmost cell of the slice as the last element of
+the slice (natural internal order).
 
 [comment {- - -- --- ----- -------- ------------- ---------------------}]
 [call void [fun cstack_push] ( [type CSTACK] [arg s], \
