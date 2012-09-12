@@ -1,5 +1,5 @@
 '\"
-'\" Generated from file '/home/aku/Projects/Struct/struct/embedded/cslice/man/files/cslice.n' by tcllib/doctools with format 'nroff'
+'\" Generated from file '/net/nas/data/andreask/Dev/Struct/struct/embedded/cslice/man/files/cslice.n' by tcllib/doctools with format 'nroff'
 '\"
 '\" The definitions below are for supplemental macros used in Tcl/Tk
 '\" manual entries.
@@ -246,11 +246,15 @@ package require \fBTcl  8.5\fR
 .sp
 package require \fBc::slice  ?1?\fR
 .sp
-\fBCSLICE\fR \fBcslice_create\fR ( \fBCSLICE_DIRECTION\fR \fIdir\fR, \fBvoid**\fR \fIcells\fR, \fBint\fR \fIn\fR )
+\fBCSLICE\fR \fBcslice_create\fR ( \fBvoid**\fR \fIcells\fR, \fBint\fR \fIn\fR )
 .sp
 void \fBcslice_destroy\fR ( \fBCSLICE\fR \fIs\fR )
 .sp
 void \fBcslice_get\fR ( \fBCSLICE\fR \fIs\fR, \fBvoid***\fR \fIcells\fR, \fBint*\fR \fIn\fR )
+.sp
+void \fBcslice_revers\fR ( \fBCSLICE\fR \fIs\fR )
+.sp
+void \fBcslice_concat\fR ( \fBCSLICE\fR \fIa\fR \fBCSLICE\fR \fIb\fR )
 .sp
 .BE
 .SH DESCRIPTION
@@ -270,7 +274,7 @@ To support this the package provides its C API by means of a
 stubs table which can be imported.
 .SH API
 .TP
-\fBCSLICE\fR \fBcslice_create\fR ( \fBCSLICE_DIRECTION\fR \fIdir\fR, \fBvoid**\fR \fIcells\fR, \fBint\fR \fIn\fR )
+\fBCSLICE\fR \fBcslice_create\fR ( \fBvoid**\fR \fIcells\fR, \fBint\fR \fIn\fR )
 This function creates and initializes a slice object with the
 specified slice of an array of cells. The return value of the function
 is the handle of the new slice object.
@@ -282,6 +286,14 @@ allocated memory.
 void \fBcslice_get\fR ( \fBCSLICE\fR \fIs\fR, \fBvoid***\fR \fIcells\fR, \fBint*\fR \fIn\fR )
 This function provides access to the slice of cells contained in the
 specified slice object.
+.TP
+void \fBcslice_revers\fR ( \fBCSLICE\fR \fIs\fR )
+This function creates a new slice which is the reverse of the input.
+The input slice is destroyed.
+.TP
+void \fBcslice_concat\fR ( \fBCSLICE\fR \fIa\fR \fBCSLICE\fR \fIb\fR )
+This function creates a new slice which is the concatenation of the
+two inputs. The input slices are destroyed.
 .PP
 .SH LICENSE
 This package, written by Andreas Kupries, is BSD licensed.
