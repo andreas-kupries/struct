@@ -1,0 +1,219 @@
+[comment {-*- text -*- ........ - - -- --- ----- -------- -------------}]
+[comment {--- doctools --- manpage}]
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[manpage_begin c::queue n 1]
+[include ../include/general.inc]
+[titledesc {Create and manipulate queues}]
+[require c::slice [opt 1]]
+[require c::queue [opt 1]]
+[keywords  queue lifo]
+[description]
+[include ../include/welcome.inc]
+
+[para] This package provides a basic C API for the creation and use of
+queues. It does provide neither Tcl commands nor other items visible
+at script level.
+
+[para] The package is meant to be used by other C level data structure
+packages, either internally, or providing a Tcl level API to it. An
+example of the latter is the C implementation of package
+[package struct::queue].
+
+[para] To support this the package provides its C API by means of a
+stubs table which can be imported.
+
+[section API]
+[list_begin definitions]
+
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call [type CQUEUE] [fun cqueue_create] ( [type CQUEUE_CELL_FREE] [arg fun], \
+      [type void*] [arg clientdata] )]
+
+This function creates and initializes a new queue object and returns
+its handle. The client-data is simply stored and available upon
+request, see function [fun cqueue_clientdata_get] below.
+
+[para] The free function [fun fun] is for the release of memory
+associated with the cells of the new queue. It may be NULL.
+
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call void [fun cqueue_destroy] ( [type CQUEUE] [arg q] )]
+
+This function destroys the specified queue object, releasing all
+allocated memory.
+
+[para] The cell release function is called for all cells left in the
+queue.
+
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call [type {long int}] [fun cqueue_size] ( [type CQUEUE] [arg q] )]
+
+This function returns the number of cells in the queue.
+
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call void [fun cqueue_first] ( [type CQUEUE] [arg q] )]
+
+This function returns the first cell in the queue.
+
+[para] The code asserts that the queue is not empty.
+
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call void [fun cqueue_last] ( [type CQUEUE] [arg q] )]
+
+This function returns the last cell in the queue.
+
+[para] The code asserts that the queue is not empty.
+
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call [type CSLICE] [fun cqueue_head] ( [type CQUEUE] [arg q], \
+      [type {long int}] [arg n] )]
+
+This function returns the first [arg n] cells in the queue as a slice,
+with the first cell of the queue as the first element of the slice
+(natural internal order).
+
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call [type CSLICE] [fun cqueue_tail] ( [type CQUEUE] [arg q], \
+      [type {long int}] [arg n] )]
+
+This function returns the last [arg n] cells in the queue as a slice,
+with the last cell of the queue as the last element of the slice
+(natural internal order).
+
+
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call [type CSLICE] [fun cqueue_get] ( [type CQUEUE] [arg q], \
+      [type {long int}] [arg at], \
+      [type {long int}] [arg n] )]
+
+This function returns the [arg n] cells starting at index [arg at] in
+the queue as a slice, with the first cell in the queue as the first
+element of the slice (natural internal order).
+
+[para] The indexing uses the natural internal order:
+[para] Index [const 0]         addresses the first cell, whereas
+[para] index 'cqueue_size()-1' addresses the last cell.
+
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call void [fun cqueue_append] ( [type CQUEUE] [arg q], \
+      [type void*] [arg item] )]
+
+This function adds the [arg item] to the queue, at the end.
+
+
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call void [fun cqueue_prepend] ( [type CQUEUE] [arg q], \
+      [type void*] [arg item] )]
+
+This function adds the [arg item] to the queue, at the head.
+
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call void [fun cqueue_append_slice] ( [type CQUEUE] [arg q], \
+      [type CSLICE] [arg sl] )]
+
+This function adds all items in the slice to the queue, at the end, in
+slice order (keeping their order in the queue). It is a convenience
+function reducing the number of calls to [fun cqueue_append] for bulk
+operations.
+
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call void [fun cqueue_prepend_slice] ( [type CQUEUE] [arg q], \
+      [type CSLICE] [arg sl] )]
+
+This function adds all items in the slice to the queue, at the head, in
+slice order (reversing their order in the queue). It is a convenience
+function reducing the number of calls to [fun cqueue_prepend] for bulk
+operations.
+
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call void [fun cqueue_remove_head] ( [type CQUEUE] [arg q], \
+      [type {long int}] [arg n] )]
+
+This function removes the first [arg n] cells from the queue.
+
+[para] The cell release function is called for all removed cells.
+This is in contrast to function [fun cqueue_drop_head] below.
+
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call void [fun cqueue_remove_tail] ( [type CQUEUE] [arg q], \
+      [type {long int}] [arg n] )]
+
+This function removes the last [arg n] cells from the queue.
+
+[para] The cell release function is called for all removed cells.
+This is in contrast to function [fun cqueue_drop_tail] below.
+
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call void [fun cqueue_clear] ( [type CQUEUE] [arg q] )]
+
+This convenience function is a variant [fun cqueue_remove_head] which
+removes all cells from the queue.
+
+After the operation [arg q] is empty.
+
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call void [fun cqueue_drop_head] ( [type CQUEUE] [arg q], \
+      [type {long int}] [arg n] )]
+
+This function drops the first [arg n] cells from the queue.
+
+[para] [emph Note:] The cell release function is [emph not] called for
+the removed cells. This is in contrast to function [fun cqueue_remove_head]
+above.
+
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call void [fun cqueue_drop_tail] ( [type CQUEUE] [arg q], \
+      [type {long int}] [arg n] )]
+
+This function drops the last [arg n] cells from the queue.
+
+[para] [emph Note:] The cell release function is [emph not] called for
+the removed cells. This is in contrast to function [fun cqueue_remove_tail]
+above.
+
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call void [fun cqueue_drop_all] ( [type CQUEUE] [arg q] )]
+
+This convenience function is a variant of [fun cqueue_drop_head] which
+drops all cells from the queue.
+
+After the operation [arg q] is empty.
+
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call void [fun cqueue_move] ( [type CQUEUE] [arg q], \
+      [type CQUEUE] [arg src], \
+      [type {long int}] [arg n] )]
+
+This function moves the first [arg n] cells in the queue [arg src]
+to the queue [arg q], adding them at the end. This keeps their order.
+
+As the cells are not destroyed the release function is not called.
+
+[para] As a basic precaution the release functions of both queues are
+compared, and have to match. The code will assert this and panic if
+the condition is not true.
+
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call void [fun cqueue_move_all] ( [type CQUEUE] [arg q], \
+      [type CQUEUE] [arg src] )]
+
+This convenience function is a variant of [fun cqueue_move] which
+moves all cells of the source to the destination. After the operation
+[arg src] is empty.
+
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call void [fun cqueue_clientdata_set] ( [type CQUEUE] [arg q], \
+      [type void*] [arg clientdata] )]
+
+This function sets new client data into the queue.
+
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call void* [fun cqueue_clientdata_get] ( [type CQUEUE] [arg q] )]
+
+This function returns the client data currently stored in the queue.
+
+[list_end]
+
+[include ../include/license.inc]
+[include ../include/feedback.inc]
+[manpage_end]
