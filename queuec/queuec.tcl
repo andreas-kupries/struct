@@ -212,12 +212,63 @@ critcl::class::define ::struct::queue {
 
     method append command {item ?item ...?} {
 	// xxx todo - we can use slices...
+
+	int i;
+	CSLICE sl;
+
+	if (objc < 3) {
+	    Tcl_WrongNumArgs (interp, 2, objv, "item ...");
+	    return TCL_ERROR;
+	}
+
+	/* Even with a slice to bulk-push
+	 * we still need a loop to fix the
+	 * ref counts proper.
+	 */
+
+	sl = cslice_create (objc-2, objv+2);
+	cstack_push_slice (instance, sl);
+
+	for (i = 2; i < objc; i++) {
+	    Tcl_IncrRefCount (objv[i]);
+	}
+
+	cslice_destroy (sl);
+	return TCL_OK;
+
+cqueue_
     }
 
     method prepend command {item ?item ...?} {
 	// xxx todo - we can use slices...
+
+
+	int i;
+	CSLICE sl;
+
+	if (objc < 3) {
+	    Tcl_WrongNumArgs (interp, 2, objv, "item ...");
+	    return TCL_ERROR;
+	}
+
+	/* Even with a slice to bulk-push
+	 * we still need a loop to fix the
+	 * ref counts proper.
+	 */
+
+	sl = cslice_create (objc-2, objv+2);
+	cstack_push_slice (instance, sl);
+
+	for (i = 2; i < objc; i++) {
+	    Tcl_IncrRefCount (objv[i]);
+	}
+
+	cslice_destroy (sl);
+	return TCL_OK;
+
     }
 
+    # stack: pop ... no result! bad!
     method remove proc {where istail queueindex n} void {
 	if (istail) {
 	    cqueue_remove_tail (instance, n);
@@ -226,20 +277,8 @@ critcl::class::define ::struct::queue {
 	}
     }
 
-    method drop proc {where istail queueindex n} void {
-	if (istail) {
-	    cqueue_drop_tail (instance, n);
-	} else {
-	    cqueue_drop_head (instance, n);
-	}
-    }
-
     method clear proc {} void {
 	cqueue_clear (instance);
-    }
-
-    method drop_all proc {} void {
-	cqueue_drop_all (instance);
     }
 
     # # ## ### ##### ######## ############# #####################

@@ -41,7 +41,52 @@ oo::class create ::struct::queue {
 	return [expr { [llength $mymiddle] + [llength $mytail] + [llength $myhead] - $myat }]
     }
 
-    method get {{n 1}} {
+    method first {} {
+	my CheckEmpty
+	if {[llength $myhead]} {
+	    return [lindex $myhead end]
+	}
+	set n [llength $mymiddle]
+	if {$n && ($myat < $n)} {
+	    return [lindex $mymiddle $myat]
+	}
+	if {[llength $mytail]} {
+	    return [lindex $mytail 0]
+	}
+	error "Internal"
+    }
+
+    method last {} {
+	my CheckEmpty
+	if {[llength $mytail]} {
+	    return [lindex $mytail end]
+	}
+	set n [llength $mymiddle]
+	if {$n && ($myat < $n)} {
+	    return [lindex $mymiddle end]
+	}
+	if {[llength $myhead]} {
+	    return [lindex $myhead 0]
+	}
+	error "Internal"
+    }
+
+    method head {n} {
+	my CheckCount $n
+	# xxx
+    }
+
+    method tail {n} {
+	my CheckCount $n
+	# xxx
+    }
+
+
+
+# xxx todo
+    method get {at n} {
+	my CheckIndex $at
+
 	if {$n < 1} {
 	    return -code error "invalid item count $n"
 	}
@@ -204,12 +249,12 @@ oo::class create ::struct::queue {
 	return
     }
 
-    method put {item args} {
+    method append {item args} {
 	lappend mytail $item {*}$args
 	return
     }
 
-    method unget {item args} {
+    method prepend {item args} {
 	lappend myhead $item {*}$args
 	return
     }

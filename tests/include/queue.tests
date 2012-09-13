@@ -1,152 +1,181 @@
-# -*- tcl -*-
-# queue.test:  tests for the queue package.
+## -*- tcl -*-
+# # ## ### ##### ######## ############# #####################
+## Test suite for struct::queue, common parts across implementations.
 #
-# This file contains a collection of tests for one or more of the Tcl
-# built-in commands.  Sourcing this file into Tcl runs the tests and
-# generates output for errors.  No output means no errors were found.
+## Two complementary constraints (queue_c, queue_tcl) tell us
+## which implementation is under test.
 #
-# Copyright (c) 1998-2000 by Ajuba Solutions.
-# All rights reserved.
-#
-# RCS: @(#) $Id: queue.testsuite,v 1.3 2010/05/25 19:26:18 andreas_kupries Exp $
+## The external procedures 'already' and 'badmethod' are used to
+## generate implementation specific error messages. Implementations
+## have to be provided by the invoking implementation-specific
+## testsuite.
 
-# -------------------------------------------------------------------------
+# # ## ### ##### ######## ############# #####################
 
-::tcltest::testConstraint queue_critcl [string equal $impl critcl]
-::tcltest::testConstraint queue_oo     [expr {![catch {package present TclOO}] && [string equal $impl tcl]}]
+test queue-1.0.1 {new, wrong#args, too many} -constraints queue_c -body {
+    struct queue new X
+} -returnCodes error -result {wrong # args: should be "struct queue new"}
 
-#----------------------------------------------------------------------
+test queue-1.1.0 {create, wrong#args, too many} -constraints queue_c -body {
+    struct queue create foo X
+} -returnCodes error -result {wrong # args: should be "::struct::queue create foo"}
 
-test queue-${impl}-0.1.0 {queue errors} !queue_oo {
-    queue myqueue
-    catch {queue myqueue} msg
+## !! Note how we are not using the ensemble.
+## Tcl generates a broken error message if we do.
+test queue-1.0.1 {new, wrong#args, too many} -constraints queue_tcl -body {
+    struct::queue new X
+} -returnCodes error -result {wrong # args: should be "struct::queue new"}
+
+test queue-1.1.1 {create, wrong#args, too many} -constraints queue_tcl -body {
+    struct::queue create foo X
+} -returnCodes error -result {wrong # args: should be "struct::queue create foo"}
+
+test queue-1.2 {constructor, create, existing command} -setup {
+    struct queue create myqueue
+} -body {
+    struct queue create myqueue
+} -cleanup {
     myqueue destroy
-    set msg
-} {command "::myqueue" already exists, unable to create queue}
+} -returnCodes error -result [already myqueue]
 
-test queue-${impl}-0.1.1 {queue errors} queue_oo {
-    queue myqueue
-    catch {queue myqueue} msg
+test queue-1.3 {constructor, create, existing command} -body {
+    struct queue create set
+} -returnCodes error -result [already set]
+
+test queue-1.4 {constructor, create} -setup {
+    set result {}
+} -body {
+    lappend result [struct queue create myqueue]
+    lappend result [info commands ::myqueue]
+    lappend result [myqueue size]
+} -cleanup {
     myqueue destroy
-    set msg
-} {can't create object "myqueue": command already exists with that name}
+    unset result
+} -result {::myqueue ::myqueue 0}
 
-test queue-${impl}-0.2 {queue errors} badTest {
-    queue myqueue
-    catch {myqueue} msg
-    myqueue destroy
-    set msg
-} "wrong # args: should be \"$MY option ?arg arg ...?\""
-
-test queue-${impl}-0.3.0 {queue errors} tcl8.4minus {
-    queue myqueue
-    catch {myqueue foo} msg
-    myqueue destroy
-    set msg
-} {bad option "foo": must be clear, destroy, get, peek, put, size, or unget}
-
-test queue-${impl}-0.3.1.0 {queue errors} {tcl8.5plus !queue_oo} {
-    queue myqueue
-    catch {myqueue foo} msg
-    myqueue destroy
-    set msg
-} [tmTake \
-       {unknown or ambiguous subcommand "foo": must be clear, destroy, get, peek, put, size, or unget} \
-       {bad option "foo": must be clear, destroy, get, peek, put, size, or unget} \
-      ]
-
-test queue-${impl}-0.3.1.1 {queue errors} {tcl8.5plus queue_oo} {
-    queue myqueue
-    catch {myqueue foo} msg
-    myqueue destroy
-    set msg
-} [tmTake \
-       {unknown method "foo": must be clear, destroy, get, peek, put, size or unget} \
-       {bad option "foo": must be clear, destroy, get, peek, put, size, or unget} \
-      ]
-
-test queue-${impl}-0.4.0 {queue errors} !queue_oo {
-    catch {queue set} msg
-    set msg
-} {command "::set" already exists, unable to create queue}
-
-test queue-${impl}-0.4.1 {queue errors} queue_oo {
-    catch {queue set} msg
-    set msg
-} {can't create object "set": command already exists with that name}
-
-#----------------------------------------------------------------------
-
-test queue-${impl}-1.1 {queue creation} {
-    set foo [queue myqueue]
-    set cmd [info commands ::myqueue]
-    set size [myqueue size]
-    myqueue destroy
-    list $foo $cmd $size
-} {::myqueue ::myqueue 0}
-
-test queue-${impl}-1.2.0 {queue creation} !queue_oo {
-    set foo [queue]
-    set cmd [info commands ::$foo]
-    set size [$foo size]
+test queue-1.5.0 {constructor, new} -constraints queue_c -setup {
+    set result {}
+} -body {
+    lappend result [set foo [struct queue new]]
+    lappend result [info commands ::$foo]
+    lappend result [$foo size]
+} -cleanup {
     $foo destroy
-    list $foo $cmd $size
-} {::queue1 ::queue1 0}
+    unset result foo
+} -match glob -result {::struct::queue* ::struct::queue* 0}
 
-test queue-${impl}-1.2.1 {queue creation} queue_oo {
-    set foo [queue]
-    set cmd [info commands ::$foo]
-    set size [$foo size]
+test queue-1.5.1 {constructor, new} -constraints queue_tcl -setup {
+    set result {}
+} -body {
+    lappend result [set foo [struct queue new]]
+    lappend result [info commands ::$foo]
+    lappend result [$foo size]
+} -cleanup {
     $foo destroy
-    list $foo $cmd $size
-    string match [list ::oo::Obj* ::oo::Obj* 0] [list $foo $cmd $size]
-} 1
+    unset result foo
+} -match glob -result {::oo::Obj* ::oo::Obj* 0}
 
-#----------------------------------------------------------------------
+# # ## ### ##### ######## ############# #####################
 
-test queue-${impl}-2.1 {queue destroy} {
-    queue myqueue
+test queue-2.0.0 {instance, no method} -constraints queue_c -setup {
+    struct queue create myqueue
+} -body {
+    myqueue
+} -cleanup {
+    myqueue destroy
+} -returnCodes error \
+    -result {wrong # args: should be "myqueue option ?arg arg ...?"}
+
+test queue-2.0.1 {instance, no method} -constraints queue_tcl -setup {
+    struct queue create myqueue
+} -body {
+    myqueue
+} -cleanup {
+    myqueue destroy
+} -returnCodes error \
+    -result {wrong # args: should be "myqueue method ?arg ...?"}
+
+test queue-2.1 {instance, bad method name} -setup {
+    struct queue create myqueue
+} -body {
+    myqueue foo
+} -cleanup {
+    myqueue destroy
+} -returnCodes error \
+    -result [badmethod foo {}]
+
+# # ## ### ##### ######## ############# #####################
+
+test queue-3.0 {destroy, wrong#args, too many} -setup {
+    struct queue create myqueue
+} -body {
+    myqueue destroy X
+} -cleanup {
+    myqueue destroy
+} -returnCodes error -result {wrong # args: should be "myqueue destroy"}
+
+test queue-3.1 {destroy} -setup {
+    struct queue create myqueue
+} -body {
     myqueue destroy
     info commands ::myqueue
-} {}
+} -result {}
 
-#----------------------------------------------------------------------
+# # ## ### ##### ######## ############# #####################
 
-test queue-${impl}-3.2 {size operation} {
-    queue myqueue
-    myqueue put a b c d e f g
-    set size [myqueue size]
+test queue-4.0 {size, wrong#args, too many} -setup {
+    struct queue create myqueue
+} -body {
+    myqueue size X
+} -cleanup {
     myqueue destroy
-    set size
-} 7
-test queue-${impl}-3.3 {size operation} {
-    queue myqueue
-    myqueue put a b c d e f g
-    myqueue get 3
-    set size [myqueue size]
+} -returnCodes error -result {wrong # args: should be "myqueue size"}
+
+test queue-4.1 {size} -setup {
+    struct queue create myqueue
+    myqueue append a b c d e f g
+} -body {
+    myqueue size
+} -cleanup {
     myqueue destroy
-    set size
-} 4
-test queue-${impl}-3.4 {size operation} {
-    queue myqueue
-    myqueue put a b c d e f g
-    myqueue get 3
+} -result 7
+
+test queue-4.2 {size} -setup {
+    struct queue create myqueue
+    myqueue append a b c d e f g
+    myqueue pop 3
+} -body {
+   myqueue size
+} -cleanup {
+    myqueue destroy
+} -result 4
+
+test queue-4.3 {size} -setup {
+    struct queue create myqueue
+    myqueue append a b c d e f g
+    myqueue pop 3
     myqueue peek 3
-    set size [myqueue size]
+} -body {
+  myqueue size
+} -cleanup {
     myqueue destroy
-    set size
-} 4
+} -result 4
+
+# # ## ### ##### ######## ############# #####################
+
+
+
 
 #----------------------------------------------------------------------
     
-test queue-${impl}-4.1 {put operation} {
+test queue-4.1 {put operation} {
     queue myqueue
     catch {myqueue put} msg
     myqueue destroy
     set msg
 } "wrong # args: should be \"$MY put item ?item ...?\""
 
-test queue-${impl}-4.2 {put operation, singleton items} {
+test queue-4.2 {put operation, singleton items} {
     queue myqueue
     myqueue put a
     myqueue put b
@@ -156,7 +185,7 @@ test queue-${impl}-4.2 {put operation, singleton items} {
     set result
 } {a b c}
 
-test queue-${impl}-4.3 {put operation, multiple items} {
+test queue-4.3 {put operation, multiple items} {
     queue myqueue
     myqueue put a b c
     set result [list [myqueue get] [myqueue get] [myqueue get]]
@@ -164,7 +193,7 @@ test queue-${impl}-4.3 {put operation, multiple items} {
     set result
 } {a b c}
 
-test queue-${impl}-4.4 {put operation, spaces in items} {
+test queue-4.4 {put operation, spaces in items} {
     queue myqueue
     myqueue put a b "foo bar"
     set result [list [myqueue get] [myqueue get] [myqueue get]]
@@ -172,7 +201,7 @@ test queue-${impl}-4.4 {put operation, spaces in items} {
     set result
 } {a b {foo bar}}
 
-test queue-${impl}-4.5 {put operation, bad chars in items} {
+test queue-4.5 {put operation, bad chars in items} {
     queue myqueue
     myqueue put a b \{
     set result [list [myqueue get] [myqueue get] [myqueue get]]
@@ -182,7 +211,7 @@ test queue-${impl}-4.5 {put operation, bad chars in items} {
 
 #----------------------------------------------------------------------
 
-test queue-${impl}-5.1 {get operation} {
+test queue-5.1 {get operation} {
     queue myqueue
     myqueue put a
     myqueue put b
@@ -192,7 +221,7 @@ test queue-${impl}-5.1 {get operation} {
     set result
 } {a b c}
 
-test queue-${impl}-5.2 {get operation, multiple items} {
+test queue-5.2 {get operation, multiple items} {
     queue myqueue
     myqueue put a
     myqueue put b
@@ -204,7 +233,7 @@ test queue-${impl}-5.2 {get operation, multiple items} {
 
 #----------------------------------------------------------------------
 
-test queue-${impl}-6.1 {peek operation} {
+test queue-6.1 {peek operation} {
     queue myqueue
     myqueue put a
     myqueue put b
@@ -214,28 +243,28 @@ test queue-${impl}-6.1 {peek operation} {
     set result
 } {a a a}
 
-test queue-${impl}-6.2 {peek operation} {
+test queue-6.2 {peek operation} {
     queue myqueue
     catch {myqueue peek 0} msg
     myqueue destroy
     set msg
 } {invalid item count 0}
 
-test queue-${impl}-6.3 {peek operation} {
+test queue-6.3 {peek operation} {
     queue myqueue
     catch {myqueue peek -1} msg
     myqueue destroy
     set msg
 } {invalid item count -1}
 
-test queue-${impl}-6.4 {peek operation} {
+test queue-6.4 {peek operation} {
     queue myqueue
     catch {myqueue peek} msg
     myqueue destroy
     set msg
 } {insufficient items in queue to fill request}
 
-test queue-${impl}-6.5 {peek operation} {
+test queue-6.5 {peek operation} {
     queue myqueue
     myqueue put a
     catch {myqueue peek 2} msg
@@ -243,7 +272,7 @@ test queue-${impl}-6.5 {peek operation} {
     set msg
 } {insufficient items in queue to fill request}
 
-test queue-${impl}-6.6 {get operation, multiple items} {
+test queue-6.6 {get operation, multiple items} {
     queue myqueue
     myqueue put a
     myqueue put b
@@ -253,28 +282,28 @@ test queue-${impl}-6.6 {get operation, multiple items} {
     set result
 } {{a b c} {a b c}}
 
-test queue-${impl}-6.7 {get operation} {
+test queue-6.7 {get operation} {
     queue myqueue
     catch {myqueue get 0} msg
     myqueue destroy
     set msg
 } {invalid item count 0}
 
-test queue-${impl}-6.8 {get operation} {
+test queue-6.8 {get operation} {
     queue myqueue
     catch {myqueue get -1} msg
     myqueue destroy
     set msg
 } {invalid item count -1}
 
-test queue-${impl}-6.9 {get operation} {
+test queue-6.9 {get operation} {
     queue myqueue
     catch {myqueue get} msg
     myqueue destroy
     set msg
 } {insufficient items in queue to fill request}
 
-test queue-${impl}-6.10 {get operation} {
+test queue-6.10 {get operation} {
     queue myqueue
     myqueue put a
     catch {myqueue get 2} msg
@@ -284,7 +313,7 @@ test queue-${impl}-6.10 {get operation} {
 
 #----------------------------------------------------------------------
 
-test queue-${impl}-7.1 {clear operation} {
+test queue-7.1 {clear operation} {
     queue myqueue
     myqueue put a
     myqueue put b
@@ -298,21 +327,21 @@ test queue-${impl}-7.1 {clear operation} {
 
 #----------------------------------------------------------------------
 
-test queue-${impl}-8.1 {unget operation, not enough arguments} {
+test queue-8.1 {unget operation, not enough arguments} {
     queue myqueue
     catch {myqueue unget} msg
     myqueue destroy
     set msg
 } [tmWrong unget {item} 0]
 
-test queue-${impl}-8.2 {unget operation, too many arguments} {
+test queue-8.2 {unget operation, too many arguments} {
     queue myqueue
     catch {myqueue unget a b} msg
     myqueue destroy
     set msg
 } [tmTooMany unget {item}]
 
-test queue-${impl}-8.3 {unget, empty queue} {
+test queue-8.3 {unget, empty queue} {
     queue myqueue
     myqueue unget foo
     set res [myqueue peek [myqueue size]]
@@ -320,7 +349,7 @@ test queue-${impl}-8.3 {unget, empty queue} {
     set res
 } {foo}
 
-test queue-${impl}-8.4 {unget, nonempty queue, at beginning of queue} {
+test queue-8.4 {unget, nonempty queue, at beginning of queue} {
     queue myqueue
     myqueue put a b c
     myqueue unget foo
@@ -329,7 +358,7 @@ test queue-${impl}-8.4 {unget, nonempty queue, at beginning of queue} {
     set res
 } {foo a b c}
 
-test queue-${impl}-8.5 {unget, nonempty queue, middle of queue} {
+test queue-8.5 {unget, nonempty queue, middle of queue} {
     queue myqueue
     myqueue put a b c d e f
     myqueue get 3
