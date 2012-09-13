@@ -130,6 +130,10 @@
 <li><a href="#3">void <b class="function">cslice_get</b> ( <b class="type">CSLICE</b> <i class="arg">s</i>, <b class="type">long int*</b> <i class="arg">cc</i>, <b class="type">void***</b> <i class="arg">cv</i> )</a></li>
 <li><a href="#4">void <b class="function">cslice_revers</b> ( <b class="type">CSLICE</b> <i class="arg">s</i> )</a></li>
 <li><a href="#5">void <b class="function">cslice_concat</b> ( <b class="type">CSLICE</b> <i class="arg">a</i> <b class="type">CSLICE</b> <i class="arg">b</i> )</a></li>
+<li><a href="#6"><b class="type">CSLICE</b> <b class="function">cslice_from_list</b> ( <b class="type">Tcl_Interp*</b> <i class="arg">interp</i> <b class="type">Tcl_Obj*</b> <i class="arg">l</i> )</a></li>
+<li><a href="#7"><b class="type">Tcl_Obj*</b> <b class="function">cslice_to_list</b> ( <b class="type">CSLICE</b> <i class="arg">s</i> )</a></li>
+<li><a href="#8"><b class="type">long int</b> <b class="function">cslice_size</b> ( <b class="type">CSLICE</b> <i class="arg">s</i> )</a></li>
+<li><a href="#9"><b class="type">void*</b> <b class="function">cslice_at</b> ( <b class="type">CSLICE</b> <i class="arg">s</i> <b class="type">long int</b> <i class="arg">at</i> )</a></li>
 </ul>
 </div>
 </div>
@@ -163,6 +167,21 @@ The input slice is destroyed.</p></dd>
 <dt><a name="5">void <b class="function">cslice_concat</b> ( <b class="type">CSLICE</b> <i class="arg">a</i> <b class="type">CSLICE</b> <i class="arg">b</i> )</a></dt>
 <dd><p>This function creates a new slice which is the concatenation of the
 two inputs. The input slices are destroyed.</p></dd>
+<dt><a name="6"><b class="type">CSLICE</b> <b class="function">cslice_from_list</b> ( <b class="type">Tcl_Interp*</b> <i class="arg">interp</i> <b class="type">Tcl_Obj*</b> <i class="arg">l</i> )</a></dt>
+<dd><p>This function creates a new slice containing the elements of the Tcl
+list object <i class="arg">l</i>.</p>
+<p>If <i class="arg">l</i> was not a list object <b class="const">0</b> is returned, and an
+error message left in the interpreter <i class="arg">interp</i>. Note that
+<i class="arg">interp</i> can be <b class="const">0</b>, in that case no error message is left.</p></dd>
+<dt><a name="7"><b class="type">Tcl_Obj*</b> <b class="function">cslice_to_list</b> ( <b class="type">CSLICE</b> <i class="arg">s</i> )</a></dt>
+<dd><p>This function creates a new Tcl list object containing the elements
+of the slice. This makes sense if and only if the elements of the slice
+are of type <b class="type">Tcl_Obj*</b>. Any other type and the resulting Tcl object
+is broken, causing a crash at some point in the future.</p></dd>
+<dt><a name="8"><b class="type">long int</b> <b class="function">cslice_size</b> ( <b class="type">CSLICE</b> <i class="arg">s</i> )</a></dt>
+<dd><p>This function returns the size of the slice <i class="arg">s</i>.</p></dd>
+<dt><a name="9"><b class="type">void*</b> <b class="function">cslice_at</b> ( <b class="type">CSLICE</b> <i class="arg">s</i> <b class="type">long int</b> <i class="arg">at</i> )</a></dt>
+<dd><p>This function returns the element at index <i class="arg">at</i> in slice <i class="arg">s</i>.</p></dd>
 </dl>
 </div>
 <div id="section3" class="section"><h2><a name="section3">License</a></h2>

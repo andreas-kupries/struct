@@ -256,6 +256,14 @@ void \fBcslice_revers\fR ( \fBCSLICE\fR \fIs\fR )
 .sp
 void \fBcslice_concat\fR ( \fBCSLICE\fR \fIa\fR \fBCSLICE\fR \fIb\fR )
 .sp
+\fBCSLICE\fR \fBcslice_from_list\fR ( \fBTcl_Interp*\fR \fIinterp\fR \fBTcl_Obj*\fR \fIl\fR )
+.sp
+\fBTcl_Obj*\fR \fBcslice_to_list\fR ( \fBCSLICE\fR \fIs\fR )
+.sp
+\fBlong int\fR \fBcslice_size\fR ( \fBCSLICE\fR \fIs\fR )
+.sp
+\fBvoid*\fR \fBcslice_at\fR ( \fBCSLICE\fR \fIs\fR \fBlong int\fR \fIat\fR )
+.sp
 .BE
 .SH DESCRIPTION
 .PP
@@ -294,6 +302,26 @@ The input slice is destroyed.
 void \fBcslice_concat\fR ( \fBCSLICE\fR \fIa\fR \fBCSLICE\fR \fIb\fR )
 This function creates a new slice which is the concatenation of the
 two inputs. The input slices are destroyed.
+.TP
+\fBCSLICE\fR \fBcslice_from_list\fR ( \fBTcl_Interp*\fR \fIinterp\fR \fBTcl_Obj*\fR \fIl\fR )
+This function creates a new slice containing the elements of the Tcl
+list object \fIl\fR.
+.sp
+If \fIl\fR was not a list object \fB0\fR is returned, and an
+error message left in the interpreter \fIinterp\fR. Note that
+\fIinterp\fR can be \fB0\fR, in that case no error message is left.
+.TP
+\fBTcl_Obj*\fR \fBcslice_to_list\fR ( \fBCSLICE\fR \fIs\fR )
+This function creates a new Tcl list object containing the elements
+of the slice. This makes sense if and only if the elements of the slice
+are of type \fBTcl_Obj*\fR. Any other type and the resulting Tcl object
+is broken, causing a crash at some point in the future.
+.TP
+\fBlong int\fR \fBcslice_size\fR ( \fBCSLICE\fR \fIs\fR )
+This function returns the size of the slice \fIs\fR.
+.TP
+\fBvoid*\fR \fBcslice_at\fR ( \fBCSLICE\fR \fIs\fR \fBlong int\fR \fIat\fR )
+This function returns the element at index \fIat\fR in slice \fIs\fR.
 .PP
 .SH LICENSE
 This package, written by Andreas Kupries, is BSD licensed.
