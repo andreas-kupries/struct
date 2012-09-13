@@ -44,7 +44,7 @@ critcl::api import c::stack 1
 critcl::tsources policy.tcl
 
 # # ## ### ##### ######## ############# #####################
-## Implementation
+## Implementation - Class Helpers - Custom argument/result processing.
 
 critcl::argtype stacksize {
     if (Tcl_GetIntFromObj (interp, @@, &@A) != TCL_OK) {
@@ -77,6 +77,9 @@ critcl::resulttype sTcl_Obj* {
     /* No refcount adjustment */
     return TCL_OK;
 } Tcl_Obj*
+
+# # ## ### ##### ######## ############# #####################
+## Implementation - Class
 
 critcl::class::define ::struct::stack {
     # # ## ### ##### ######## ############# #####################
@@ -185,9 +188,22 @@ critcl::class::define ::struct::stack {
 	      "insufficient items on stack to fulfill request",
 	      NULL);
 	    return 0;
-	} else {
-	    return cstack_top (instance);
 	}
+
+	return cstack_top (instance);
+    }
+
+    method bottom proc {} sTcl_Obj* {
+	long int n = cstack_size (instance);
+
+	if (!n) {
+	    Tcl_AppendResult (interp,
+	      "insufficient items on stack to fulfill request",
+	      NULL);
+	    return 0;
+	}
+
+	return cstack_bottom (instance);
     }
 
     method at proc {stackindex at} sTcl_Obj* {
@@ -257,22 +273,31 @@ critcl::class::define ::struct::stack {
     # # ## ### ##### ######## ############# #####################
 
     method clear proc {} void {
-	cstack_pop (instance, cstack_size (instance));
+	cstack_clear (instance);
     }
 
     method push command {item ?item ...?} {
 	int i;
+	CSLICE sl;
 
 	if (objc < 3) {
 	    Tcl_WrongNumArgs (interp, 2, objv, "item ...");
 	    return TCL_ERROR;
 	}
 
+	/* Even with a slice to bulk-push
+	 * we still need a loop to fix the
+	 * ref counts proper.
+	 */
+
+	sl = cslice_create (objc-2, objv+2);
+	cstack_push_slice (instance, sl);
+
 	for (i = 2; i < objc; i++) {
-	    cstack_push (instance, objv[i]);
 	    Tcl_IncrRefCount (objv[i]);
 	}
 
+	cslice_destroy (sl);
 	return TCL_OK;
     }
 
