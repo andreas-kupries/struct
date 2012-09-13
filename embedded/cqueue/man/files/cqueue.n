@@ -1,5 +1,5 @@
 '\"
-'\" Generated from file '/net/nas/data/andreask/Dev/Struct/struct/embedded/cstack/man/files/cstack.n' by tcllib/doctools with format 'nroff'
+'\" Generated from file '/net/nas/data/andreask/Dev/Struct/struct/embedded/cqueue/man/files/cqueue.n' by tcllib/doctools with format 'nroff'
 '\"
 '\" The definitions below are for supplemental macros used in Tcl/Tk
 '\" manual entries.
@@ -237,58 +237,60 @@ Database Class:	\\fB\\$3\\fR
 .de UL
 \\$1\l'|0\(ul'\\$2
 ..
-.TH "c::stack" n 1 cstack "Tcl Data Structures"
+.TH "c::queue" n 1 cqueue "Tcl Data Structures"
 .BS
 .SH NAME
-c::stack \- Create and manipulate stacks
+c::queue \- Create and manipulate queues
 .SH SYNOPSIS
 package require \fBTcl  8.5\fR
 .sp
 package require \fBc::slice  ?1?\fR
 .sp
-package require \fBc::stack  ?1?\fR
+package require \fBc::queue  ?1?\fR
 .sp
-\fBCSTACK\fR \fBcstack_create\fR ( \fBCSTACK_CELL_FREE\fR \fIfun\fR, \fBvoid*\fR \fIclientdata\fR )
+\fBCQUEUE\fR \fBcqueue_create\fR ( \fBCQUEUE_CELL_FREE\fR \fIfun\fR, \fBvoid*\fR \fIclientdata\fR )
 .sp
-void \fBcstack_destroy\fR ( \fBCSTACK\fR \fIs\fR )
+void \fBcqueue_destroy\fR ( \fBCQUEUE\fR \fIq\fR )
 .sp
-\fBlong int\fR \fBcstack_size\fR ( \fBCSTACK\fR \fIs\fR )
+\fBlong int\fR \fBcqueue_size\fR ( \fBCQUEUE\fR \fIq\fR )
 .sp
-void \fBcstack_top\fR ( \fBCSTACK\fR \fIs\fR )
+void \fBcqueue_first\fR ( \fBCQUEUE\fR \fIq\fR )
 .sp
-void \fBcstack_bottom\fR ( \fBCSTACK\fR \fIs\fR )
+void \fBcqueue_last\fR ( \fBCQUEUE\fR \fIq\fR )
 .sp
-void \fBcstack_at\fR ( \fBCSTACK\fR \fIs\fR \fBlong int\fR \fIi\fR)
+\fBCSLICE\fR \fBcqueue_head\fR ( \fBCQUEUE\fR \fIq\fR, \fBlong int\fR \fIn\fR )
 .sp
-void \fBcstack_atr\fR ( \fBCSTACK\fR \fIs\fR \fBlong int\fR \fIi\fR)
+\fBCSLICE\fR \fBcqueue_tail\fR ( \fBCQUEUE\fR \fIq\fR, \fBlong int\fR \fIn\fR )
 .sp
-\fBCSLICE\fR \fBcstack_get\fR ( \fBCSTACK\fR \fIs\fR, \fBlong int\fR \fIat\fR, \fBlong int\fR \fIn\fR )
+\fBCSLICE\fR \fBcqueue_get\fR ( \fBCQUEUE\fR \fIq\fR, \fBlong int\fR \fIat\fR, \fBlong int\fR \fIn\fR )
 .sp
-\fBCSLICE\fR \fBcstack_getr\fR ( \fBCSTACK\fR \fIs\fR, \fBlong int\fR \fIat\fR, \fBlong int\fR \fIn\fR )
+void \fBcqueue_append\fR ( \fBCQUEUE\fR \fIq\fR, \fBvoid*\fR \fIitem\fR )
 .sp
-void \fBcstack_push\fR ( \fBCSTACK\fR \fIs\fR, \fBvoid*\fR \fIitem\fR )
+void \fBcqueue_prepend\fR ( \fBCQUEUE\fR \fIq\fR, \fBvoid*\fR \fIitem\fR )
 .sp
-void \fBcstack_push_slice\fR ( \fBCSTACK\fR \fIs\fR, \fBCSLICE\fR \fIsl\fR )
+void \fBcqueue_append_slice\fR ( \fBCQUEUE\fR \fIq\fR, \fBCSLICE\fR \fIsl\fR )
 .sp
-void \fBcstack_pop\fR ( \fBCSTACK\fR \fIs\fR, \fBlong int\fR \fIn\fR )
+void \fBcqueue_prepend_slice\fR ( \fBCQUEUE\fR \fIq\fR, \fBCSLICE\fR \fIsl\fR )
 .sp
-void \fBcstack_clear\fR ( \fBCSTACK\fR \fIs\fR )
+void \fBcqueue_remove_head\fR ( \fBCQUEUE\fR \fIq\fR, \fBlong int\fR \fIn\fR )
 .sp
-void \fBcstack_trim\fR ( \fBCSTACK\fR \fIs\fR, \fBlong int\fR \fIn\fR )
+void \fBcqueue_remove_tail\fR ( \fBCQUEUE\fR \fIq\fR, \fBlong int\fR \fIn\fR )
 .sp
-void \fBcstack_drop\fR ( \fBCSTACK\fR \fIs\fR, \fBlong int\fR \fIn\fR )
+void \fBcqueue_clear\fR ( \fBCQUEUE\fR \fIq\fR )
 .sp
-void \fBcstack_drop_all\fR ( \fBCSTACK\fR \fIs\fR )
+void \fBcqueue_drop_head\fR ( \fBCQUEUE\fR \fIq\fR, \fBlong int\fR \fIn\fR )
 .sp
-void \fBcstack_rol\fR ( \fBCSTACK\fR \fIs\fR, \fBlong int\fR \fIn\fR, \fBlong int\fR \fIstep\fR )
+void \fBcqueue_drop_tail\fR ( \fBCQUEUE\fR \fIq\fR, \fBlong int\fR \fIn\fR )
 .sp
-void \fBcstack_move\fR ( \fBCSTACK\fR \fIs\fR, \fBCSTACK\fR \fIsrc\fR, \fBlong int\fR \fIn\fR )
+void \fBcqueue_drop_all\fR ( \fBCQUEUE\fR \fIq\fR )
 .sp
-void \fBcstack_move_all\fR ( \fBCSTACK\fR \fIs\fR, \fBCSTACK\fR \fIsrc\fR )
+void \fBcqueue_move\fR ( \fBCQUEUE\fR \fIq\fR, \fBCQUEUE\fR \fIsrc\fR, \fBlong int\fR \fIn\fR )
 .sp
-void \fBcstack_clientdata_set\fR ( \fBCSTACK\fR \fIs\fR, \fBvoid*\fR \fIclientdata\fR )
+void \fBcqueue_move_all\fR ( \fBCQUEUE\fR \fIq\fR, \fBCQUEUE\fR \fIsrc\fR )
 .sp
-void* \fBcstack_clientdata_get\fR ( \fBCSTACK\fR \fIs\fR )
+void \fBcqueue_clientdata_set\fR ( \fBCQUEUE\fR \fIq\fR, \fBvoid*\fR \fIclientdata\fR )
+.sp
+void* \fBcqueue_clientdata_get\fR ( \fBCQUEUE\fR \fIq\fR )
 .sp
 .BE
 .SH DESCRIPTION
@@ -297,152 +299,140 @@ Welcome to Struct, a set of packages providing various data structures
 to Tcl, and additional operations for existing Tcl structures.
 .PP
 This package provides a basic C API for the creation and use of
-stacks. It does provide neither Tcl commands nor other items visible
+queues. It does provide neither Tcl commands nor other items visible
 at script level.
 .PP
 The package is meant to be used by other C level data structure
 packages, either internally, or providing a Tcl level API to it. An
-example of the former is the package \fBc::queue\fR which uses
-several stacks inside of each queue. An example of the latter is the C
-implementation of package \fBstruct::stack\fR.
+example of the latter is the C implementation of package
+\fBstruct::queue\fR.
 .PP
 To support this the package provides its C API by means of a
 stubs table which can be imported.
 .SH API
 .TP
-\fBCSTACK\fR \fBcstack_create\fR ( \fBCSTACK_CELL_FREE\fR \fIfun\fR, \fBvoid*\fR \fIclientdata\fR )
-This function creates and initializes a new stack object and returns
+\fBCQUEUE\fR \fBcqueue_create\fR ( \fBCQUEUE_CELL_FREE\fR \fIfun\fR, \fBvoid*\fR \fIclientdata\fR )
+This function creates and initializes a new queue object and returns
 its handle. The client-data is simply stored and available upon
-request, see function \fBcstack_clientdata_get\fR below.
+request, see function \fBcqueue_clientdata_get\fR below.
 .sp
 The free function \fBfun\fR is for the release of memory
-associated with the cells of the new stack. It may be NULL.
+associated with the cells of the new queue. It may be NULL.
 .TP
-void \fBcstack_destroy\fR ( \fBCSTACK\fR \fIs\fR )
-This function destroys the specified stack object, releasing all
+void \fBcqueue_destroy\fR ( \fBCQUEUE\fR \fIq\fR )
+This function destroys the specified queue object, releasing all
 allocated memory.
 .sp
 The cell release function is called for all cells left in the
-stack.
+queue.
 .TP
-\fBlong int\fR \fBcstack_size\fR ( \fBCSTACK\fR \fIs\fR )
-This function returns the number of cells in the stack.
+\fBlong int\fR \fBcqueue_size\fR ( \fBCQUEUE\fR \fIq\fR )
+This function returns the number of cells in the queue.
 .TP
-void \fBcstack_top\fR ( \fBCSTACK\fR \fIs\fR )
-This function returns the topmost cell in the stack.
+void \fBcqueue_first\fR ( \fBCQUEUE\fR \fIq\fR )
+This function returns the first cell in the queue.
 .sp
-The code asserts that the stack is not empty.
+The code asserts that the queue is not empty.
 .TP
-void \fBcstack_bottom\fR ( \fBCSTACK\fR \fIs\fR )
-This function returns the bottom-most cell in the stack.
+void \fBcqueue_last\fR ( \fBCQUEUE\fR \fIq\fR )
+This function returns the last cell in the queue.
 .sp
-The code asserts that the stack is not empty.
+The code asserts that the queue is not empty.
 .TP
-void \fBcstack_at\fR ( \fBCSTACK\fR \fIs\fR \fBlong int\fR \fIi\fR)
-This function returns the indexed cell in the stack.
-.sp
-The code asserts that the stack is not empty, and that the
-index is in the proper range.
-.sp
-Index \fB0\fR         addresses the topmost cell, whereas
-.sp
-index 'cstack_size()-1' addresses the bottommost cell.
+\fBCSLICE\fR \fBcqueue_head\fR ( \fBCQUEUE\fR \fIq\fR, \fBlong int\fR \fIn\fR )
+This function returns the first \fIn\fR cells in the queue as a slice,
+with the first cell of the queue as the first element of the slice
+(natural internal order).
 .TP
-void \fBcstack_atr\fR ( \fBCSTACK\fR \fIs\fR \fBlong int\fR \fIi\fR)
-This function is a variant of function \fBcstack_at\fR above,
-returning the indexed cell in the stack.
-.sp
-In contrast to the former the indexing is reversed. I.e.:
-.sp
-Index 'cstack_size()-1' addresses the topmost cell, whereas
-.sp
-index \fB0\fR         addresses the bottommost cell.
+\fBCSLICE\fR \fBcqueue_tail\fR ( \fBCQUEUE\fR \fIq\fR, \fBlong int\fR \fIn\fR )
+This function returns the last \fIn\fR cells in the queue as a slice,
+with the last cell of the queue as the last element of the slice
+(natural internal order).
 .TP
-\fBCSLICE\fR \fBcstack_get\fR ( \fBCSTACK\fR \fIs\fR, \fBlong int\fR \fIat\fR, \fBlong int\fR \fIn\fR )
+\fBCSLICE\fR \fBcqueue_get\fR ( \fBCQUEUE\fR \fIq\fR, \fBlong int\fR \fIat\fR, \fBlong int\fR \fIn\fR )
 This function returns the \fIn\fR cells starting at index \fIat\fR in
-the stack as a slice, with the topmost cell of the stack as the last
+the queue as a slice, with the first cell in the queue as the first
 element of the slice (natural internal order).
 .sp
-The indexing is the same as for function \fBcstack_at\fR above.
+The indexing uses the natural internal order:
 .sp
-Index \fB0\fR         addresses the topmost cell, whereas
+Index \fB0\fR         addresses the first cell, whereas
 .sp
-index 'cstack_size()-1' addresses the bottommost cell.
+index 'cqueue_size()-1' addresses the last cell.
 .TP
-\fBCSLICE\fR \fBcstack_getr\fR ( \fBCSTACK\fR \fIs\fR, \fBlong int\fR \fIat\fR, \fBlong int\fR \fIn\fR )
-This function is a variant of function \fBcstack_get\fR above,
-returning the indexed slice in the stack.
-.sp
-In contrast to the former the indexing is reversed. I.e.:
-.sp
-Index 'cstack_size()-1' addresses the topmost cell, whereas
-.sp
-index \fB0\fR         addresses the bottommost cell.
-.sp
-Note that this does not affect the ordering in the slice
-itself, which has the topmost cell of the stack as the last element of
-the slice (natural internal order).
+void \fBcqueue_append\fR ( \fBCQUEUE\fR \fIq\fR, \fBvoid*\fR \fIitem\fR )
+This function adds the \fIitem\fR to the queue, at the end.
 .TP
-void \fBcstack_push\fR ( \fBCSTACK\fR \fIs\fR, \fBvoid*\fR \fIitem\fR )
-This function pushes the \fIitem\fR onto the stack.
+void \fBcqueue_prepend\fR ( \fBCQUEUE\fR \fIq\fR, \fBvoid*\fR \fIitem\fR )
+This function adds the \fIitem\fR to the queue, at the head.
 .TP
-void \fBcstack_push_slice\fR ( \fBCSTACK\fR \fIs\fR, \fBCSLICE\fR \fIsl\fR )
-This function pushes all items in the slice onto the stack.
-It is a convenience function reducing the number of calls
-to  \fBcstack_push\fR for bulk operations.
+void \fBcqueue_append_slice\fR ( \fBCQUEUE\fR \fIq\fR, \fBCSLICE\fR \fIsl\fR )
+This function adds all items in the slice to the queue, at the end, in
+slice order (keeping their order in the queue). It is a convenience
+function reducing the number of calls to \fBcqueue_append\fR for bulk
+operations.
 .TP
-void \fBcstack_pop\fR ( \fBCSTACK\fR \fIs\fR, \fBlong int\fR \fIn\fR )
-This function removes the \fIn\fR topmost cells from the stack.
+void \fBcqueue_prepend_slice\fR ( \fBCQUEUE\fR \fIq\fR, \fBCSLICE\fR \fIsl\fR )
+This function adds all items in the slice to the queue, at the head, in
+slice order (reversing their order in the queue). It is a convenience
+function reducing the number of calls to \fBcqueue_prepend\fR for bulk
+operations.
+.TP
+void \fBcqueue_remove_head\fR ( \fBCQUEUE\fR \fIq\fR, \fBlong int\fR \fIn\fR )
+This function removes the first \fIn\fR cells from the queue.
 .sp
 The cell release function is called for all removed cells.
-This is in contrast to function \fBcstack_drop\fR below.
+This is in contrast to function \fBcqueue_drop_head\fR below.
 .TP
-void \fBcstack_clear\fR ( \fBCSTACK\fR \fIs\fR )
-This convenience function is a variant \fBcstack_pop\fR which removes
-all cells from the stack.
-After the operation \fIs\fR is empty.
-.TP
-void \fBcstack_trim\fR ( \fBCSTACK\fR \fIs\fR, \fBlong int\fR \fIn\fR )
-This function removes cells until the stack contains only \fIn\fR
-cells. If the stack had less cells to begin with nothing is done.
+void \fBcqueue_remove_tail\fR ( \fBCQUEUE\fR \fIq\fR, \fBlong int\fR \fIn\fR )
+This function removes the last \fIn\fR cells from the queue.
 .sp
 The cell release function is called for all removed cells.
+This is in contrast to function \fBcqueue_drop_tail\fR below.
 .TP
-void \fBcstack_drop\fR ( \fBCSTACK\fR \fIs\fR, \fBlong int\fR \fIn\fR )
-This function drops the \fIn\fR topmost cells from the stack.
+void \fBcqueue_clear\fR ( \fBCQUEUE\fR \fIq\fR )
+This convenience function is a variant \fBcqueue_remove_head\fR which
+removes all cells from the queue.
+After the operation \fIq\fR is empty.
+.TP
+void \fBcqueue_drop_head\fR ( \fBCQUEUE\fR \fIq\fR, \fBlong int\fR \fIn\fR )
+This function drops the first \fIn\fR cells from the queue.
 .sp
 \fINote:\fR The cell release function is \fInot\fR called for
-the removed cells. This is in contrast to function \fBcstack_pop\fR
+the removed cells. This is in contrast to function \fBcqueue_remove_head\fR
 above.
 .TP
-void \fBcstack_drop_all\fR ( \fBCSTACK\fR \fIs\fR )
-This convenience function is a variant of \fBcstack_drop\fR which
-drops all cells from the stack.
-After the operation \fIs\fR is empty.
+void \fBcqueue_drop_tail\fR ( \fBCQUEUE\fR \fIq\fR, \fBlong int\fR \fIn\fR )
+This function drops the last \fIn\fR cells from the queue.
+.sp
+\fINote:\fR The cell release function is \fInot\fR called for
+the removed cells. This is in contrast to function \fBcqueue_remove_tail\fR
+above.
 .TP
-void \fBcstack_rol\fR ( \fBCSTACK\fR \fIs\fR, \fBlong int\fR \fIn\fR, \fBlong int\fR \fIstep\fR )
-This function rotates the \fIn\fR topmost cells in the stack by
-\fIstep\fR elements.
+void \fBcqueue_drop_all\fR ( \fBCQUEUE\fR \fIq\fR )
+This convenience function is a variant of \fBcqueue_drop_head\fR which
+drops all cells from the queue.
+After the operation \fIq\fR is empty.
 .TP
-void \fBcstack_move\fR ( \fBCSTACK\fR \fIs\fR, \fBCSTACK\fR \fIsrc\fR, \fBlong int\fR \fIn\fR )
-This function moves the \fIn\fR topmost cells in the stack \fIsrc\fR
-to the stack \fIs\fR. This reverses their order.
+void \fBcqueue_move\fR ( \fBCQUEUE\fR \fIq\fR, \fBCQUEUE\fR \fIsrc\fR, \fBlong int\fR \fIn\fR )
+This function moves the first \fIn\fR cells in the queue \fIsrc\fR
+to the queue \fIq\fR, adding them at the end. This keeps their order.
 As the cells are not destroyed the release function is not called.
 .sp
-As a basic precaution the release functions of both stacks are
+As a basic precaution the release functions of both queues are
 compared, and have to match. The code will assert this and panic if
 the condition is not true.
 .TP
-void \fBcstack_move_all\fR ( \fBCSTACK\fR \fIs\fR, \fBCSTACK\fR \fIsrc\fR )
-This convenience function is a variant of \fBcstack_move\fR which
+void \fBcqueue_move_all\fR ( \fBCQUEUE\fR \fIq\fR, \fBCQUEUE\fR \fIsrc\fR )
+This convenience function is a variant of \fBcqueue_move\fR which
 moves all cells of the source to the destination. After the operation
 \fIsrc\fR is empty.
 .TP
-void \fBcstack_clientdata_set\fR ( \fBCSTACK\fR \fIs\fR, \fBvoid*\fR \fIclientdata\fR )
-This function sets new client data into the stack.
+void \fBcqueue_clientdata_set\fR ( \fBCQUEUE\fR \fIq\fR, \fBvoid*\fR \fIclientdata\fR )
+This function sets new client data into the queue.
 .TP
-void* \fBcstack_clientdata_get\fR ( \fBCSTACK\fR \fIs\fR )
-This function returns the client data currently stored in the stack.
+void* \fBcqueue_clientdata_get\fR ( \fBCQUEUE\fR \fIq\fR )
+This function returns the client data currently stored in the queue.
 .PP
 .SH LICENSE
 This package, written by Andreas Kupries, is BSD licensed.
@@ -454,6 +444,6 @@ Please report such at the
 Please also report any ideas for enhancements you may have for either
 package and/or documentation.
 .SH KEYWORDS
-data structures, lifo, stack
+data structures, lifo, queue
 .SH CATEGORY
 Data structures

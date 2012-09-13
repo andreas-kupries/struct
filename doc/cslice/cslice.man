@@ -24,8 +24,8 @@ stubs table which can be imported.
 [list_begin definitions]
 
 [comment {- - -- --- ----- -------- ------------- ---------------------}]
-[call [type CSLICE] [fun cslice_create] ( [type void**] [arg cells], \
-	[type int] [arg n] )]
+[call [type CSLICE] [fun cslice_create] ( [type {long int}] [arg cc], \
+	[type void**] [arg cv] )]
 
 This function creates and initializes a slice object with the
 specified slice of an array of cells. The return value of the function
@@ -39,8 +39,8 @@ allocated memory.
 
 [comment {- - -- --- ----- -------- ------------- ---------------------}]
 [call void [fun cslice_get] ( [type CSLICE] [arg s], \
-	[type void***] [arg cells], \
-	[type int*] [arg n] )]
+	[type {long int*}] [arg cc], \
+	[type void***] [arg cv] )]
 
 This function provides access to the slice of cells contained in the
 specified slice object.

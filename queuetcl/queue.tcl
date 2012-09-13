@@ -21,16 +21,16 @@ oo::class create ::struct::queue {
     # - The list of elements new elements are added to.
     # - The list of elements which are put back.
 
-    variable myreturn myat myappend myunget
+    variable mymiddle myat mytail myhead
 
     # # ## ### ##### ######## ############# #####################
     ## Lifecycle management.
 
     constructor {} {
 	set myat     0
-	set myreturn {}
-	set myappend {}
-	set myunget  {}
+	set mymiddle {}
+	set mytail {}
+	set myhead  {}
 	return
     }
 
@@ -38,7 +38,7 @@ oo::class create ::struct::queue {
     ## Accessors
 
     method size {} {
-	return [expr { [llength $myreturn] + [llength $myappend] + [llength $myunget] - $myat }]
+	return [expr { [llength $mymiddle] + [llength $mytail] + [llength $myhead] - $myat }]
     }
 
     method get {{n 1}} {
@@ -56,20 +56,20 @@ oo::class create ::struct::queue {
 	# buffer alone does not have enough.
 
 	set missing $n
-	if {[llength $myunget]} {
+	if {[llength $myhead]} {
 	    # Pull from the unget buffer first.
-	    set k [llength $myunget]
+	    set k [llength $myhead]
 	    if {$missing >= $k} {
 		# We need equal or more than is in this buffer. We take everything.
-		lappend result {*}[lreverse $myunget]
+		lappend result {*}[lreverse $myhead]
 		incr missing -$k
-		set myunget {}
+		set myhead {}
 	    } else {
 		# This buffer contains more than the whole request.
 		incr missing -1
-		lappend result {*}[lreverse [lrange $myunget end-$missing end]]
+		lappend result {*}[lreverse [lrange $myhead end-$missing end]]
 		incr missing
-		set myunget [lrange $myunget 0 end-$missing]
+		set myhead [lrange $myhead 0 end-$missing]
 		set missing 0
 	    }
 	}
@@ -80,11 +80,11 @@ oo::class create ::struct::queue {
 	foreach _ {0 1} {
 	    if {$missing} {
 		# Try the regular return buffer next, if needed.
-		set k [expr {[llength $myreturn] - $myat}]
+		set k [expr {[llength $mymiddle] - $myat}]
 		if {$missing >= $k} {
 		    # We need equal or more than is found in this
 		    # buffer. We take everything. And shift (*).
-		    lappend result {*}[lrange $myreturn $myat end]
+		    lappend result {*}[lrange $mymiddle $myat end]
 		    incr missing -$k
 		    my Shift
 		} else {
@@ -92,7 +92,7 @@ oo::class create ::struct::queue {
 		    set  stop $myat
 		    incr stop $missing
 		    incr stop -1
-		    lappend result {*}[lrange $myreturn $myat $stop]
+		    lappend result {*}[lrange $mymiddle $myat $stop]
 		    incr stop
 		    set myat $stop
 		    set missing 0
@@ -132,51 +132,51 @@ oo::class create ::struct::queue {
 	# buffer alone does not have enough.
 
 	set missing $n
-	if {[llength $myunget]} {
+	if {[llength $myhead]} {
 	    # Pull from the unget buffer first.
-	    set k [llength $myunget]
+	    set k [llength $myhead]
 	    if {$missing >= $k} {
 		# We need equal or more than is in this buffer. We take everything.
-		lappend result {*}[lreverse $myunget]
+		lappend result {*}[lreverse $myhead]
 		incr missing -$k
 	    } else {
 		# This buffer contains more than the whole request.
 		incr missing -1
-		lappend result {*}[lreverse [lrange $myunget end-$missing end]]
+		lappend result {*}[lreverse [lrange $myhead end-$missing end]]
 		set missing 0
 	    }
 	}
 
 	if {$missing} {
 	    # Try the regular return buffer next, if needed.
-	    set k [expr {[llength $myreturn] - $myat}]
+	    set k [expr {[llength $mymiddle] - $myat}]
 	    if {$missing >= $k} {
 		# We need equal or more than is found in this
 		# buffer. We take everything.
-		lappend result {*}[lrange $myreturn $myat end]
+		lappend result {*}[lrange $mymiddle $myat end]
 		incr missing -$k
 	    } else {
 		# This buffer contains more than the whole request.
 		set  stop $myat
 		incr stop $missing
 		incr stop -1
-		lappend result {*}[lrange $myreturn $myat $stop]
+		lappend result {*}[lrange $mymiddle $myat $stop]
 		set missing 0
 	    }
 	}
 
 	if {$missing} {
 	    # At last check the append buffer, if needed
-	    set k [llength $myappend]
+	    set k [llength $mytail]
 	    if {$missing >= $k} {
 		# We need equal or more than is found in this
 		# buffer. We take everything.
-		lappend result {*}$myappend
+		lappend result {*}$mytail
 		incr missing -$k
 	    } else {
 		# This buffer contains more than the whole request.
 		incr missing -1
-		lappend result {*}[lrange $myappend 0 $missing]
+		lappend result {*}[lrange $mytail 0 $missing]
 		set missing 0
 	    }
 	}
@@ -198,19 +198,19 @@ oo::class create ::struct::queue {
 
     method clear {} {
 	set myat     0
-	set myreturn {}
-	set myappend {}
-	set myunget  {}
+	set mymiddle {}
+	set mytail {}
+	set myhead  {}
 	return
     }
 
     method put {item args} {
-	lappend myappend $item {*}$args
+	lappend mytail $item {*}$args
 	return
     }
 
     method unget {item args} {
-	lappend myunget $item {*}$args
+	lappend myhead $item {*}$args
 	return
     }
 
@@ -218,8 +218,8 @@ oo::class create ::struct::queue {
 
     method Shift {} {
 	set myat 0
-	set myreturn $myappend
-	set myappend {}
+	set mymiddle $mytail
+	set mytail {}
 	return
     }
 

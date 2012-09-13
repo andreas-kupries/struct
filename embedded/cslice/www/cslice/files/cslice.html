@@ -125,9 +125,9 @@
 <li>package require <b class="pkgname">c::slice <span class="opt">?1?</span></b></li>
 </ul>
 <ul class="syntax">
-<li><a href="#1"><b class="type">CSLICE</b> <b class="function">cslice_create</b> ( <b class="type">void**</b> <i class="arg">cells</i>, <b class="type">int</b> <i class="arg">n</i> )</a></li>
+<li><a href="#1"><b class="type">CSLICE</b> <b class="function">cslice_create</b> ( <b class="type">long int</b> <i class="arg">cc</i>, <b class="type">void**</b> <i class="arg">cv</i> )</a></li>
 <li><a href="#2">void <b class="function">cslice_destroy</b> ( <b class="type">CSLICE</b> <i class="arg">s</i> )</a></li>
-<li><a href="#3">void <b class="function">cslice_get</b> ( <b class="type">CSLICE</b> <i class="arg">s</i>, <b class="type">void***</b> <i class="arg">cells</i>, <b class="type">int*</b> <i class="arg">n</i> )</a></li>
+<li><a href="#3">void <b class="function">cslice_get</b> ( <b class="type">CSLICE</b> <i class="arg">s</i>, <b class="type">long int*</b> <i class="arg">cc</i>, <b class="type">void***</b> <i class="arg">cv</i> )</a></li>
 <li><a href="#4">void <b class="function">cslice_revers</b> ( <b class="type">CSLICE</b> <i class="arg">s</i> )</a></li>
 <li><a href="#5">void <b class="function">cslice_concat</b> ( <b class="type">CSLICE</b> <i class="arg">a</i> <b class="type">CSLICE</b> <i class="arg">b</i> )</a></li>
 </ul>
@@ -147,14 +147,14 @@ stubs table which can be imported.</p>
 </div>
 <div id="section2" class="section"><h2><a name="section2">API</a></h2>
 <dl class="definitions">
-<dt><a name="1"><b class="type">CSLICE</b> <b class="function">cslice_create</b> ( <b class="type">void**</b> <i class="arg">cells</i>, <b class="type">int</b> <i class="arg">n</i> )</a></dt>
+<dt><a name="1"><b class="type">CSLICE</b> <b class="function">cslice_create</b> ( <b class="type">long int</b> <i class="arg">cc</i>, <b class="type">void**</b> <i class="arg">cv</i> )</a></dt>
 <dd><p>This function creates and initializes a slice object with the
 specified slice of an array of cells. The return value of the function
 is the handle of the new slice object.</p></dd>
 <dt><a name="2">void <b class="function">cslice_destroy</b> ( <b class="type">CSLICE</b> <i class="arg">s</i> )</a></dt>
 <dd><p>This function destroys the specified slice object, releasing all
 allocated memory.</p></dd>
-<dt><a name="3">void <b class="function">cslice_get</b> ( <b class="type">CSLICE</b> <i class="arg">s</i>, <b class="type">void***</b> <i class="arg">cells</i>, <b class="type">int*</b> <i class="arg">n</i> )</a></dt>
+<dt><a name="3">void <b class="function">cslice_get</b> ( <b class="type">CSLICE</b> <i class="arg">s</i>, <b class="type">long int*</b> <i class="arg">cc</i>, <b class="type">void***</b> <i class="arg">cv</i> )</a></dt>
 <dd><p>This function provides access to the slice of cells contained in the
 specified slice object.</p></dd>
 <dt><a name="4">void <b class="function">cslice_revers</b> ( <b class="type">CSLICE</b> <i class="arg">s</i> )</a></dt>

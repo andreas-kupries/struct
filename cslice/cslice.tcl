@@ -1,8 +1,9 @@
 # cslice.tcl --
 #
-#	Low-level slice data structure. Supporting data structure for
-#	stacks, queues, and any other data structure making use of
-#	arrays of cells. The slice represents a part of such arrays.
+#	Low-level 'slice of cells' data structure. A supporting data
+#	structure for stacks, queues, and any other data structure
+#	making use of arrays of cells. The slice represents a part of
+#	such arrays.
 #
 # Copyright (c) 2012 Andreas Kupries <andreas_kupries@users.sourceforge.net>
 
@@ -45,9 +46,9 @@ critcl::cheaders   csliceInt.h
 # - Dispose of a slice.
 # - Access the data in the slice.
 
-critcl::api function CSLICE cslice_create  {void** cells {long int} n}
+critcl::api function CSLICE cslice_create  {{long int} cc void** cv}
 critcl::api function void   cslice_destroy {CSLICE s}
-critcl::api function void   cslice_get     {CSLICE s void*** cell {long int *} n}
+critcl::api function void   cslice_get     {CSLICE s {long int *} cc void*** cv}
 critcl::api function CSLICE cslice_reverse {CSLICE s}
 critcl::api function CSLICE cslice_concat  {CSLICE a CSLICE b}
 
@@ -59,18 +60,18 @@ critcl::ccode {
     #include <string.h>
 
     CSLICE
-    cslice_create ( void**           cells,
-		    long int         n)
+    cslice_create ( long int cc,
+		    void**   cv )
     {
 	CSLICE s = ALLOC (CSLICE_);
-	s->n = n;
+	s->n = cc;
 
 	/* Initial slices are always in the same direction as the
 	 * input array. We simply copy the pointer, and remember
 	 * that it is not allocated.
 	 */
 
-	s->cell    = cells;
+	s->cell    = cv;
 	s->dynamic = 0;
 	return s;
     }
@@ -86,11 +87,11 @@ critcl::ccode {
 
     void
     cslice_get ( CSLICE    s,
-		 void***   cells,
-		 long int* n)
+		 long int* cc,
+		 void***   cv )
     {
-	*cells = s->cell;
-	*n     = s->n;
+	*cc = s->n;
+	*cv = s->cell;
     }
 
     CSLICE

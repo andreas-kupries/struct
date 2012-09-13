@@ -88,7 +88,7 @@ cstack_get (CSTACK s, long int at, long int n)
     ASSERT_BOUNDS (at,              s->top);
     ASSERT_BOUNDS (s->top-at-1+n-1, s->top);
 
-    return cslice_create (s->cell + (s->top - at - 1), n);
+    return cslice_create (n, s->cell + (s->top - at - 1));
 }
 
 CSLICE
@@ -101,7 +101,7 @@ cstack_getr (CSTACK s, long int at, long int n)
     ASSERT_BOUNDS (at,     s->top);
     ASSERT_BOUNDS (at+n-1, s->top);
 
-    return cslice_create (s->cell + at, n);
+    return cslice_create (n, s->cell + at);
 }
 
 /*
@@ -125,6 +125,31 @@ cstack_push (CSTACK s, void* item)
 }
 
 void
+cstack_push_slice (CSTACK s, CSLICE sl)
+{
+    void** cell;
+    long int n, i, need;
+
+    cslice_get (sl, &n, &cell);
+    need = s->top + n;
+
+    if (need >= s->max) {
+	long int expand = s->max ? (2 * s->max) : CSTACK_INITIAL_SIZE;
+	long int new = MAX (need, expand);
+	void**   cell = (void**) ckrealloc ((char*) s->cell, new * sizeof(void*));
+	ASSERT (cell,"Memory allocation failure for cstack");
+	s->max  = new;
+	s->cell = cell;
+    }
+
+    ASSERT_BOUNDS(s->top,s->max);
+    for (i=0;i<n;i++) {
+	s->cell [s->top] = cell [i];
+	s->top ++;
+    }
+}
+
+void
 cstack_pop (CSTACK s, long int n)
 {
     ASSERT (n >= 0, "Bad pop count");
@@ -139,6 +164,20 @@ cstack_pop (CSTACK s, long int n)
 	}
     } else {
 	s->top -= n;
+    }
+}
+
+void
+cstack_clear (CSTACK s)
+{
+    if (s->freeCell) {
+	while (s->top) {
+	    s->top --;
+	    ASSERT_BOUNDS(s->top,s->max);
+	    s->freeCell ( s->cell [s->top] );
+	}
+    } else {
+	s->top = 0;
     }
 }
 
@@ -164,6 +203,12 @@ cstack_drop (CSTACK s, long int n)
     ASSERT (n >= 0, "Bad pop count");
     if (n == 0) return;
     s->top -= n;
+}
+
+void
+cstack_drop_all (CSTACK s)
+{
+    s->top = 0;
 }
 
 void
@@ -195,20 +240,28 @@ cstack_rol (CSTACK s, long int n, long int steps)
 }
 
 void
-cstack_move (CSTACK dst, CSTACK src)
+cstack_move (CSTACK dst, CSTACK src, long int n)
 {
     ASSERT (dst->freeCell == src->freeCell, "Ownership mismatch");
+    ASSERT ((0 < n) && (n <= cstack_size (src)), "Bad move count")
 
     /*
      * Note: The destination takes ownership of the moved cell, thus there is
      * no need to run free on them.
      */
 
-    while (src->top > 0) {
+    while (n > 0) {
 	src->top --;
+	n --;
 	ASSERT_BOUNDS(src->top,src->max);
 	cstack_push (dst, src->cell [src->top] );
     }
+}
+
+void
+cstack_move_all (CSTACK dst, CSTACK src)
+{
+    cstack_move (dst, src, cstack_size (src));
 }
 
 /*

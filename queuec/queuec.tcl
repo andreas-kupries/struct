@@ -1,151 +1,250 @@
 # queuec.tcl --
 #
 #       Implementation of a queue data structure for Tcl.
-#       This code based on critcl, API compatible to the PTI [x].
-#       [x] Pure Tcl Implementation.
+#       This code based on critcl v3.1
+#	API compatible with the implementation in Tcl (8.5+OO)
 #
-# Copyright (c) 2008 Andreas Kupries <andreas_kupries@users.sourceforge.net>
+# Copyright (c) 2012 Andreas Kupries <andreas_kupries@users.sourceforge.net>
 #
 # See the file "license.terms" for information on usage and redistribution
 # of this file, and for a DISCLAIMER OF ALL WARRANTIES.
-#
-# RCS: @(#) $Id: queue_c.tcl,v 1.2 2011/04/21 17:51:55 andreas_kupries Exp $
 
-package require critcl
-# @sak notprovided struct_queuec
-package provide struct_queuec 1.3.1
-package require Tcl 8.4
+# # ## ### ##### ######## ############# #####################
+## Requisites
 
-namespace eval ::struct {
-    # Supporting code for the main command.
+package require Tcl 8.5
+package require critcl 3.1.1
 
-    critcl::cheaders queue/*.h
-    critcl::csources queue/*.c
-
-    critcl::ccode {
-	/* -*- c -*- */
-
-	#include <util.h>
-	#include <q.h>
-	#include <ms.h>
-	#include <m.h>
-
-	/* .................................................. */
-	/* Global queue management, per interp
-	*/
-
-	typedef struct QDg {
-	    long int counter;
-	    char buf [50];
-	} QDg;
-
-	static void
-	QDgrelease (ClientData cd, Tcl_Interp* interp)
-	{
-	    ckfree((char*) cd);
-	}
-
-	static CONST char*
-	QDnewName (Tcl_Interp* interp)
-	{
-#define KEY "tcllib/struct::queue/critcl"
-
-	    Tcl_InterpDeleteProc* proc = QDgrelease;
-	    QDg*                  qdg;
-
-	    qdg = Tcl_GetAssocData (interp, KEY, &proc);
-	    if (qdg  == NULL) {
-		qdg = (QDg*) ckalloc (sizeof (QDg));
-		qdg->counter = 0;
-
-		Tcl_SetAssocData (interp, KEY, proc,
-				  (ClientData) qdg);
-	    }
-	    
-	    qdg->counter ++;
-	    sprintf (qdg->buf, "queue%d", qdg->counter);
-	    return qdg->buf;
-
-#undef  KEY
-	}
-
-	static void
-	QDdeleteCmd (ClientData clientData)
-	{
-	    /* Release the whole queue. */
-	    qu_delete ((Q*) clientData);
-	}
-    }
-
-    # Main command, queue creation.
-
-    critcl::ccommand queue_critcl {dummy interp objc objv} {
-      /* Syntax
-       *  - epsilon                         |1
-       *  - name                            |2
-       */
-
-      CONST char* name;
-      Q*          qd;
-      Tcl_Obj*    fqn;
-      Tcl_CmdInfo ci;
-
-#define USAGE "?name?"
-
-      if ((objc != 2) && (objc != 1)) {
-        Tcl_WrongNumArgs (interp, 1, objv, USAGE);
-        return TCL_ERROR;
-      }
-
-      if (objc < 2) {
-        name = QDnewName (interp);
-      } else {
-        name = Tcl_GetString (objv [1]);
-      }
-
-      if (!Tcl_StringMatch (name, "::*")) {
-        /* Relative name. Prefix with current namespace */
-
-        Tcl_Eval (interp, "namespace current");
-        fqn = Tcl_GetObjResult (interp);
-        fqn = Tcl_DuplicateObj (fqn);
-        Tcl_IncrRefCount (fqn);
-
-        if (!Tcl_StringMatch (Tcl_GetString (fqn), "::")) {
-          Tcl_AppendToObj (fqn, "::", -1);
-        }
-        Tcl_AppendToObj (fqn, name, -1);
-      } else {
-        fqn = Tcl_NewStringObj (name, -1);
-        Tcl_IncrRefCount (fqn);
-      }
-      Tcl_ResetResult (interp);
-
-      if (Tcl_GetCommandInfo (interp,
-                              Tcl_GetString (fqn),
-                              &ci)) {
-        Tcl_Obj* err;
-
-        err = Tcl_NewObj ();
-        Tcl_AppendToObj    (err, "command \"", -1);
-        Tcl_AppendObjToObj (err, fqn);
-        Tcl_AppendToObj    (err, "\" already exists, unable to create queue", -1);
-
-        Tcl_DecrRefCount (fqn);
-        Tcl_SetObjResult (interp, err);
-        return TCL_ERROR;
-      }
-
-      qd = qu_new();
-      qd->cmd = Tcl_CreateObjCommand (interp, Tcl_GetString (fqn),
-				      qums_objcmd, (ClientData) qd,
-				      QDdeleteCmd);
-
-      Tcl_SetObjResult (interp, fqn);
-      Tcl_DecrRefCount (fqn);
-      return TCL_OK;
-    }
+critcl::buildrequirement {
+    package require critcl::class 1.0.3 ; # DSL, easy spec of Tcl class/object commands.
 }
+
+# # ## ### ##### ######## ############# #####################
+## Administrivia
+
+critcl::license {Andreas Kupries} {BSD licensed}
+
+critcl::summary {Queue objects for Tcl.}
+
+critcl::description {
+    This package implements queue objects for Tcl. It uses the abstract
+    data type provided by package 'c::queue' to handle actual storage
+    and operations.
+}
+
+critcl::subject {double-sided queue}
+critcl::subject {double-sided fifo}
+critcl::subject queue fifo stack lifo
+critcl::subject {data structure}
+critcl::subject structure
+critcl::subject {abstract data structure}
+critcl::subject {generic data structure}
+
+critcl::api import c::slice 1
+critcl::api import c::queue 1
+
+critcl::tsources policy.tcl
+
+# # ## ### ##### ######## ############# #####################
+## Implementation
+
+critcl::argtype queuesize {
+    if (Tcl_GetIntFromObj (interp, @@, &@A) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    if (@A < 0) {
+	Tcl_AppendResult (interp, "invalid size ",
+			  Tcl_GetString (@@),
+			  NULL);
+	return TCL_ERROR;
+    }
+} int int
+
+critcl::argtype queueindex {
+    if (Tcl_GetIntFromObj (interp, @@, &@A) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    if ((@A < 0) || (cqueue_size ((CQUEUE) cd) <= @A)) {
+	Tcl_AppendResult (interp, "invalid index ",
+			  Tcl_GetString (@@),
+			  NULL);
+	return TCL_ERROR;
+    }
+} int int
+
+critcl::argtype where {
+    const char* where = { "head", "tail", NULL }; 
+    if (Tcl_GetIndexFromObj (interp, @@, where, "location", TCL_EXACT, &@A) != TCL_OK) {
+	return TCL_ERROR;
+    }
+} int int
+
+# Custom definition.
+critcl::resulttype sTcl_Obj* {
+    if (rv == NULL) { return TCL_ERROR; }
+    Tcl_SetObjResult(interp, rv);
+    /* No refcount adjustment */
+    return TCL_OK;
+} Tcl_Obj*
 
 # ### ### ### ######### ######### #########
 ## Ready
+
+critcl::class::define ::struct::queue {
+    # # ## ### ##### ######## ############# #####################
+
+    include c_slice/c_sliceDecls.h ; # API of the generic CSLICE used by CQUEUE.
+    include c_queue/c_queueDecls.h ; # API of the generic CQUEUE we are binding to.
+    type    CQUEUE
+
+    support {
+	/* * ** *** ***** ******** ************* ********************* */
+	/* Cell lifecycle, release */
+
+	static void
+	StructQueueC_FreeCell (void* cell) {
+	    Tcl_DecrRefCount ((Tcl_Obj*) cell);
+	}
+
+	/* * ** *** ***** ******** ************* ********************* */
+	/* Common code for peek, peekr, and pop */
+
+	static int
+	StructQueueC_GetN (CQUEUE instance, Tcl_Interp* interp,
+			   int objc, Tcl_Obj*const* objv, int* n) {
+
+	    if ((objc != 2) && (objc != 3)) {
+		Tcl_WrongNumArgs (interp, 2, objv, "?n?");
+		return TCL_ERROR;
+	    }
+
+	    if (objc == 3) {
+		if (Tcl_GetIntFromObj(interp, objv[2], n) != TCL_OK) {
+		    return TCL_ERROR;
+		} else if (*n < 1) {
+		    Tcl_AppendResult (interp, "invalid item count ",
+				      Tcl_GetString (objv[2]),
+				      NULL);
+		    return TCL_ERROR;
+		}
+	    }
+
+	    if (*n > cqueue_size (instance)) {
+		Tcl_AppendResult (interp,
+			  "insufficient items on queue to fulfill request",
+			  NULL);
+		return TCL_ERROR;
+	    }
+
+	    return TCL_OK;
+	}
+
+	static Tcl_Obj*
+	StructQueueC_Elements (CQUEUE instance, int n, int reverse) {
+	    CSLICE s = cqueue_get (instance, n-1, n);
+	    void** cells;
+	    long int ln;
+	    Tcl_Obj* result;
+
+	    if (reverse) s = cslice_reverse (s);
+
+	    cslice_get (s, &ln, &cells);
+	    if (n == 1) {
+		result = (Tcl_Obj*) cells [0];
+	    } else {
+		result = Tcl_NewListObj (ln, (Tcl_Obj**) cells);
+	    }
+	    cslice_destroy (s);
+	    return result;
+	}
+    }
+
+    # # ## ### ##### ######## ############# #####################
+    ## Lifecycle management.
+
+    constructor {
+        if (objc > 0) {
+	    Tcl_WrongNumArgs (interp, objcskip, objv-objcskip, NULL);
+	    goto error;
+        }
+
+	instance = cqueue_create (StructQueueC_FreeCell, 0);
+    } {
+	/* Set back reference from CQUEUE instance to instance command */
+	cqueue_clientdata_set (instance, (ClientData) cmd);
+    }
+
+    destructor {
+	/* Release the whole queue. */
+	cqueue_destroy (instance);
+    }
+
+    method destroy proc {} void {
+	Tcl_DeleteCommandFromToken(interp, (Tcl_Command) cqueue_clientdata_get (instance));
+    }
+
+    # # ## ### ##### ######## ############# #####################
+
+    method size proc {} int {
+	return cqueue_size (instance);
+    }
+
+    method first proc {} sTcl_Obj* {
+	// xxx todo size check
+	return cqueue_first (instance);
+    }
+
+    method last proc {} sTcl_Obj* {
+	// xxx todo size check
+	return cqueue_last (instance);
+    }
+
+    method head proc {queueindex n} sTcl_Obj* {
+    }
+
+    method tail proc {queueindex n} sTcl_Obj* {
+    }
+
+    method get proc {queueindex at int n} sTcl_Obj* {
+    }
+
+    # # ## ### ##### ######## ############# #####################
+
+    method append command {item ?item ...?} {
+	// xxx todo - we can use slices...
+    }
+
+    method prepend command {item ?item ...?} {
+	// xxx todo - we can use slices...
+    }
+
+    method remove proc {where istail queueindex n} void {
+	if (istail) {
+	    cqueue_remove_tail (instance, n);
+	} else {
+	    cqueue_remove_head (instance, n);
+	}
+    }
+
+    method drop proc {where istail queueindex n} void {
+	if (istail) {
+	    cqueue_drop_tail (instance, n);
+	} else {
+	    cqueue_drop_head (instance, n);
+	}
+    }
+
+    method clear proc {} void {
+	cqueue_clear (instance);
+    }
+
+    method drop_all proc {} void {
+	cqueue_drop_all (instance);
+    }
+
+    # # ## ### ##### ######## ############# #####################
+}
+
+# # ## ### ##### ######## ############# #####################
+## Ready
+package provide struct::queue 2
