@@ -37,35 +37,28 @@ oo::class create ::struct::stack {
 	return [llength $mystack]
     }
 
-    method top {} {
-	my CheckEmpty
-	return [lindex $mystack end]
-    }
-
-    method bottom {} {
-	my CheckEmpty
-	return [lindex $mystack 0]
-    }
-
     method at {at} {
-	my CheckIndex $at
-	return [lindex $mystack end-$at]
-    }
-
-    method atr {at} {
-	my CheckIndex $at
-	return [lindex $mystack $at]
+	if {$at eq "end"} {
+	    # bottom
+	    return [lindex $mystack 0]
+	} elseif {[string match end-* $at]} {
+	    # end-x        ==> x
+	    # end-0 == end ==> 0 == bottom
+	    set at [string range $at 4 end]
+	    my CheckIndex $at
+	    return [lindex $mystack $at]
+	} else {
+	    # x ==> end-x, 0 == end == top
+	    my CheckIndex $at
+	    return [lindex $mystack end-$at]
+	}
     }
 
     method get {} {
 	return [lreverse $mystack]
     }
 
-    method getr {} {
-	return $mystack
-    }
-
-    method peek {{n 1}} {
+    method top {{n 1}} {
 	my CheckCount $n
 
 	if {$n == 1} {
@@ -79,18 +72,18 @@ oo::class create ::struct::stack {
 	return [lreverse [lrange $mystack end-$n end]]
     }
 
-    method peekr {{n 1}} {
+    method bottom {{n 1}} {
 	my CheckCount $n
 
 	if {$n == 1} {
 	    # Handle this as a special case.
 	    # Single item peeks are not listified
-	    return [lindex $mystack end]
+	    return [lindex $mystack 0]
 	}
 
-	# Otherwise, return a list of items, in reversed order.
+	# Otherwise, return a list of items
 	incr n -1
-	return [lrange $mystack end-$n end]
+	return [lreverse [lrange $mystack 0 $n]]
     }
 
     # # ## ### ##### ######## ############# #####################
