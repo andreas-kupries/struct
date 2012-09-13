@@ -102,7 +102,7 @@ test stack-2.1 {instance, bad method name} -setup {
 } -cleanup {
     mystack destroy
 } -returnCodes error \
-    -result [badmethod foo {at atr clear destroy get getr peek peekr pop push rotate size top trim trim*}]
+    -result [badmethod foo {at atr bottom clear destroy get getr peek peekr pop push rotate size top trim trim*}]
 
 # # ## ### ##### ######## ############# #####################
 

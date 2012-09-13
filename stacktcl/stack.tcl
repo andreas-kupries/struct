@@ -38,29 +38,22 @@ oo::class create ::struct::stack {
     }
 
     method top {} {
-	if {![llength $mystack]} {
-	    return -code error "insufficient items on stack to fulfill request"
-	}
+	my CheckEmpty
 	return [lindex $mystack end]
     }
 
+    method bottom {} {
+	my CheckEmpty
+	return [lindex $mystack 0]
+    }
+
     method at {at} {
-	if {![string is int -strict $at]} {
-	    return -code error "expected integer but got \"$at\""
-	}
-	if {($at < 0) || ([llength $mystack] <= $at)} {
-	    return -code error "invalid index $at"
-	}
+	my CheckIndex $at
 	return [lindex $mystack end-$at]
     }
 
     method atr {at} {
-	if {![string is int -strict $at]} {
-	    return -code error "expected integer but got \"$at\""
-	}
-	if {($at < 0) || ([llength $mystack] <= $at)} {
-	    return -code error "invalid index $at"
-	}
+	my CheckIndex $at
 	return [lindex $mystack $at]
     }
 
@@ -73,13 +66,7 @@ oo::class create ::struct::stack {
     }
 
     method peek {{n 1}} {
-	if {$n < 1} {
-	    return -code error "invalid item count $n"
-	}
-
-	if {$n > [llength $mystack]} {
-	    return -code error "insufficient items on stack to fulfill request"
-	}
+	my CheckCount $n
 
 	if {$n == 1} {
 	    # Handle this as a special case
@@ -93,13 +80,7 @@ oo::class create ::struct::stack {
     }
 
     method peekr {{n 1}} {
-	if {$n < 1} {
-	    return -code error "invalid item count $n"
-	}
-
-	if {$n > [llength $mystack]} {
-	    return -code error "insufficient items on stack to fulfill request"
-	}
+	my CheckCount $n
 
 	if {$n == 1} {
 	    # Handle this as a special case.
@@ -116,20 +97,13 @@ oo::class create ::struct::stack {
     ## Manipulators
 
     method pop {{n 1}} {
-	if { $n < 1 } {
-	    return -code error "invalid item count $n"
-	}
-
-	set size [llength $mystack]
-
-	if {$n > $size} {
-	    return -code error "insufficient items on stack to fulfill request"
-	}
+	my CheckCount $n
 
 	if {$n == 1} {
 	    # Handle this as a special case.
 	    # Single item pops are not listified
 	    set item [lindex $mystack end]
+	    set size [llength $mystack]
 	    if {$n == $size} {
 		set mystack {}
 	    } else {
@@ -137,6 +111,8 @@ oo::class create ::struct::stack {
 	    }
 	    return $item
 	}
+
+	set size [llength $mystack]
 
 	# Otherwise, return a list of items, and remove the items from the
 	# stack.
@@ -239,9 +215,41 @@ oo::class create ::struct::stack {
     }
 
     # # ## ### ##### ######## ############# #####################
-    ## Internal helper to manage refcounts.
+    ## Internals - Helper to manage refcounts.
 
     method K {x y} { set x }
+
+    method CheckEmpty {} {
+	upvar 1 mystack mystack
+	if {![llength $mystack]} {
+	    return -code error "insufficient items on stack to fulfill request"
+	}
+    }
+
+    method CheckIndex {i} {
+	upvar 1 mystack mystack
+	if {![string is int -strict $i]} {
+	    return -code error "expected integer but got \"$i\""
+	}
+	if {($i < 0) || ([llength $mystack] <= $i)} {
+	    return -code error "invalid index $i"
+	}
+    }
+
+    method CheckCount {n} {
+	upvar 1 mystack mystack
+	if {![string is int -strict $n]} {
+	    return -code error "expected integer but got \"$n\""
+	}
+	if {$n < 1} {
+	    return -code error "invalid item count $n"
+	}
+	if {[llength $mystack] < $n} {
+	    return -code error "insufficient items on stack to fulfill request"
+	}
+    }
+
+    # # ## ### ##### ######## ############# #####################
 }
 
 # # ## ### ##### ######## ############# #####################
