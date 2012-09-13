@@ -104,6 +104,8 @@ proc version {file} {
     #puts /$provisions/
     return [lindex $provisions 0 3]
 }
+proc Hrequire {} { return "\n\tReturn build requirements to run before this." }
+proc _require {} { puts { cslice cstack } }
 proc Hhelp {} { return "\n\tPrint this help" }
 proc _help {} {
     usage 0
