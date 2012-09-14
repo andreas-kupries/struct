@@ -31,12 +31,12 @@ ActiveState.
 
 to install all packages ActiveState provides, and the kitchensink, as
 the distribution itself usually contains only the ost important set of
-packages. This ensures that the dependencies for [sectref CriTcl],
-[sectref Crimp], and KineTcl are all present, and more.
+packages. This ensures that the dependencies for [sectref CriTcl], and
+Struct are all present, and more.
 
-[para] If that is not your liking you have to read the sections 
-for [sectref CriTcl], [sectref Crimp], and KineTcl to determine the
-exact set of packages required, and install only these using
+[para] If that is not your liking you have to read the sections for
+[sectref CriTcl], and Struct to determine the exact set of packages
+required, and install only these using
 
 [example {
     teacup install $packagename
@@ -58,5 +58,4 @@ can be found at
 
 [list_begin definitions]
 [def Tcl]   [uri http://core.tcl.tk/tcl/]
-[def Tk]    [uri http://core.tcl.tk/tk/]
 [list_end]

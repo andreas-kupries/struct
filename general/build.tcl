@@ -63,7 +63,7 @@ proc _recipes {} {
     return
 }
 proc Hmaindoc {} { return "?destination?\n\t(Re)Generate the embedded documentation." }
-proc _maindoc {{dst {../embedded/all}}} {
+proc _maindoc {{dst {../embedded}}} {
     cd $::topdir/doc
 
     puts "Removing old documentation..."
