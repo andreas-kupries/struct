@@ -250,6 +250,9 @@ c::slice
 data structures
 .RS
 .TP
+\fBfiles/cindex/cindex.n\fR
+c::index
+.TP
 \fBfiles/cqueue/cqueue.n\fR
 c::queue
 .TP
@@ -339,4 +342,10 @@ struct::stack
 .TP
 \fBfiles/stacktcl/struct_stack_tcl.n\fR
 struct::stack
+.RE
+TclGetForIndex emulation
+.RS
+.TP
+\fBfiles/cindex/cindex.n\fR
+c::index
 .RE

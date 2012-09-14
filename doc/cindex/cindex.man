@@ -1,0 +1,52 @@
+[comment {-*- text -*- ........ - - -- --- ----- -------- -------------}]
+[comment {--- doctools --- manpage}]
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[manpage_begin c::index n 1]
+[include ../include/general.inc]
+[titledesc {TclGetForIndex emulation}]
+[require c::index [opt 1]]
+[keywords {TclGetForIndex emulation}]
+[description]
+[include ../include/welcome.inc]
+
+[para] This package provides a replication of Tcl 8.5's internal
+function [fun TclGetForIndex] handling all forms of list indices,
+i.e. all of
+
+[list_begin enumerated]
+[enum] INT
+[enum] [const end]
+[enum] [const end]-INT
+[enum] INT+INT
+[enum] INT-INT
+[list_end]
+
+[section API]
+[list_begin definitions]
+
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call [type int] [fun cindex_get] ( \
+      [type Tcl_Interp*] [arg interp], \
+      [type Tcl_Obj*]    [arg objPtr], \
+      [type int]         [arg endValue], \
+      [type int*]        [arg indexPtr] )]
+
+This function replicates function [fun TclGetForIndex].
+
+[para] The result is a Tcl status value ([const TCL_OK], [const TCL_ERROR]).
+
+[para] It parses the data in [arg objPtr], stores the resulting integer
+list index into the [arg indexPtr] and returns [const TCL_OK]. It may change
+the Tcl_ObjType of [arg objPtr].
+
+[para] In case of an error it returns [const TCL_ERROR], leaves an error
+message in the [arg interp], and does not change [arg indexPtr].
+
+[para] The [arg endValue] tells the function what value to use for [const end]
+and related indices.
+
+[list_end]
+
+[include ../include/license.inc]
+[include ../include/feedback.inc]
+[manpage_end]
