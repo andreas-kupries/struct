@@ -1,6 +1,6 @@
 [manpage_begin struct::stack n 2]
 [include ../include/general.inc]
-[titledesc {Create and manipulate stacks, Tcl}]
+[titledesc {Create and manipulate Tcl stack objects, Tcl implementation}]
 [require TclOO]
 [require struct::stack [opt 2]]
 [description]

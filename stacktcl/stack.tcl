@@ -38,6 +38,8 @@ oo::class create ::struct::stack {
     }
 
     method at {at} {
+	my CheckIndex at
+
 	if {$at eq "end"} {
 	    # bottom
 	    return [lindex $mystack 0]
@@ -49,7 +51,6 @@ oo::class create ::struct::stack {
 	    return [lindex $mystack $at]
 	} else {
 	    # x ==> end-x, 0 == end == top
-	    my CheckIndex $at
 	    return [lindex $mystack end-$at]
 	}
     }
@@ -131,10 +132,7 @@ oo::class create ::struct::stack {
     }
 
     method rotate {n steps} {
-	set len [llength $mystack]
-	if {$n > $len} {
-	    return -code error "insufficient items on stack to perform request"
-	}
+	my CheckIndex n
 
 	# Rotation algorithm:
 	# do
@@ -212,20 +210,16 @@ oo::class create ::struct::stack {
 
     method K {x y} { set x }
 
-    method CheckEmpty {} {
-	upvar 1 mystack mystack
-	if {![llength $mystack]} {
-	    return -code error "insufficient items on stack to fulfill request"
-	}
-    }
+    # size:  integer,    >= 0
+    # count: integer,    >= 0, < cstack_size(s)
+    # index: list index, >= 0, < cstack_size(s)
 
-    method CheckIndex {i} {
-	upvar 1 mystack mystack
+    method CheckSize {} {
 	if {![string is int -strict $i]} {
 	    return -code error "expected integer but got \"$i\""
 	}
-	if {($i < 0) || ([llength $mystack] <= $i)} {
-	    return -code error "invalid index $i"
+	if {$i < 0} {
+	    return -code error "invalid size $i"
 	}
     }
 
@@ -239,6 +233,40 @@ oo::class create ::struct::stack {
 	}
 	if {[llength $mystack] < $n} {
 	    return -code error "insufficient items on stack to fulfill request"
+	}
+    }
+
+    method CheckIndex {iv} {
+	upvar 1 mystack mystack $iv index
+
+	if {$index eq "end"} {
+	    return 0
+	} elseif {[string match end-* $at]} {
+	    # end-x        ==> x
+	    # end-0 == end ==> 0 == bottom
+	    set index [string range $index 4 end]
+	    if {![string is int -strict $index]} {
+		# XXX
+		return -code error "expected integer but got \"$index\""
+	    }
+
+
+
+
+	    my CheckIndex $at
+	    return [lindex $mystack $at]
+	} else {
+	    # x ==> end-x, 0 == end == top
+	    return [lindex $mystack end-$at]
+	}
+
+
+
+	if {![string is int -strict $i]} {
+	    return -code error "expected integer but got \"$i\""
+	}
+	if {($i < 0) || ([llength $mystack] <= $i)} {
+	    return -code error "invalid index $i"
 	}
     }
 

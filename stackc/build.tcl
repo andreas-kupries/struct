@@ -105,7 +105,7 @@ proc version {file} {
     return [lindex $provisions 0 3]
 }
 proc Hrequire {} { return "\n\tReturn build requirements to run before this." }
-proc _require {} { puts { cslice cstack } }
+proc _require {} { puts { cindex cslice cstack } }
 proc Hhelp {} { return "\n\tPrint this help" }
 proc _help {} {
     usage 0
@@ -345,6 +345,7 @@ proc _test {{config {}}} {
 
 	# We need c::slice and c::stack also.
 
+	exec 2>@ stderr >@ stdout [info nameofexecutable] $::topdir/cindex/build.tcl install $testpkg/lib $config
 	exec 2>@ stderr >@ stdout [info nameofexecutable] $::topdir/cslice/build.tcl install $testpkg/lib $config
 	exec 2>@ stderr >@ stdout [info nameofexecutable] $::topdir/cstack/build.tcl install $testpkg/lib $config
 	#exec 2>@ stderr >@ stdout [info nameofexecutable] $::topdir/stackc/build.tcl install $testpkg/lib $config
