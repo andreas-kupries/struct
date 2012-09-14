@@ -1,0 +1,30 @@
+[comment {-*- tcl -*- doctools manpage}]
+[manpage_begin struct_introduction n 1]
+[include include/general.inc]
+[titledesc {Struct - Introduction to Struct}]
+[description]
+[include include/welcome.inc]
+
+[comment {
+[para]
+What are your goals which drove you here ?
+
+[list_begin enumerated]
+[enum]
+[list_end]
+}]
+
+[section {Related Documents}]
+
+[list_begin enum]
+[enum] [term {Struct - License}].
+[enum] [term {Struct - How To Get The Sources}].
+[enum] [term {Struct - The Installer's Guide}].
+[enum] [term {Struct - The Developer's Guide}].
+[list_end]
+
+[section {System Architecture}]
+
+[include include/feedback.inc]
+[manpage_end]
+

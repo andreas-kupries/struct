@@ -6,7 +6,6 @@ package require Tcl 8.5
 set sep _______________________________________________
 set noe [info nameofexecutable]
 
-
 proc get {name args} {
     global noe
     if {![catch {
@@ -49,13 +48,20 @@ proc do {name} {
 # until the stack limit.
 
 apply {{self} {
-    global ok
+    global ok argv
     set selfdir [file dirname $self]
+    set cmd     [lindex $argv 0]
+
 
     set ok {}
     puts ""
     foreach child [lsort -dict [glob -directory $selfdir */$self]] {
 	set name [lindex [file split $child] end-1]
+	# ignore the children which do not support the specified command.
+	if {$cmd ni [get $name recipes]} {
+	    puts "$name: Not applicable"
+	    continue
+	}
 	do $name
     }
 }} [file tail [info script]]
