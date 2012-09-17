@@ -240,7 +240,7 @@ Database Class:	\\fB\\$3\\fR
 .TH "c::stack" n 1 doc "Tcl Data Structures"
 .BS
 .SH NAME
-c::stack \- Create and manipulate stacks
+c::stack \- Create and manipulate C-level stack objects
 .SH SYNOPSIS
 package require \fBTcl  8.5\fR
 .sp

@@ -242,6 +242,9 @@ Database Class:	\\fB\\$3\\fR
 doc
 .RS
 .TP
+\fBc::stack\fR
+\fIfiles/cstack/cstack.n\fR: Create and manipulate C-level stack objects
+.TP
 \fBc::queue\fR
 \fIfiles/cqueue/cqueue.n\fR: Create and manipulate queues
 .TP
@@ -254,14 +257,11 @@ doc
 \fBc::slice\fR
 \fIfiles/cslice/cslice.n\fR: Create and manipulate slices
 .TP
-\fBc::stack\fR
-\fIfiles/cstack/cstack.n\fR: Create and manipulate stacks
+\fBstruct::stack\fR
+\fIfiles/stackc/struct_stack_c.n\fR: Create and manipulate Tcl stack objects, C implementation
 .TP
 \fBstruct::stack\fR
-\fIfiles/stackc/struct_stack_c.n\fR: Create and manipulate stacks, C
-.TP
-\fBstruct::stack\fR
-\fIfiles/stacktcl/struct_stack_tcl.n\fR: Create and manipulate stacks, Tcl
+\fIfiles/stacktcl/struct_stack_tcl.n\fR: Create and manipulate Tcl stack objects, Tcl implementation
 .TP
 \fBstruct_sources\fR
 \fIfiles/struct_sources.n\fR: Struct - How To Get The Sources

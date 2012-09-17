@@ -240,9 +240,11 @@ Database Class:	\\fB\\$3\\fR
 .TH "struct::stack" n 2 doc "Tcl Data Structures"
 .BS
 .SH NAME
-struct::stack \- Create and manipulate stacks, C
+struct::stack \- Create and manipulate Tcl stack objects, C implementation
 .SH SYNOPSIS
 package require \fBTcl  8.5\fR
+.sp
+package require \fBc::index  ?1?\fR
 .sp
 package require \fBc::slice  ?1?\fR
 .sp
@@ -254,27 +256,29 @@ package require \fBstruct::stack  ?2?\fR
 .sp
 \fB::struct stack\fR \fBcreate\fR \fIname\fR
 .sp
-\fIstackObj\fR \fBdestroy\fR
+\fIstackObj\fR \fBat\fR \fIindex\fR
 .sp
-\fIstackObj\fR \fBsize\fR
+\fIstackObj\fR \fBbottom\fR ?\fIcount\fR?
+.sp
+\fIstackObj\fR \fBclear\fR
+.sp
+\fIstackObj\fR \fBdestroy\fR
 .sp
 \fIstackObj\fR \fBget\fR
 .sp
-\fIstackObj\fR \fBgetr\fR
-.sp
-\fIstackObj\fR \fBpeek\fR ?\fIcount\fR?
-.sp
-\fIstackObj\fR \fBpeekr\fR ?\fIcount\fR?
-.sp
 \fIstackObj\fR \fBpop\fR ?\fIcount\fR?
 .sp
-\fIstackObj\fR \fBclear\fR
+\fIstackObj\fR \fBpush\fR \fIitem\fR ?\fIitem...\fR?
+.sp
+\fIstackObj\fR \fBrotate\fR \fIcount\fR \fIsteps\fR
+.sp
+\fIstackObj\fR \fBsize\fR
+.sp
+\fIstackObj\fR \fBtop\fR ?\fIcount\fR?
 .sp
 \fIstackObj\fR \fBtrim\fR ?\fInewsize\fR?
 .sp
 \fIstackObj\fR \fBtrim*\fR ?\fInewsize\fR?
-.sp
-\fIstackObj\fR \fBpush\fR \fIitem\fR ?\fIitem...\fR?
 .sp
 .BE
 .SH DESCRIPTION
@@ -305,54 +309,28 @@ argument of the method.
 All instances of stacks created through the \fBClass API\fR
 support the following API:
 .TP
-\fIstackObj\fR \fBdestroy\fR
-This method destroys the stack instance and the associated Tcl
-command, releasing any associated resurces.
+\fIstackObj\fR \fBat\fR \fIindex\fR
+This method returns the requested element stored without removing it
+from the stack. The topmost element of the stack is addressed by index
+\fB0\fR, whereas the bottommost element can be addressed as either
+\fBsize\fR-1, or \fBend\fR. This addressing order matches the order
+used by method \fBget\fR to return the stack.
 .sp
-The method returns the empty string as its result.
-.TP
-\fIstackObj\fR \fBsize\fR
-This method returns the number of elements stored in the stack.
-.TP
-\fIstackObj\fR \fBget\fR
-This method returns all elements stored in the stack as a list,
-without removing them from the stack. The topmost element is returned
-as the first element of the list, while the bottom-most element is the
-last.
-.TP
-\fIstackObj\fR \fBgetr\fR
-This method is a variant of method \fBget\fR which returns the
-elements in reversed order. This means that the topmost element is
-returned as the last element of the list, while the bottom-most
-element is the first.
-.TP
-\fIstackObj\fR \fBpeek\fR ?\fIcount\fR?
-This method returns the top \fIcount\fR elements of the stack, without
-removing them from the stack. The count defaults to \fB1\fR.
+An error is thrown if the specified index is not within the
+boundaries of the stack.
 .sp
-If more than one element is requested the result will be a list
-of elements, with the topmost element of the stack as the first
-element of the result. If only one element is requested the result is
-that element.
-.sp
-An error will be thrown if the stack does not hold enough
-elements to satisfy the request, i.e. less than \fIcount\fR elements.
+Note that the method accepts for \fIindex\fR all syntactical
+forms supported by the Tcl builtin \fBlindex\fR.
 .TP
-\fIstackObj\fR \fBpeekr\fR ?\fIcount\fR?
-This method is a variant of method \fBpeek\fR which returns the
-requested items in reversed order. This means that the topmost element
-is returned as the last element of the list.
+\fIstackObj\fR \fBbottom\fR ?\fIcount\fR?
+This method returns the bottom \fIcount\fR elements of the stack,
+without removing them from the stack. The count defaults to \fB1\fR.
 .sp
-For \fIcount\fR == \fB1\fR there is no difference, of course.
-.TP
-\fIstackObj\fR \fBpop\fR ?\fIcount\fR?
-This method returns the top \fIcount\fR items of the stack, and
-removes them from the stack. The count defaults to \fB1\fR.
-.sp
-If more than one element is requested the result will be a list
-of elements, with the topmost element of the stack as the first
-element of the result. If only one element is requested the result is
-that element.
+If only one element is requested the result is that element. If
+more than one element is requested the result will be a list of
+elements, with the bottommost element of the stack returned as the
+last element of the result. This matches the ordering of method
+\fBget\fR.
 .sp
 An error will be thrown if the stack does not hold enough
 elements to satisfy the request, i.e. less than \fIcount\fR elements.
@@ -361,6 +339,69 @@ elements to satisfy the request, i.e. less than \fIcount\fR elements.
 This method removes all elements from the stack.
 .sp
 The method returns the empty string as its result.
+.TP
+\fIstackObj\fR \fBdestroy\fR
+This method destroys the stack instance and the associated Tcl
+command, releasing any associated resurces.
+.sp
+The method returns the empty string as its result.
+.TP
+\fIstackObj\fR \fBget\fR
+This method returns all elements stored in the stack as a list,
+without removing them from the stack. The topmost element of the stack
+is returned as the first element of the list, while the bottom-most
+element of the stack is matched to the last element of the list.
+.sp
+In other words, writing the list in left-to-right order the top
+of the stack will be at the left, and the bottom at the right.
+.TP
+\fIstackObj\fR \fBpop\fR ?\fIcount\fR?
+This method returns the top \fIcount\fR items of the stack, and
+removes them from the stack. The count defaults to \fB1\fR.
+.sp
+If only one element is requested the result is that element. If
+more than one element is requested the result will be a list of
+elements, with the topmost element of the stack as the first element
+of the result. This matches the ordering of method \fBget\fR.
+.sp
+An error will be thrown if the stack does not hold enough
+elements to satisfy the request, i.e. less than \fIcount\fR elements.
+.TP
+\fIstackObj\fR \fBpush\fR \fIitem\fR ?\fIitem...\fR?
+This method pushes the specified \fIitem\fR or items onto the stack.
+If more than one \fIitem\fR is given, they will be pushed in the order
+they are listed.
+.sp
+The method returns the empty string as its result.
+.TP
+\fIstackObj\fR \fBrotate\fR \fIcount\fR \fIsteps\fR
+This method rotates the top \fIcount\fR elements of the stack by the
+specified number of \fIsteps\fR.
+.sp
+Rotating 1 element (i.e. "\fIcount\fR == 1") is a no-op.
+Similarly "\fIsteps\fR == 0 mod \fIn\fR" is a no-op as well.
+.sp
+Laying out the contents of the stack as returned by method
+\fBget\fR, i.e. top at the left, a positive number of steps rotates
+the elements left, whereas a negative \fIsteps\fR rotates to the
+right.
+.sp
+The result of the method is the empty string.
+.TP
+\fIstackObj\fR \fBsize\fR
+This method returns the number of elements stored in the stack.
+.TP
+\fIstackObj\fR \fBtop\fR ?\fIcount\fR?
+This method returns the top \fIcount\fR elements of the stack, without
+removing them from the stack. The count defaults to \fB1\fR.
+.sp
+If only one element is requested the result is that element. If
+more than one element is requested the result will be a list of
+elements, with the topmost element of the stack returned as the first
+element of the result. This matches the ordering of method \fBget\fR.
+.sp
+An error will be thrown if the stack does not hold enough
+elements to satisfy the request, i.e. less than \fIcount\fR elements.
 .TP
 \fIstackObj\fR \fBtrim\fR ?\fInewsize\fR?
 This method shrinks the stack to contain at most \fInewsize\fR
@@ -371,13 +412,6 @@ size, or smaller. In that case the result is the empty list.
 \fIstackObj\fR \fBtrim*\fR ?\fInewsize\fR?
 This method is a variant of method \fBtrim\fR which does not return
 the removed elements, and only performs any necessary shrinking.
-.TP
-\fIstackObj\fR \fBpush\fR \fIitem\fR ?\fIitem...\fR?
-This method pushes the specified \fIitem\fR or items onto the stack.
-If more than one \fIitem\fR is given, they will be pushed in the order
-they are listed.
-.sp
-The method returns the empty string as its result.
 .PP
 .SH LICENSE
 This package, written by Andreas Kupries, is BSD licensed.
