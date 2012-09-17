@@ -38,6 +38,7 @@ critcl::subject structure
 critcl::subject {abstract data structure}
 critcl::subject {generic data structure}
 
+critcl::api import c::index 1
 critcl::api import c::slice 1
 critcl::api import c::stack 1
 
@@ -46,26 +47,35 @@ critcl::tsources policy.tcl
 # # ## ### ##### ######## ############# #####################
 ## Implementation - Class Helpers - Custom argument/result processing.
 
+# stacksize:  integer,    >= 0
+# stackcount: integer,    >  0, <= cstack_size(s)
+# stackindex: list index, >= 0, < cstack_size(s)
+
 critcl::argtype stacksize {
-    if (Tcl_GetIntFromObj (interp, @@, &@A) != TCL_OK) {
-	return TCL_ERROR;
-    }
-    if (@A < 0) {
-	Tcl_AppendResult (interp, "invalid size ",
-			  Tcl_GetString (@@),
-			  NULL);
+    if ((Tcl_GetIntFromObj (interp, @@, &@A) != TCL_OK) || (@A < 0)) {
+	Tcl_ResetResult  (interp);
+	Tcl_AppendResult (interp, "expected non-negative integer but got \"",
+			  Tcl_GetString (@@), "\"", NULL);
 	return TCL_ERROR;
     }
 } int int
 
 critcl::argtype stackindex {
-    if (Tcl_GetIntFromObj (interp, @@, &@A) != TCL_OK) {
+    int n = cstack_size ((CSTACK) cd);
+    if (cindex_get (interp, @@, n-1, &@A) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if ((@A < 0) || (cstack_size ((CSTACK) cd) <= @A)) {
-	Tcl_AppendResult (interp, "invalid index ",
-			  Tcl_GetString (@@),
-			  NULL);
+    if ((@A < 0) || (n <= @A)) {
+	char buf [20];
+	sprintf (buf, "%d", @A);
+	Tcl_AppendResult (interp, "invalid index \"",
+			  buf, "\"", NULL);
+	return TCL_ERROR;
+    }
+} int int
+
+critcl::argtype stackcount {
+    if ((StructStackC_CheckCount ((CSTACK) cd, interp, @@, &@A) != TCL_OK) || (@A < 0)) {
 	return TCL_ERROR;
     }
 } int int
@@ -101,7 +111,27 @@ critcl::class::define ::struct::stack {
 	/* Common code for peek, peekr, and pop */
 
 	static int
-	StructStackC_GetN (CSTACK instance, Tcl_Interp* interp,
+	StructStackC_CheckCount (CSTACK instance, Tcl_Interp* interp,
+				 Tcl_Obj* obj, int* n) {
+
+	    if ((Tcl_GetIntFromObj(interp, obj, n) != TCL_OK) ||
+		(*n < 1)) {
+		Tcl_ResetResult  (interp);
+		Tcl_AppendResult (interp, "expected positive integer but got \"",
+				  Tcl_GetString (obj), "\"", NULL);
+		return TCL_ERROR;
+	    }
+
+	    if (*n > cstack_size (instance)) {
+		Tcl_AppendResult (interp,"not enough elements",NULL);
+		return TCL_ERROR;
+	    }
+
+	    return TCL_OK;
+	}
+
+	static int
+	StructStackC_GetCount (CSTACK instance, Tcl_Interp* interp,
 			   int objc, Tcl_Obj*const* objv, int* n) {
 
 	    if ((objc != 2) && (objc != 3)) {
@@ -110,40 +140,45 @@ critcl::class::define ::struct::stack {
 	    }
 
 	    if (objc == 3) {
-		if (Tcl_GetIntFromObj(interp, objv[2], n) != TCL_OK) {
-		    return TCL_ERROR;
-		} else if (*n < 1) {
-		    Tcl_AppendResult (interp, "invalid item count ",
-				      Tcl_GetString (objv[2]),
-				      NULL);
+		if (StructStackC_CheckCount(instance, interp, objv[2], n) != TCL_OK) {
 		    return TCL_ERROR;
 		}
-	    }
-
-	    if (*n > cstack_size (instance)) {
-		Tcl_AppendResult (interp,
-			  "insufficient items on stack to fulfill request",
-			  NULL);
-		return TCL_ERROR;
+	    } else {
+		*n = 1;
+		if (*n > cstack_size (instance)) {
+		    Tcl_AppendResult (interp,"not enough elements",NULL);
+		    return TCL_ERROR;
+		}
 	    }
 
 	    return TCL_OK;
 	}
 
 	static Tcl_Obj*
-	StructStackC_Elements (CSTACK instance, int n, int reverse) {
+	StructStackC_Top (CSTACK instance, int n) {
 	    CSLICE s = cstack_get (instance, n-1, n);
-	    void** cells;
-	    long int ln;
 	    Tcl_Obj* result;
 
-	    if (reverse) s = cslice_reverse (s);
-
-	    cslice_get (s, &ln, &cells);
 	    if (n == 1) {
-		result = (Tcl_Obj*) cells [0];
+		result = (Tcl_Obj*) cslice_at (s, 0);
 	    } else {
-		result = Tcl_NewListObj (ln, (Tcl_Obj**) cells);
+		s = cslice_reverse (s);
+		result = cslice_to_list (s);
+	    }
+	    cslice_destroy (s);
+	    return result;
+	}
+
+	static Tcl_Obj*
+	StructStackC_Bottom (CSTACK instance, int n) {
+	    CSLICE s = cstack_get (instance, cstack_size(instance)-1, n);
+	    Tcl_Obj* result;
+
+	    if (n == 1) {
+		result = (Tcl_Obj*) cslice_at (s, 0);
+	    } else {
+		s = cslice_reverse (s);
+		result = cslice_to_list (s);
 	    }
 	    cslice_destroy (s);
 	    return result;
@@ -180,92 +215,54 @@ critcl::class::define ::struct::stack {
 	return cstack_size (instance);
     }
 
-    method top proc {} sTcl_Obj* {
-	long int n = cstack_size (instance);
-
-	if (!n) {
-	    Tcl_AppendResult (interp,
-	      "insufficient items on stack to fulfill request",
-	      NULL);
-	    return 0;
-	}
-
-	return cstack_top (instance);
-    }
-
-    method bottom proc {} sTcl_Obj* {
-	long int n = cstack_size (instance);
-
-	if (!n) {
-	    Tcl_AppendResult (interp,
-	      "insufficient items on stack to fulfill request",
-	      NULL);
-	    return 0;
-	}
-
-	return cstack_bottom (instance);
-    }
-
     method at proc {stackindex at} sTcl_Obj* {
 	return cstack_at (instance, at);
     }
 
-    method atr proc {stackindex at} sTcl_Obj* {
-	return cstack_atr (instance, at);
-    }
-
     method get proc {} sTcl_Obj* {
-	Tcl_Obj* result;
-	int      n = cstack_size (instance);
-
-	if (!n) {
-	    return Tcl_NewListObj (0,NULL);
-	} else {
-	    return StructStackC_Elements (instance, n, 1);
-	}
-    }
-
-    method getr proc {} sTcl_Obj* {
-	Tcl_Obj* result;
 	int n = cstack_size (instance);
-
 	if (!n) {
 	    return Tcl_NewListObj (0,NULL);
 	} else {
-	    return StructStackC_Elements (instance, n, 0);
+	    Tcl_Obj* result;
+	    CSLICE s = cstack_get (instance, n-1, n);
+	    s = cslice_reverse (s);
+	    result = cslice_to_list (s);
+	    cslice_destroy (s);
+	    return result;
 	}
     }
 
-    method peek command {?n?} {
+    method top command {?n?} {
 	int n = 1;
 
-	if (StructStackC_GetN (instance, interp, objc, objv, &n) != TCL_OK) {
+	if (StructStackC_GetCount (instance, interp, objc, objv, &n) != TCL_OK) {
 	    return TCL_ERROR;
 	}
 
-	Tcl_SetObjResult (interp, StructStackC_Elements (instance, n, 1));
+	Tcl_SetObjResult (interp, StructStackC_Top (instance, n));
 	return TCL_OK;
     }
 
-    method peekr command {?n?} {
+    method bottom command {?n?} {
 	int n = 1;
 
-	if (StructStackC_GetN (instance, interp, objc, objv, &n) != TCL_OK) {
+	if (StructStackC_GetCount (instance, interp, objc, objv, &n) != TCL_OK) {
 	    return TCL_ERROR;
 	}
 
-	Tcl_SetObjResult (interp, StructStackC_Elements (instance, n, 0));
+	Tcl_SetObjResult (interp, StructStackC_Bottom (instance, n));
 	return TCL_OK;
     }
 
     method pop command {?n?} {
 	int n = 1;
 
-	if (StructStackC_GetN (instance, interp, objc, objv, &n) != TCL_OK) {
+	if (StructStackC_GetCount (instance, interp, objc, objv, &n) != TCL_OK) {
 	    return TCL_ERROR;
 	}
 
-	Tcl_SetObjResult (interp, StructStackC_Elements (instance, n, 1));
+	Tcl_SetObjResult (interp, StructStackC_Top (instance, n));
 	cstack_pop (instance, n);
 	return TCL_OK;
     }
@@ -301,34 +298,29 @@ critcl::class::define ::struct::stack {
 	return TCL_OK;
     }
 
-    method rotate proc {int n int steps} ok {
-	if (n > cstack_size (instance)) {
-	    Tcl_AppendResult (interp,
-		      "insufficient items on stack to perform request",
-		      NULL);
-	    return TCL_ERROR;
-	}
-
+    method rotate proc {stackcount n int steps} ok {
 	cstack_rol (instance, n, steps);
 	return TCL_OK;
     }
 
     method trim proc {stacksize n} sTcl_Obj* {
 	int len = cstack_size (instance);
-
-	if (n < len) {
-	    Tcl_Obj* result = StructStackC_Elements (instance, len-n, 1);
+	if (n >= len) {
+	    return Tcl_NewListObj (0,NULL);
+	} else {
+	    Tcl_Obj* result;
+	    CSLICE s = cstack_get (instance, len-n-1, len-n);
+	    s = cslice_reverse (s);
+	    result = cslice_to_list (s);
+	    cslice_destroy (s);
 	    cstack_trim (instance, n);
 	    return result;
 	}
-
-	return Tcl_NewListObj (0,NULL);
     }
 
     method trim* proc {stacksize n} void {
-	if (n < cstack_size (instance)) {
-	    cstack_trim (instance, n);
-	}
+	if (n >= cstack_size (instance)) return ;
+	cstack_trim (instance, n);
     }
 
     # # ## ### ##### ######## ############# #####################

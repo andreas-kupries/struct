@@ -325,22 +325,22 @@ proc _test {{config {}}} {
     return
 }
 proc Hdoc {} { return "?destination?\n\t(Re)Generate the embedded documentation." }
-proc _doc {{dst {../../embedded/queuetcl}}} {
-    cd $::topdir/doc/queuetcl
+proc _doc {{dst {../embedded}}} {
+    cd $::topdir/doc
 
     puts "Removing old documentation..."
-    file delete -force $dst/man
-    file delete -force $dst/www
+    file delete -force $dst/man/files/queuetcl
+    file delete -force $dst/www/doc/files/queuetcl
 
-    file mkdir $dst/man
-    file mkdir $dst/www
+    file mkdir $dst/man/files/queuetcl
+    file mkdir $dst/www/doc/files/queuetcl
 
     puts "Generating man pages..."
-    exec 2>@ stderr >@ stdout dtplite -ext n -o $dst/man nroff .
+    exec 2>@ stderr >@ stdout dtplite -ext n -o $dst/man nroff queuetcl
     puts "Generating 1st html..."
-    exec 2>@ stderr >@ stdout dtplite -merge -o $dst/www html .
+    exec 2>@ stderr >@ stdout dtplite -merge -o $dst/www html queuetcl
     puts "Generating 2nd html, resolving cross-references..."
-    exec 2>@ stderr >@ stdout dtplite -merge -o $dst/www html .
+    exec 2>@ stderr >@ stdout dtplite -merge -o $dst/www html queuetcl
 
     cd  $dst/man
     file delete -force .idxdoc .tocdoc

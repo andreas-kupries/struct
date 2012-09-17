@@ -105,7 +105,7 @@ proc version {file} {
     return [lindex $provisions 0 3]
 }
 proc Hrequire {} { return "\n\tReturn build requirements to run before this." }
-proc _require {} { puts { cslice cstack } }
+proc _require {} { puts { cindex cslice cstack } }
 proc Hhelp {} { return "\n\tPrint this help" }
 proc _help {} {
     usage 0
@@ -345,6 +345,7 @@ proc _test {{config {}}} {
 
 	# We need c::slice and c::stack also.
 
+	exec 2>@ stderr >@ stdout [info nameofexecutable] $::topdir/cindex/build.tcl install $testpkg/lib $config
 	exec 2>@ stderr >@ stdout [info nameofexecutable] $::topdir/cslice/build.tcl install $testpkg/lib $config
 	exec 2>@ stderr >@ stdout [info nameofexecutable] $::topdir/cstack/build.tcl install $testpkg/lib $config
 	#exec 2>@ stderr >@ stdout [info nameofexecutable] $::topdir/stackc/build.tcl install $testpkg/lib $config
@@ -420,22 +421,22 @@ proc _test {{config {}}} {
     return
 }
 proc Hdoc {} { return "?destination?\n\t(Re)Generate the embedded documentation." }
-proc _doc {{dst {../../embedded/stackc}}} {
-    cd $::topdir/doc/stackc
+proc _doc {{dst {../embedded}}} {
+    cd $::topdir/doc
 
     puts "Removing old documentation..."
-    file delete -force $dst/man
-    file delete -force $dst/www
+    file delete -force $dst/man/files/stackc
+    file delete -force $dst/www/doc/files/stackc
 
-    file mkdir $dst/man
-    file mkdir $dst/www
+    file mkdir $dst/man/files/stackc
+    file mkdir $dst/www/doc/files/stackc
 
     puts "Generating man pages..."
-    exec 2>@ stderr >@ stdout dtplite -ext n -o $dst/man nroff .
+    exec 2>@ stderr >@ stdout dtplite -ext n -o $dst/man nroff stackc
     puts "Generating 1st html..."
-    exec 2>@ stderr >@ stdout dtplite -merge -o $dst/www html .
+    exec 2>@ stderr >@ stdout dtplite -merge -o $dst/www html stackc
     puts "Generating 2nd html, resolving cross-references..."
-    exec 2>@ stderr >@ stdout dtplite -merge -o $dst/www html .
+    exec 2>@ stderr >@ stdout dtplite -merge -o $dst/www html stackc
 
     cd  $dst/man
     file delete -force .idxdoc .tocdoc

@@ -298,6 +298,7 @@ proc _test {{config {}}} {
 	    set line [join [linsert $r 0 [file tail $path]] :]
 	    set line [string map {{error: test } {}} $line]
 	    puts \r$line\t\t
+	    flush stdout
 	    continue
 	}
 
@@ -325,22 +326,22 @@ proc _test {{config {}}} {
     return
 }
 proc Hdoc {} { return "?destination?\n\t(Re)Generate the embedded documentation." }
-proc _doc {{dst {../../embedded/stacktcl}}} {
-    cd $::topdir/doc/stacktcl
+proc _doc {{dst {../embedded}}} {
+    cd $::topdir/doc
 
     puts "Removing old documentation..."
-    file delete -force $dst/man
-    file delete -force $dst/www
+    file delete -force $dst/man/files/stacktcl
+    file delete -force $dst/www/doc/files/stacktcl
 
-    file mkdir $dst/man
-    file mkdir $dst/www
+    file mkdir $dst/man/files/stacktcl
+    file mkdir $dst/www/doc/files/stacktcl
 
     puts "Generating man pages..."
-    exec 2>@ stderr >@ stdout dtplite -ext n -o $dst/man nroff .
+    exec 2>@ stderr >@ stdout dtplite -ext n -o $dst/man nroff stacktcl
     puts "Generating 1st html..."
-    exec 2>@ stderr >@ stdout dtplite -merge -o $dst/www html .
+    exec 2>@ stderr >@ stdout dtplite -merge -o $dst/www html stacktcl
     puts "Generating 2nd html, resolving cross-references..."
-    exec 2>@ stderr >@ stdout dtplite -merge -o $dst/www html .
+    exec 2>@ stderr >@ stdout dtplite -merge -o $dst/www html stacktcl
 
     cd  $dst/man
     file delete -force .idxdoc .tocdoc
