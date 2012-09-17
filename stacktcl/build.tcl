@@ -298,6 +298,7 @@ proc _test {{config {}}} {
 	    set line [join [linsert $r 0 [file tail $path]] :]
 	    set line [string map {{error: test } {}} $line]
 	    puts \r$line\t\t
+	    flush stdout
 	    continue
 	}
 

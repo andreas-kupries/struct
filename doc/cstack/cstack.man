@@ -3,7 +3,7 @@
 [comment {- - -- --- ----- -------- ------------- ---------------------}]
 [manpage_begin c::stack n 1]
 [include ../include/general.inc]
-[titledesc {Create and manipulate stacks}]
+[titledesc {Create and manipulate C-level stack objects}]
 [require c::slice [opt 1]]
 [require c::stack [opt 1]]
 [keywords  stack lifo]
