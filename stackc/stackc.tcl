@@ -52,13 +52,10 @@ critcl::tsources policy.tcl
 # stackindex: list index, >= 0, < cstack_size(s)
 
 critcl::argtype stacksize {
-    if (Tcl_GetIntFromObj (interp, @@, &@A) != TCL_OK) {
-	return TCL_ERROR;
-    }
-    if (@A < 0) {
-	Tcl_AppendResult (interp, "invalid size ",
-			  Tcl_GetString (@@),
-			  NULL);
+    if ((Tcl_GetIntFromObj (interp, @@, &@A) != TCL_OK) || (@A < 0)) {
+	Tcl_ResetResult  (interp);
+	Tcl_AppendResult (interp, "expected non-negative integer but got \"",
+			  Tcl_GetString (@@), "\"", NULL);
 	return TCL_ERROR;
     }
 } int int

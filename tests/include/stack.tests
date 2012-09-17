@@ -102,7 +102,7 @@ test stack-2.1 {instance, bad method name} -setup {
 } -cleanup {
     mystack destroy
 } -returnCodes error \
-    -result [badmethod foo {at atr bottom clear destroy get getr peek peekr pop push rotate size top trim trim*}]
+    -result [badmethod foo {at bottom clear destroy get pop push rotate size top trim trim*}]
 
 # # ## ### ##### ######## ############# #####################
 
@@ -154,7 +154,7 @@ test stack-4.3 {size} -setup {
     struct stack create mystack
     mystack push a b c d e f g
     mystack pop 3
-    mystack peek 3
+    mystack top 3
 } -body {
   mystack size
 } -cleanup {
@@ -211,122 +211,73 @@ test stack-5.5 {push, bad chars in items} -setup {
 
 # # ## ### ##### ######## ############# #####################
 
-test stack-6.1 {pop} {
+test stack-6.0 {pop, empty} -setup {
     struct stack create mystack
-    mystack push a
-    mystack push b
-    mystack push c
-    set result [list [mystack pop] [mystack pop] [mystack pop]]
+} -body {
+    mystack pop
+} -cleanup {
     mystack destroy
-    set result
-} {c b a}
+} -returnCodes error -result {not enough elements}
 
-test stack-6.2 {pop, multiple items} {
+test stack-6.1 {pop, bad count, not integer} -setup {
+    struct stack create mystack
+} -body {
+    mystack pop X
+} -cleanup {
+    mystack destroy
+} -returnCodes error -result {expected positive integer but got "X"}
+
+test stack-6.2 {pop, bad count, not definite positive} -setup {
+    struct stack create mystack
+    mystack push a b c
+} -body {
+    mystack pop 0
+} -cleanup {
+    mystack destroy
+} -returnCodes error -result {expected positive integer but got "0"}
+
+test stack-6.3 {pop, bad count, not definite positive} -setup {
+    struct stack create mystack
+} -body {
+    mystack pop -1
+} -cleanup {
+    mystack destroy
+} -returnCodes error -result {expected positive integer but got "-1"}
+
+test stack-6.4 {pop, bad count, too large} -setup {
+    struct stack create mystack
+    mystack push a b c
+} -body {
+    mystack pop 4
+} -cleanup {
+    mystack destroy
+} -returnCodes error -result {not enough elements}
+
+test stack-6.5 {pop, singles} -setup {
     struct stack create mystack
     mystack push a
     mystack push b
     mystack push c
-    set result [mystack pop 3]
+} -body {
+    list [mystack pop] [mystack pop] [mystack pop]
+} -cleanup {
     mystack destroy
-    set result
-} {c b a}
+} -result {c b a}
+
+test stack-6.6 {pop, multiple items} -setup {
+    struct stack create mystack
+    mystack push a
+    mystack push b
+    mystack push c
+} -body {
+    mystack pop 3
+} -cleanup {
+    mystack destroy
+} -result {c b a}
 
 # # ## ### ##### ######## ############# #####################
 
-test stack-7.1 {peek} {
-    struct stack create mystack
-    mystack push a
-    mystack push b
-    mystack push c
-    set result [list [mystack peek] [mystack peek] [mystack peek]]
-    mystack destroy
-    set result
-} {c c c}
-
-test stack-7.2 {peek} {
-    struct stack create mystack
-    catch {mystack peek 0} msg
-    mystack destroy
-    set msg
-} {invalid item count 0}
-
-test stack-7.3 {peek} {
-    struct stack create mystack
-    catch {mystack peek -1} msg
-    mystack destroy
-    set msg
-} {invalid item count -1}
-
-test stack-7.4 {peek} {
-    struct stack create mystack
-    catch {mystack peek} msg
-    mystack destroy
-    set msg
-} {insufficient items on stack to fulfill request}
-
-test stack-7.5 {peek} {
-    struct stack create mystack
-    mystack push a
-    catch {mystack peek 2} msg
-    mystack destroy
-    set msg
-} {insufficient items on stack to fulfill request}
-
-test stack-7.11 {peek} {
-    struct stack create mystack
-    mystack push a
-    mystack push b
-    mystack push c
-    mystack push d
-    set result [mystack peek 3]
-    mystack destroy
-    set result
-} {d c b}
-
-# # ## ### ##### ######## ############# #####################
-
-test stack-7.6 {pop, multiple items} {
-    struct stack create mystack
-    mystack push a
-    mystack push b
-    mystack push c
-    set result [list [mystack peek 3] [mystack pop 3]]
-    mystack destroy
-    set result
-} {{c b a} {c b a}}
-
-test stack-7.7 {pop} {
-    struct stack create mystack
-    catch {mystack pop 0} msg
-    mystack destroy
-    set msg
-} {invalid item count 0}
-
-test stack-7.8 {pop} {
-    struct stack create mystack
-    catch {mystack pop -1} msg
-    mystack destroy
-    set msg
-} {invalid item count -1}
-
-test stack-7.9 {pop} {
-    struct stack create mystack
-    catch {mystack pop} msg
-    mystack destroy
-    set msg
-} {insufficient items on stack to fulfill request}
-
-test stack-7.10 {pop} {
-    struct stack create mystack
-    mystack push a
-    catch {mystack pop 2} msg
-    mystack destroy
-    set msg
-} {insufficient items on stack to fulfill request}
-
-# # ## ### ##### ######## ############# #####################
-
-test stack-8.0 {clear, wrong#args, too many} -setup {
+test stack-7.0 {clear, wrong#args, too many} -setup {
     struct stack create mystack
 } -body {
     mystack clear X
@@ -334,11 +285,9 @@ test stack-8.0 {clear, wrong#args, too many} -setup {
     mystack destroy
 } -returnCodes error -result {wrong # args: should be "mystack clear"}
 
-test stack-8.1 {clear} -setup {
+test stack-7.1 {clear} -setup {
     struct stack create mystack
-    mystack push a
-    mystack push b
-    mystack push c
+    mystack push a b c
     set result {}
 } -body {
     lappend result [mystack size]
@@ -351,208 +300,211 @@ test stack-8.1 {clear} -setup {
 
 # # ## ### ##### ######## ############# #####################
 
-test stack-9.1 {rotate} {
+test stack-8.0 {rotate, wrong#args, not enough} -setup {
     struct stack create mystack
-    mystack push a b c d e f g h
-    mystack rotate 3 1
-    set result [mystack get]
+} -body {
+    mystack rotate
+} -cleanup {
     mystack destroy
-    set result
-} {g f h e d c b a}
+} -returnCodes error \
+    -result [tcltest::wrongNumArgs "mystack rotate" {n steps} 0]
 
-test stack-9.2 {rotate} {
+test stack-8.1 {rotate, wrong#args, not enough} -setup {
     struct stack create mystack
-    mystack push a b c d e f g h
-    mystack rotate 3 2
-    set result [mystack get]
+} -body {
+    mystack rotate X
+} -cleanup {
     mystack destroy
-    set result
-} {f h g e d c b a}
+} -returnCodes error \
+    -result [tcltest::wrongNumArgs "mystack rotate" {n steps} 1]
 
-test stack-9.3 {rotate} {
+test stack-8.2 {rotate, wrong#args, too many} -setup {
     struct stack create mystack
-    mystack push a b c d e f g h
-    mystack rotate 3 5
-    set result [mystack get]
+} -body {
+    mystack rotate X Y Z
+} -cleanup {
     mystack destroy
-    set result
-} {f h g e d c b a}
+} -returnCodes error \
+    -result [tcltest::tooManyArgs "mystack rotate" {n steps}]
 
-test stack-9.4 {rotate} {
+test stack-8.3 {rotate, bad count, not integer} -setup {
     struct stack create mystack
-    mystack push a b c d e f g h
-    mystack rotate 8 1
-    set result [mystack get]
+} -body {
+    mystack rotate X 0
+} -cleanup {
     mystack destroy
-    set result
-} {g f e d c b a h}
+} -returnCodes error \
+    -result {expected positive integer but got "X"}
 
-test stack-9.5 {rotate} {
+test stack-8.4 {rotate, bad count, not definite positive} -setup {
     struct stack create mystack
-    mystack push a b c d e f g h
-    mystack rotate 8 -1
-    set result [mystack get]
+} -body {
+    mystack rotate 0 0
+} -cleanup {
     mystack destroy
-    set result
-} {a h g f e d c b}
+} -returnCodes error \
+    -result {expected positive integer but got "0"}
 
-test stack-9.6 {rotate} {
+test stack-8.5 {rotate, bad count, not definite positive} -setup {
     struct stack create mystack
-    catch {mystack rotate 8 -1} msg
+} -body {
+    mystack rotate -1 0
+} -cleanup {
     mystack destroy
-    set msg
-} {insufficient items on stack to perform request}
+} -returnCodes error \
+    -result {expected positive integer but got "-1"}
 
-test stack-9.7 {rotate} {
+test stack-8.6 {rotate, bad count, too large} -setup {
     struct stack create mystack
     mystack push a b c d
-    catch {mystack rotate 8 -1} msg
+} -body {
+    mystack rotate 5 0
+} -cleanup {
     mystack destroy
-    set msg
-} {insufficient items on stack to perform request}
+} -returnCodes error \
+    -result {not enough elements}
+
+test stack-8.7 {rotate, bad steps} -setup {
+    struct stack create mystack
+    mystack push a b c d
+} -body {
+    mystack rotate 1 X
+} -cleanup {
+    mystack destroy
+} -returnCodes error \
+    -result {expected integer but got "X"}
+
+foreach {k n steps result} {
+    8    3  1 {g f h e d c b a}
+    9    3  2 {f h g e d c b a}
+    10    3  3 {h g f e d c b a}
+    11    3  5 {f h g e d c b a}
+    12    8  1 {g f e d c b a h}
+    13    8 -1 {a h g f e d c b}
+    14    8  0 {h g f e d c b a}
+    15    1  4 {h g f e d c b a}
+    16    1  0 {h g f e d c b a}
+} {
+    # pre-rol  {h g f e d c b a}
+    test stack-8.$k {rotate} -setup {
+	struct stack create mystack
+	mystack push a b c d e f g h
+    } -body {
+	mystack rotate $n $steps
+	mystack get
+    } -cleanup {
+	mystack destroy
+    } -result $result
+}
 
 # # ## ### ##### ######## ############# #####################
 
-test stack-10.0 {get, wrong args, too many} {
+test stack-9.0 {get, wrong args, too many} -setup {
     struct stack create mystack
-    catch {mystack get X} msg
+} -body {
+    mystack get X
+} -cleanup {
     mystack destroy
-    set msg
-} [tcltest::tooManyArgs "mystack get" {}]
+} -returnCodes error -result [tcltest::tooManyArgs "mystack get" {}]
 
-test stack-10.1 {get, empty stack} {
+test stack-9.1 {get, empty} -setup {
     struct stack create mystack
-    set result [mystack get]
+} -body {
+    mystack get
+} -cleanup {
     mystack destroy
     set result
-} {}
+} -result {}
 
-test stack-10.2 {get} {
+test stack-9.2 {get} -setup {
     struct stack create mystack
     mystack push a b c d
-    set result [mystack get]
+} -body {
+    mystack get
+} -cleanup {
     mystack destroy
     set result
-} {d c b a}
+} -result {d c b a}
 
-test stack-10.3 {get} {
+# # ## ### ##### ######## ############# #####################
+# # ## ### ##### ######## ############# #####################
+# # ## ### ##### ######## ############# #####################
+
+test stack-11.0 {trim, wrong args, not enough} -setup {
+    struct stack create mystack
+} -body {
+    mystack trim
+} -cleanup {
+    mystack destroy
+} -returnCodes error \
+    -result [tcltest::wrongNumArgs "mystack trim" {n} 0]
+
+test stack-11.1 {trim, wrong args, too many} -setup {
+    struct stack create mystack
+} -body {
+    mystack trim X Y
+} -cleanup {
+    mystack destroy
+} -returnCodes error \
+    -result [tcltest::tooManyArgs "mystack trim" {n}]
+
+test stack-11.2 {trim, bad argument} -setup {
+    struct stack create mystack
+} -body {
+    mystack trim X
+} -cleanup {
+    mystack destroy
+} -returnCodes error \
+    -result {expected non-negative integer but got "X"}
+
+test stack-11.3 {trim, bad argument} -setup {
+    struct stack create mystack
+} -body {
+    mystack trim -4
+} -cleanup {
+    mystack destroy
+} -returnCodes error \
+    -result {expected non-negative integer but got "-4"}
+
+test stack-11.4 {trim, empty stack} -setup {
+    struct stack create mystack
+} -body {
+    list [mystack size] [mystack trim 1] [mystack size]
+} -cleanup {
+    mystack destroy
+} -result {0 {} 0}
+
+test stack-11.5 {trim} -setup {
+    struct stack create mystack
+    mystack push a b c d
+} -body {
+    list [mystack size] [mystack trim 1] [mystack size]
+} -cleanup {
+    mystack destroy
+} -result {4 {d c b} 1}
+
+test stack-11.6 {trim} -setup {
     struct stack create mystack
     mystack push a
     mystack push b
     mystack push c
     mystack push d
-    set result [mystack get]
+} -body {
+    list [mystack size] [mystack trim 1] [mystack size]
+} -cleanup {
     mystack destroy
-    set result
-} {d c b a}
+} -result {4 {d c b} 1}
+
+test stack-11.7 {trim} -setup {
+    struct stack create mystack
+    mystack push a b c d
+} -body {
+    list [mystack size] [mystack trim 5] [mystack size]
+} -cleanup {
+    mystack destroy
+} -result {4 {} 4}
 
 # # ## ### ##### ######## ############# #####################
-
-test stack-11.0 {trim, wrong args, not enough} {
-    struct stack create mystack
-    catch {mystack trim} msg
-    mystack destroy
-    set msg
-} [tcltest::wrongNumArgs "mystack trim" {n} 0]
-
-test stack-11.1 {trim, wrong args, too many} {
-    struct stack create mystack
-    catch {mystack trim X Y} msg
-    mystack destroy
-    set msg
-} [tcltest::tooManyArgs "mystack trim" {n}]
-
-test stack-11.2 {trim, bad argument} {
-    struct stack create mystack
-    catch {mystack trim X} msg
-    mystack destroy
-    set msg
-} {expected integer but got "X"}
-
-test stack-11.3 {trim, bad argument} {
-    struct stack create mystack
-    catch {mystack trim -4} msg
-    mystack destroy
-    set msg
-} {invalid size -4}
-
-test stack-11.4 {trim, empty stack} {
-    struct stack create mystack
-    set     result [mystack size]
-    lappend result [mystack trim 1]
-    lappend result [mystack size]
-    mystack destroy
-    set result
-} {0 {} 0}
-
-test stack-11.5 {trim} {
-    struct stack create mystack
-    mystack push a b c d
-    set     result [mystack size]
-    lappend result [mystack trim 1]
-    lappend result [mystack size]
-    mystack destroy
-    set result
-} {4 {d c b} 1}
-
-test stack-11.6 {trim} {
-    struct stack create mystack
-    mystack push a
-    mystack push b
-    mystack push c
-    mystack push d
-    set     result [mystack size]
-    lappend result [mystack trim 1]
-    lappend result [mystack size]
-    mystack destroy
-    set result
-} {4 {d c b} 1}
-
-test stack-11.7 {trim} {
-    struct stack create mystack
-    mystack push a b c d
-    set     result [mystack size]
-    lappend result [mystack trim 5]
-    lappend result [mystack size]
-    mystack destroy
-    set result
-} {4 {} 4}
-
-# # ## ### ##### ######## ############# #####################
-
-test stack-12.0 {getr, wrong args, too many} {
-    struct stack create mystack
-    catch {mystack getr X} msg
-    mystack destroy
-    set msg
-} [tcltest::tooManyArgs "mystack getr" {}]
-
-test stack-12.1 {getr, empty stack} {
-    struct stack create mystack
-    set result [mystack getr]
-    mystack destroy
-    set result
-} {}
-
-test stack-12.2 {getr} {
-    struct stack create mystack
-    mystack push a b c d
-    set result [mystack getr]
-    mystack destroy
-    set result
-} {a b c d}
-
-test stack-12.3 {getr} {
-    struct stack create mystack
-    mystack push a
-    mystack push b
-    mystack push c
-    mystack push d
-    set result [mystack getr]
-    mystack destroy
-    set result
-} {a b c d}
-
 # # ## ### ##### ######## ############# #####################
 
 test stack-13.0 {trim*, wrong args, not enough} {
@@ -626,57 +578,6 @@ test stack-13.7 {trim*} {
 } {4 {} 4}
 
 # # ## ### ##### ######## ############# #####################
-
-test stack-14.1 {peekr} {
-    struct stack create mystack
-    mystack push a
-    mystack push b
-    mystack push c
-    set result [list [mystack peekr] [mystack peekr] [mystack peekr]]
-    mystack destroy
-    set result
-} {c c c}
-
-test stack-14.2 {peekr} {
-    struct stack create mystack
-    catch {mystack peekr 0} msg
-    mystack destroy
-    set msg
-} {invalid item count 0}
-
-test stack-14.3 {peekr} {
-    struct stack create mystack
-    catch {mystack peekr -1} msg
-    mystack destroy
-    set msg
-} {invalid item count -1}
-
-test stack-14.4 {peekr} {
-    struct stack create mystack
-    catch {mystack peekr} msg
-    mystack destroy
-    set msg
-} {insufficient items on stack to fulfill request}
-
-test stack-14.5 {peekr} {
-    struct stack create mystack
-    mystack push a
-    catch {mystack peekr 2} msg
-    mystack destroy
-    set msg
-} {insufficient items on stack to fulfill request}
-
-test stack-14.6 {peekr} {
-    struct stack create mystack
-    mystack push a
-    mystack push b
-    mystack push c
-    mystack push d
-    set result [mystack peekr 3]
-    mystack destroy
-    set result
-} {b c d}
-
 # # ## ### ##### ######## ############# #####################
 
 test stack-15.0 {at} -setup {
@@ -727,92 +628,123 @@ test stack-15.5 {at} -setup {
     lappend result [mystack at 0]
     lappend result [mystack at 1]
     lappend result [mystack at 2]
+
+    lappend result [mystack at end]
+    lappend result [mystack at end-1]
+    lappend result [mystack at end-2]
+
+    lappend result [mystack at 1+1]
+    lappend result [mystack at 3-1]
 } -cleanup {
     mystack destroy
     unset result
-} -result {c b a}
+} -result {c b a a b c b b}
 
 # # ## ### ##### ######## ############# #####################
 
-test stack-16.0 {atr, wrong args, not enough} -setup {
+test stack-16.0 {bottom, empty} -setup {
     struct stack create mystack
 } -body {
-    mystack atr
+    mystack bottom
 } -cleanup {
     mystack destroy
-} -returnCodes error -result {wrong # args: should be "mystack atr at"}
+} -returnCodes error -result {not enough elements}
 
-test stack-16.1 {atr, wrong args, too many} -setup {
+test stack-16.1 {bottom, bad count, not integer} -setup {
     struct stack create mystack
 } -body {
-    mystack atr X Y
+    mystack bottom X
 } -cleanup {
     mystack destroy
-} -returnCodes error -result {wrong # args: should be "mystack atr at"}
+} -returnCodes error -result {expected positive integer but got "X"}
 
-test stack-16.2 {atr, bad index, not integer} -setup {
-    struct stack create mystack
-} -body {
-    mystack atr X
-} -cleanup {
-    mystack destroy
-} -returnCodes error -result {expected integer but got "X"}
-
-test stack-16.3 {atr, bad index, too small} -setup {
-    struct stack create mystack
-} -body {
-    mystack atr -1
-} -cleanup {
-    mystack destroy
-} -returnCodes error -result {invalid index -1}
-
-test stack-16.4 {atr, bad index, too large} -setup {
-    struct stack create mystack
-} -body {
-    mystack atr 0
-} -cleanup {
-    mystack destroy
-} -returnCodes error -result {invalid index 0}
-
-test stack-16.5 {atr} -setup {
+test stack-16.2 {bottom, bad count, not definite positive} -setup {
     struct stack create mystack
     mystack push a b c
-    set result {}
 } -body {
-    lappend result [mystack atr 0]
-    lappend result [mystack atr 1]
-    lappend result [mystack atr 2]
+    mystack bottom 0
 } -cleanup {
     mystack destroy
-    unset result
-} -result {a b c}
+} -returnCodes error -result {expected positive integer but got "0"}
+
+test stack-16.3 {bottom, bad count, not definite positive} -setup {
+    struct stack create mystack
+} -body {
+    mystack bottom -1
+} -cleanup {
+    mystack destroy
+} -returnCodes error -result {expected positive integer but got "-1"}
+
+test stack-16.4 {bottom, bad count, too large} -setup {
+    struct stack create mystack
+    mystack push a b c
+} -body {
+    mystack bottom 4
+} -cleanup {
+    mystack destroy
+} -returnCodes error -result {not enough elements}
+
+test stack-16.5 {bottom} -setup {
+    struct stack create mystack
+    mystack push a b c
+} -body {
+    list [mystack bottom] [mystack bottom 2] [mystack bottom 3]
+} -cleanup {
+    mystack destroy
+} -result {a {b a} {c b a}}
 
 # # ## ### ##### ######## ############# #####################
 
-test stack-17.0 {top, wrong args, too many} -setup {
+test stack-17.0 {top, empty} -setup {
+    struct stack create mystack
+} -body {
+    mystack top
+} -cleanup {
+    mystack destroy
+} -returnCodes error -result {not enough elements}
+
+test stack-17.1 {top, bad count, not integer} -setup {
     struct stack create mystack
 } -body {
     mystack top X
 } -cleanup {
     mystack destroy
-} -returnCodes error -result {wrong # args: should be "mystack top"}
+} -returnCodes error -result {expected positive integer but got "X"}
 
-test stack-17.1 {top, empty} -setup {
-    struct stack create mystack
-} -body {
-    mystack top
-} -cleanup {
-    mystack destroy
-} -returnCodes error -result {insufficient items on stack to fulfill request}
-
-test stack-17.3 {top} -setup {
+test stack-17.2 {top, bad count, not definite positive} -setup {
     struct stack create mystack
     mystack push a b c
 } -body {
-    mystack top
+    mystack top 0
 } -cleanup {
     mystack destroy
-} -result c
+} -returnCodes error -result {expected positive integer but got "0"}
+
+test stack-17.3 {top, bad count, not definite positive} -setup {
+    struct stack create mystack
+} -body {
+    mystack top -1
+} -cleanup {
+    mystack destroy
+} -returnCodes error -result {expected positive integer but got "-1"}
+
+test stack-17.4 {top, bad count, too large} -setup {
+    struct stack create mystack
+    mystack push a b c
+} -body {
+    mystack top 4
+} -cleanup {
+    mystack destroy
+} -returnCodes error -result {not enough elements}
+
+test stack-17.5 {top} -setup {
+    struct stack create mystack
+    mystack push a b c
+} -body {
+    list [mystack top] [mystack top 2] [mystack top 3]
+} -cleanup {
+    mystack destroy
+} -result {c {c b} {c b a}}
 
 # # ## ### ##### ######## ############# #####################
 

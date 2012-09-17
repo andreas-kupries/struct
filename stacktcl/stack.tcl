@@ -132,7 +132,17 @@ oo::class create ::struct::stack {
     }
 
     method rotate {n steps} {
-	my CheckIndex n
+	my CheckCount $n
+	if {![string is int -strict $steps]} {
+	    return -code error "expected integer but got \"$steps\""
+	}
+
+	# Optimization:
+	# Detect 0-rotations, which do nothing, and bail out quickly.
+
+	if {$n == 1} return
+	set steps [expr {$steps % $n}]
+	if {$steps == 0} return
 
 	# Rotation algorithm:
 	# do
@@ -140,10 +150,8 @@ oo::class create ::struct::stack {
 	#   Move the end item to the insertion point
 	# repeat $steps times
 
+	set len   [llength $mystack]
 	set start [expr {$len - $n}]
-	set steps [expr {$steps % $n}]
-
-	if {$steps == 0} return
 
 	for {set i 0} {$i < $steps} {incr i} {
 	    set item [lindex $mystack end]
@@ -156,11 +164,9 @@ oo::class create ::struct::stack {
     }
 
     method trim {n} {
-	if { ![string is integer -strict $n]} {
-	    return -code error "expected integer but got \"$n\""
-	} elseif { $n < 0 } {
-	    return -code error "invalid size $n"
-	} elseif { $n >= [llength $mystack] } {
+	my CheckSize $n
+
+	if { $n >= [llength $mystack] } {
 	    # Stack is smaller than requested, do nothing.
 	    return {}
 	}
@@ -180,11 +186,7 @@ oo::class create ::struct::stack {
     }
 
     method trim* {n} {
-	if { ![string is integer -strict $n]} {
-	    return -code error "expected integer but got \"$n\""
-	} elseif { $n < 0 } {
-	    return -code error "invalid size $n"
-	}
+	my CheckSize $n
 
 	if { $n >= [llength $mystack] } {
 	    # Stack is smaller than requested, do nothing.
@@ -214,25 +216,19 @@ oo::class create ::struct::stack {
     # count: integer,    >= 0, < cstack_size(s)
     # index: list index, >= 0, < cstack_size(s)
 
-    method CheckSize {} {
-	if {![string is int -strict $i]} {
-	    return -code error "expected integer but got \"$i\""
-	}
-	if {$i < 0} {
-	    return -code error "invalid size $i"
+    method CheckSize {n} {
+	if {![string is int -strict $n] || ($n < 0)} {
+	    return -code error "expected non-negative integer but got \"$n\""
 	}
     }
 
     method CheckCount {n} {
 	upvar 1 mystack mystack
-	if {![string is int -strict $n]} {
-	    return -code error "expected integer but got \"$n\""
-	}
-	if {$n < 1} {
-	    return -code error "invalid item count $n"
+	if {![string is int -strict $n] || ($n < 1)} {
+	    return -code error "expected positive integer but got \"$n\""
 	}
 	if {[llength $mystack] < $n} {
-	    return -code error "insufficient items on stack to fulfill request"
+	    return -code error "not enough elements"
 	}
     }
 
