@@ -8,6 +8,7 @@ testsNeedTcl     8.5
 testsNeedTcltest 2 ; # 8.5 does not have tcltest 1.x
 
 support {
+    useC _local/lib/cindex* c::index
     useC _local/lib/cslice* c::slice
     useC _local/lib/cstack* c::stack
     useC _local/lib/cqueue* c::queue

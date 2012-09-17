@@ -108,7 +108,7 @@ critcl::class::define ::struct::stack {
 	}
 
 	/* * ** *** ***** ******** ************* ********************* */
-	/* Common code for peek, peekr, and pop */
+	/* Common code for peek, top, bottom, and pop */
 
 	static int
 	StructStackC_CheckCount (CSTACK instance, Tcl_Interp* interp,

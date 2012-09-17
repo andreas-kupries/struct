@@ -40,6 +40,7 @@ critcl::subject structure
 critcl::subject {abstract data structure}
 critcl::subject {generic data structure}
 
+critcl::api import c::index 1
 critcl::api import c::slice 1
 critcl::api import c::queue 1
 
@@ -48,26 +49,35 @@ critcl::tsources policy.tcl
 # # ## ### ##### ######## ############# #####################
 ## Implementation
 
+# queuesize:  integer,    >= 0
+# queuecount: integer,    >  0, <= cqueue_size(s)
+# queueindex: list index, >= 0, < cqueue_size(s)
+
 critcl::argtype queuesize {
-    if (Tcl_GetIntFromObj (interp, @@, &@A) != TCL_OK) {
-	return TCL_ERROR;
-    }
-    if (@A < 0) {
-	Tcl_AppendResult (interp, "invalid size ",
-			  Tcl_GetString (@@),
-			  NULL);
+    if ((Tcl_GetIntFromObj (interp, @@, &@A) != TCL_OK) || (@A < 0)) {
+	Tcl_ResetResult  (interp);
+	Tcl_AppendResult (interp, "expected non-negative integer but got \"",
+			  Tcl_GetString (@@), "\"", NULL);
 	return TCL_ERROR;
     }
 } int int
 
 critcl::argtype queueindex {
-    if (Tcl_GetIntFromObj (interp, @@, &@A) != TCL_OK) {
+    int n = cqueue_size ((CQUEUE) cd);
+    if (cindex_get (interp, @@, n-1, &@A) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if ((@A < 0) || (cqueue_size ((CQUEUE) cd) <= @A)) {
-	Tcl_AppendResult (interp, "invalid index ",
-			  Tcl_GetString (@@),
-			  NULL);
+    if ((@A < 0) || (n <= @A)) {
+	char buf [20];
+	sprintf (buf, "%d", @A);
+	Tcl_AppendResult (interp, "invalid index \"",
+			  buf, "\"", NULL);
+	return TCL_ERROR;
+    }
+} int int
+
+critcl::argtype queuecount {
+    if ((StructQueueC_CheckCount ((CQUEUE) cd, interp, @@, &@A) != TCL_OK) || (@A < 0)) {
 	return TCL_ERROR;
     }
 } int int
@@ -107,10 +117,30 @@ critcl::class::define ::struct::queue {
 	}
 
 	/* * ** *** ***** ******** ************* ********************* */
-	/* Common code for peek, peekr, and pop */
+	/* Common code for head, tail, and pop */
 
 	static int
-	StructQueueC_GetN (CQUEUE instance, Tcl_Interp* interp,
+	StructQueueC_CheckCount (CQUEUE instance, Tcl_Interp* interp,
+				 Tcl_Obj* obj, int* n) {
+
+	    if ((Tcl_GetIntFromObj(interp, obj, n) != TCL_OK) ||
+		(*n < 1)) {
+		Tcl_ResetResult  (interp);
+		Tcl_AppendResult (interp, "expected positive integer but got \"",
+				  Tcl_GetString (obj), "\"", NULL);
+		return TCL_ERROR;
+	    }
+
+	    if (*n > cqueue_size (instance)) {
+		Tcl_AppendResult (interp,"not enough elements",NULL);
+		return TCL_ERROR;
+	    }
+
+	    return TCL_OK;
+	}
+
+	static int
+	StructQueueC_GetCount (CQUEUE instance, Tcl_Interp* interp,
 			   int objc, Tcl_Obj*const* objv, int* n) {
 
 	    if ((objc != 2) && (objc != 3)) {
@@ -119,40 +149,43 @@ critcl::class::define ::struct::queue {
 	    }
 
 	    if (objc == 3) {
-		if (Tcl_GetIntFromObj(interp, objv[2], n) != TCL_OK) {
-		    return TCL_ERROR;
-		} else if (*n < 1) {
-		    Tcl_AppendResult (interp, "invalid item count ",
-				      Tcl_GetString (objv[2]),
-				      NULL);
+		if (StructQueueC_CheckCount(instance, interp, objv[2], n) != TCL_OK) {
 		    return TCL_ERROR;
 		}
-	    }
-
-	    if (*n > cqueue_size (instance)) {
-		Tcl_AppendResult (interp,
-			  "insufficient items on queue to fulfill request",
-			  NULL);
-		return TCL_ERROR;
+	    } else {
+		*n = 1;
+		if (*n > cqueue_size (instance)) {
+		    Tcl_AppendResult (interp,"not enough elements",NULL);
+		    return TCL_ERROR;
+		}
 	    }
 
 	    return TCL_OK;
 	}
 
 	static Tcl_Obj*
-	StructQueueC_Elements (CQUEUE instance, int n, int reverse) {
-	    CSLICE s = cqueue_get (instance, n-1, n);
-	    void** cells;
-	    long int ln;
+	StructQueueC_Head (CQUEUE instance, int n) {
+	    CSLICE s = cqueue_head (instance, n);
 	    Tcl_Obj* result;
 
-	    if (reverse) s = cslice_reverse (s);
-
-	    cslice_get (s, &ln, &cells);
 	    if (n == 1) {
-		result = (Tcl_Obj*) cells [0];
+		result = (Tcl_Obj*) cslice_at (s, 0);
 	    } else {
-		result = Tcl_NewListObj (ln, (Tcl_Obj**) cells);
+		result = cslice_to_list (s);
+	    }
+	    cslice_destroy (s);
+	    return result;
+	}
+
+	static Tcl_Obj*
+	StructQueueC_Tail (CQUEUE instance, int n) {
+	    CSLICE s = cqueue_tail (instance, n);
+	    Tcl_Obj* result;
+
+	    if (n == 1) {
+		result = (Tcl_Obj*) cslice_at (s, 0);
+	    } else {
+		result = cslice_to_list (s);
 	    }
 	    cslice_destroy (s);
 	    return result;
@@ -189,30 +222,39 @@ critcl::class::define ::struct::queue {
 	return cqueue_size (instance);
     }
 
-    method first proc {} sTcl_Obj* {
-	// xxx todo size check
-	return cqueue_first (instance);
+    method head command {?n?} {
+	int n = 1;
+
+	if (StructQueueC_GetCount (instance, interp, objc, objv, &n) != TCL_OK) {
+	    return TCL_ERROR;
+	}
+
+	Tcl_SetObjResult (interp, StructQueueC_Head (instance, n));
+	return TCL_OK;
     }
 
-    method last proc {} sTcl_Obj* {
-	// xxx todo size check
-	return cqueue_last (instance);
-    }
+    method tail command {?n?} {
+	int n = 1;
 
-    method head proc {queueindex n} sTcl_Obj* {
-    }
+	if (StructQueueC_GetCount (instance, interp, objc, objv, &n) != TCL_OK) {
+	    return TCL_ERROR;
+	}
 
-    method tail proc {queueindex n} sTcl_Obj* {
+	Tcl_SetObjResult (interp, StructQueueC_Tail (instance, n));
+	return TCL_OK;
     }
 
     method get proc {queueindex at int n} sTcl_Obj* {
+	// XXXX todo get
     }
 
     # # ## ### ##### ######## ############# #####################
 
-    method append command {item ?item ...?} {
-	// xxx todo - we can use slices...
+    method clear proc {} void {
+	cqueue_clear (instance);
+    }
 
+    method append command {item ?item ...?} {
 	int i;
 	CSLICE sl;
 
@@ -227,7 +269,7 @@ critcl::class::define ::struct::queue {
 	 */
 
 	sl = cslice_create (objc-2, objv+2);
-	cstack_push_slice (instance, sl);
+	cqueue_append_slice (instance, sl);
 
 	for (i = 2; i < objc; i++) {
 	    Tcl_IncrRefCount (objv[i]);
@@ -235,14 +277,9 @@ critcl::class::define ::struct::queue {
 
 	cslice_destroy (sl);
 	return TCL_OK;
-
-cqueue_
     }
 
     method prepend command {item ?item ...?} {
-	// xxx todo - we can use slices...
-
-
 	int i;
 	CSLICE sl;
 
@@ -257,7 +294,7 @@ cqueue_
 	 */
 
 	sl = cslice_create (objc-2, objv+2);
-	cstack_push_slice (instance, sl);
+	cqueue_prepend_slice (instance, sl);
 
 	for (i = 2; i < objc; i++) {
 	    Tcl_IncrRefCount (objv[i]);
@@ -265,20 +302,19 @@ cqueue_
 
 	cslice_destroy (sl);
 	return TCL_OK;
-
     }
 
-    # stack: pop ... no result! bad!
-    method remove proc {where istail queueindex n} void {
+    # xxx todo pop - command - optional count n!
+    method pop proc {where istail queuecount n} sTcl_Obj* {
+	Tcl_Obj* result;
 	if (istail) {
+	    result = StructQueueC_Tail (instance, n);
 	    cqueue_remove_tail (instance, n);
 	} else {
+	    result = StructQueueC_Head (instance, n);
 	    cqueue_remove_head (instance, n);
 	}
-    }
-
-    method clear proc {} void {
-	cqueue_clear (instance);
+	return result;
     }
 
     # # ## ### ##### ######## ############# #####################
