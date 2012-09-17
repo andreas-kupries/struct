@@ -39,20 +39,7 @@ oo::class create ::struct::stack {
 
     method at {at} {
 	my CheckIndex at
-
-	if {$at eq "end"} {
-	    # bottom
-	    return [lindex $mystack 0]
-	} elseif {[string match end-* $at]} {
-	    # end-x        ==> x
-	    # end-0 == end ==> 0 == bottom
-	    set at [string range $at 4 end]
-	    my CheckIndex $at
-	    return [lindex $mystack $at]
-	} else {
-	    # x ==> end-x, 0 == end == top
-	    return [lindex $mystack end-$at]
-	}
+	return [lindex $mystack $at]
     }
 
     method get {} {
@@ -236,34 +223,61 @@ oo::class create ::struct::stack {
 	upvar 1 mystack mystack $iv index
 
 	if {$index eq "end"} {
-	    return 0
-	} elseif {[string match end-* $at]} {
+	    set index 0
+	    return
+	}
+
+	if {[string is int -strict $index]} {
+	    my CheckIndexRange index
+	    return
+	}
+
+	if {[regexp {^end-(.+)$} $index -> a]} {
 	    # end-x        ==> x
 	    # end-0 == end ==> 0 == bottom
-	    set index [string range $index 4 end]
-	    if {![string is int -strict $index]} {
-		# XXX
-		return -code error "expected integer but got \"$index\""
-	    }
-
-
-
-
-	    my CheckIndex $at
-	    return [lindex $mystack $at]
-	} else {
-	    # x ==> end-x, 0 == end == top
-	    return [lindex $mystack end-$at]
+	    if {![string is int -strict $a]} { my ReportBadIndex $index }
+	    set index $a
+	    # Use 'a' below, not 'index', as 'index' is already
+	    # inverted and should not be overwritten.
+	    my CheckIndexRange a
+	    return
 	}
 
+	if {[regexp {^([^-]+)-([^-]+)$} $index -> a b]} {
+	    # N-M
+	    if {![string is int -strict $a]} { my ReportBadIndex $index }
+	    if {![string is int -strict $b]} { my ReportBadIndex $index }
 
+	    set index [expr {$a - $b}]
+	    my CheckIndexRange index
+	    return
+	}
 
-	if {![string is int -strict $i]} {
-	    return -code error "expected integer but got \"$i\""
+	if {[regexp {^([^-]+)[+]([^-]+)$} $index -> a b]} {
+	    # N+M
+	    if {![string is int -strict $a]} { my ReportBadIndex $index }
+	    if {![string is int -strict $b]} { my ReportBadIndex $index }
+
+	    set index [expr {$a + $b}]
+	    my CheckIndexRange index
+	    return
 	}
-	if {($i < 0) || ([llength $mystack] <= $i)} {
-	    return -code error "invalid index $i"
+
+	my ReportBadIndex $index
+    }
+
+    method CheckIndexRange {iv} {
+	upvar 1 mystack stack $iv index
+	set sz [llength $mystack]
+	if {($index < 0) || ($sz <= $index)} {
+	    return -code error "invalid index \"$index\""
 	}
+	set index [expr {$sz - 1 - $index}]
+	return
+    }
+
+    method ReportBadIndex {index} {
+	return -code error "bad index \"$index\": must be integer?\[+-]integer? or end?\[+-]integer?"
     }
 
     # # ## ### ##### ######## ############# #####################

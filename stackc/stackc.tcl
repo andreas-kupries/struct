@@ -48,7 +48,7 @@ critcl::tsources policy.tcl
 ## Implementation - Class Helpers - Custom argument/result processing.
 
 # stacksize:  integer,    >= 0
-# stackcount: integer,    >= 0, < cstack_size(s)
+# stackcount: integer,    >  0, <= cstack_size(s)
 # stackindex: list index, >= 0, < cstack_size(s)
 
 critcl::argtype stacksize {
@@ -66,9 +66,16 @@ critcl::argtype stackindex {
 	return TCL_ERROR;
     }
     if ((@A < 0) || (n <= @A)) {
-	Tcl_AppendResult (interp, "invalid index ",
-			  Tcl_GetString (@@),
-			  NULL);
+	char buf [20];
+	sprintf (buf, "%d", @A);
+	Tcl_AppendResult (interp, "invalid index \"",
+			  buf, "\"", NULL);
+	return TCL_ERROR;
+    }
+} int int
+
+critcl::argtype stackcount {
+    if ((StructStackC_CheckCount ((CSTACK) cd, interp, @@, &@A) != TCL_OK) || (@A < 0)) {
 	return TCL_ERROR;
     }
 } int int
@@ -104,6 +111,26 @@ critcl::class::define ::struct::stack {
 	/* Common code for peek, peekr, and pop */
 
 	static int
+	StructStackC_CheckCount (CSTACK instance, Tcl_Interp* interp,
+				 Tcl_Obj* obj, int* n) {
+
+	    if ((Tcl_GetIntFromObj(interp, obj, n) != TCL_OK) ||
+		(*n < 1)) {
+		Tcl_ResetResult  (interp);
+		Tcl_AppendResult (interp, "expected positive integer but got \"",
+				  Tcl_GetString (obj), "\"", NULL);
+		return TCL_ERROR;
+	    }
+
+	    if (*n > cstack_size (instance)) {
+		Tcl_AppendResult (interp,"not enough elements",NULL);
+		return TCL_ERROR;
+	    }
+
+	    return TCL_OK;
+	}
+
+	static int
 	StructStackC_GetCount (CSTACK instance, Tcl_Interp* interp,
 			   int objc, Tcl_Obj*const* objv, int* n) {
 
@@ -113,21 +140,15 @@ critcl::class::define ::struct::stack {
 	    }
 
 	    if (objc == 3) {
-		if (Tcl_GetIntFromObj(interp, objv[2], n) != TCL_OK) {
-		    return TCL_ERROR;
-		} else if (*n < 1) {
-		    Tcl_AppendResult (interp, "invalid item count ",
-				      Tcl_GetString (objv[2]),
-				      NULL);
+		if (StructStackC_CheckCount(instance, interp, objv[2], n) != TCL_OK) {
 		    return TCL_ERROR;
 		}
-	    }
-
-	    if (*n > cstack_size (instance)) {
-		Tcl_AppendResult (interp,
-			  "insufficient items on stack to fulfill request",
-			  NULL);
-		return TCL_ERROR;
+	    } else {
+		*n = 1;
+		if (*n > cstack_size (instance)) {
+		    Tcl_AppendResult (interp,"not enough elements",NULL);
+		    return TCL_ERROR;
+		}
 	    }
 
 	    return TCL_OK;
@@ -192,32 +213,6 @@ critcl::class::define ::struct::stack {
 
     method size proc {} int {
 	return cstack_size (instance);
-    }
-
-    method top proc {} sTcl_Obj* {
-	long int n = cstack_size (instance);
-
-	if (!n) {
-	    Tcl_AppendResult (interp,
-	      "insufficient items on stack to fulfill request",
-	      NULL);
-	    return 0;
-	}
-
-	return cstack_top (instance);
-    }
-
-    method bottom proc {} sTcl_Obj* {
-	long int n = cstack_size (instance);
-
-	if (!n) {
-	    Tcl_AppendResult (interp,
-	      "insufficient items on stack to fulfill request",
-	      NULL);
-	    return 0;
-	}
-
-	return cstack_bottom (instance);
     }
 
     method at proc {stackindex at} sTcl_Obj* {
@@ -303,8 +298,8 @@ critcl::class::define ::struct::stack {
 	return TCL_OK;
     }
 
-    method rotate proc {stackindex at int steps} ok {
-	cstack_rol (instance, at, steps);
+    method rotate proc {stackcount n int steps} ok {
+	cstack_rol (instance, n, steps);
 	return TCL_OK;
     }
 
