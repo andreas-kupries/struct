@@ -13,7 +13,7 @@
 ## Requisites
 
 package require Tcl 8.5
-package require critcl 3.1.1
+package require critcl 3.1.2
 
 critcl::buildrequirement {
     package require critcl::class 1.0.3 ; # DSL, easy spec of Tcl class/object commands.
@@ -48,8 +48,8 @@ critcl::tsources policy.tcl
 ## Implementation - Class Helpers - Custom argument/result processing.
 
 # stacksize:  integer,    >= 0
-# stackcount: integer,    >  0, <= cstack_size(s)
-# stackindex: list index, >= 0, < cstack_size(s)
+# stackindex: list index, >= 0, <  cstack_size (s)
+# stackcount: integer,    >  0, <= cstack_size (s)
 
 critcl::argtype stacksize {
     if ((Tcl_GetIntFromObj (interp, @@, &@A) != TCL_OK) || (@A < 0)) {
@@ -75,7 +75,15 @@ critcl::argtype stackindex {
 } int int
 
 critcl::argtype stackcount {
-    if ((StructStackC_CheckCount ((CSTACK) cd, interp, @@, &@A) != TCL_OK) || (@A < 0)) {
+    if ((Tcl_GetIntFromObj(interp, @@, &@A) != TCL_OK) ||
+	(@A < 1)) {
+	Tcl_ResetResult  (interp);
+	Tcl_AppendResult (interp, "expected positive integer but got \"",
+			  Tcl_GetString (@@), "\"", NULL);
+	return TCL_ERROR;
+    }
+    if (@A > cstack_size ((CSTACK) cd)) {
+	Tcl_AppendResult (interp, "not enough elements", NULL);
 	return TCL_ERROR;
     }
 } int int
@@ -108,80 +116,34 @@ critcl::class::define ::struct::stack {
 	}
 
 	/* * ** *** ***** ******** ************* ********************* */
-	/* Common code for peek, peekr, and pop */
-
-	static int
-	StructStackC_CheckCount (CSTACK instance, Tcl_Interp* interp,
-				 Tcl_Obj* obj, int* n) {
-
-	    if ((Tcl_GetIntFromObj(interp, obj, n) != TCL_OK) ||
-		(*n < 1)) {
-		Tcl_ResetResult  (interp);
-		Tcl_AppendResult (interp, "expected positive integer but got \"",
-				  Tcl_GetString (obj), "\"", NULL);
-		return TCL_ERROR;
-	    }
-
-	    if (*n > cstack_size (instance)) {
-		Tcl_AppendResult (interp,"not enough elements",NULL);
-		return TCL_ERROR;
-	    }
-
-	    return TCL_OK;
-	}
-
-	static int
-	StructStackC_GetCount (CSTACK instance, Tcl_Interp* interp,
-			   int objc, Tcl_Obj*const* objv, int* n) {
-
-	    if ((objc != 2) && (objc != 3)) {
-		Tcl_WrongNumArgs (interp, 2, objv, "?n?");
-		return TCL_ERROR;
-	    }
-
-	    if (objc == 3) {
-		if (StructStackC_CheckCount(instance, interp, objv[2], n) != TCL_OK) {
-		    return TCL_ERROR;
-		}
-	    } else {
-		*n = 1;
-		if (*n > cstack_size (instance)) {
-		    Tcl_AppendResult (interp,"not enough elements",NULL);
-		    return TCL_ERROR;
-		}
-	    }
-
-	    return TCL_OK;
-	}
+	/* Common code for top, bottom, and pop */
 
 	static Tcl_Obj*
 	StructStackC_Top (CSTACK instance, int n) {
-	    CSLICE s = cstack_get (instance, n-1, n);
-	    Tcl_Obj* result;
-
 	    if (n == 1) {
-		result = (Tcl_Obj*) cslice_at (s, 0);
+		return cstack_top (instance);
 	    } else {
+		Tcl_Obj* result;
+		CSLICE s = cstack_get (instance, n-1, n);
 		s = cslice_reverse (s);
 		result = cslice_to_list (s);
+		cslice_destroy (s);
+		return result;
 	    }
-	    cslice_destroy (s);
-	    return result;
 	}
 
 	static Tcl_Obj*
 	StructStackC_Bottom (CSTACK instance, int n) {
-	    CSLICE s = cstack_get (instance, cstack_size(instance)-1, n);
-	    Tcl_Obj* result;
-
 	    if (n == 1) {
-		result = (Tcl_Obj*) cslice_at (s, 0);
+		return cstack_bottom (instance);
 	    } else {
+		Tcl_Obj* result;
+		CSLICE s = cstack_get (instance, cstack_size(instance)-1, n);
 		s = cslice_reverse (s);
 		result = cslice_to_list (s);
+		cslice_destroy (s);
+		return result;
 	    }
-	    cslice_destroy (s);
-	    return result;
 	}
     }
 
@@ -233,10 +195,9 @@ critcl::class::define ::struct::stack {
 	}
     }
 
-    method top command {?n?} {
-	int n = 1;
-
-	if (StructStackC_GetCount (instance, interp, objc, objv, &n) != TCL_OK) {
+    method top proc {stackcount {n 1}} ok {
+	if (n > cstack_size (instance)) {
+	    Tcl_AppendResult (interp, "not enough elements", NULL);
 	    return TCL_ERROR;
 	}
 
@@ -244,10 +205,9 @@ critcl::class::define ::struct::stack {
 	return TCL_OK;
     }
 
-    method bottom command {?n?} {
-	int n = 1;
-
-	if (StructStackC_GetCount (instance, interp, objc, objv, &n) != TCL_OK) {
+    method bottom proc {stackcount {n 1}} ok {
+	if (n > cstack_size (instance)) {
+	    Tcl_AppendResult (interp, "not enough elements", NULL);
 	    return TCL_ERROR;
 	}
 
@@ -255,10 +215,9 @@ critcl::class::define ::struct::stack {
 	return TCL_OK;
     }
 
-    method pop command {?n?} {
-	int n = 1;
-
-	if (StructStackC_GetCount (instance, interp, objc, objv, &n) != TCL_OK) {
+    method pop proc {stackcount {n 1}} ok {
+	if (n > cstack_size (instance)) {
+	    Tcl_AppendResult (interp, "not enough elements", NULL);
 	    return TCL_ERROR;
 	}
 
