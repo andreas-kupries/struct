@@ -123,7 +123,7 @@ cqueue_head (CQUEUE q, long int take)
 	long int pull = MIN (take, size);
 
 	take -= pull;
-	tmp = cstack_getr (q->head, q->at, pull);
+	tmp = cstack_getr (q->middle, q->at, pull);
 	result = (!result)
 	    ? tmp
 	    : cslice_concat (result, tmp);
@@ -179,7 +179,7 @@ cqueue_tail (CQUEUE q, long int take)
 	long int pull = MIN (take, size);
 
 	take -= pull;
-	tmp = cstack_get (q->head, pull-1, pull);
+	tmp = cstack_get (q->middle, pull-1, pull);
 	result = (!result)
 	    ? tmp
 	    : cslice_concat (tmp, result);
@@ -247,7 +247,7 @@ cqueue_get (CQUEUE q, long int at, long int take)
 	    pull = MIN (take, sz);
 
 	    take -= pull;
-	    tmp = cstack_getr (q->head, q->at, pull);
+	    tmp = cstack_getr (q->middle, q->at, pull);
 	    result = (!result)
 		? tmp
 		: cslice_concat (result, tmp);
@@ -372,6 +372,16 @@ cqueue_remove_head (CQUEUE q, long int take)
 	/* drop == take < size ---> take-drop == 0, stop. */
 	q->at += drop;
 	return;
+    }
+
+    if (q->tail) {
+	if (q->middle) {
+	    HoldStack (q, &q->middle);
+	}
+	q->middle = q->tail;
+	q->tail   = 0;
+	q->at     = 0;
+	goto again;
     }
 
     /* We are not accessing tail, because this has been done already,
