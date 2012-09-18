@@ -74,7 +74,7 @@ critcl::argtype stackindex {
     }
 } int int
 
-critcl::argtype stackcount {
+critcl::argtype stackcountfull {
     if ((Tcl_GetIntFromObj(interp, @@, &@A) != TCL_OK) ||
 	(@A < 1)) {
 	Tcl_ResetResult  (interp);
@@ -86,6 +86,19 @@ critcl::argtype stackcount {
 	Tcl_AppendResult (interp, "not enough elements", NULL);
 	return TCL_ERROR;
     }
+} int int
+
+critcl::argtype stackcount {
+    if ((Tcl_GetIntFromObj(interp, @@, &@A) != TCL_OK) ||
+	(@A < 1)) {
+	Tcl_ResetResult  (interp);
+	Tcl_AppendResult (interp, "expected positive integer but got \"",
+			  Tcl_GetString (@@), "\"", NULL);
+	return TCL_ERROR;
+    }
+    /* Check for size overrun is done in the using proc body.
+     * This here cannot check the default value.
+     */
 } int int
 
 # Custom definition.
@@ -257,7 +270,7 @@ critcl::class::define ::struct::stack {
 	return TCL_OK;
     }
 
-    method rotate proc {stackcount n int steps} ok {
+    method rotate proc {stackcountfull n int steps} ok {
 	cstack_rol (instance, n, steps);
 	return TCL_OK;
     }
