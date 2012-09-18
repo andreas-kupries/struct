@@ -167,7 +167,7 @@ critcl::ccode {
 	if (Tcl_ListObjGetElements (interp, l, &lc, &lv) != TCL_OK) {
 	    return 0;
 	} else {
-	    return cslice_create (lc, lv);
+	    return cslice_create (lc, (void**) lv);
 	}
     }
 
