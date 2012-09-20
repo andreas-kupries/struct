@@ -240,7 +240,7 @@ Database Class:	\\fB\\$3\\fR
 .TH "c::slice" n 1 doc "Tcl Data Structures"
 .BS
 .SH NAME
-c::slice \- Create and manipulate slices
+c::slice \- Create and manipulate C-level array slices
 .SH SYNOPSIS
 package require \fBTcl  8.5\fR
 .sp

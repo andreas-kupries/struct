@@ -242,14 +242,14 @@ Database Class:	\\fB\\$3\\fR
 doc
 .RS
 .TP
-\fBc::stack\fR
-\fIfiles/cstack/cstack.n\fR: Create and manipulate C-level stack objects
+\fBc::slice\fR
+\fIfiles/cslice/cslice.n\fR: Create and manipulate C-level array slices
 .TP
 \fBc::queue\fR
-\fIfiles/cqueue/cqueue.n\fR: Create and manipulate queues
+\fIfiles/cqueue/cqueue.n\fR: Create and manipulate C-level queue objects
 .TP
-\fBc::slice\fR
-\fIfiles/cslice/cslice.n\fR: Create and manipulate slices
+\fBc::stack\fR
+\fIfiles/cstack/cstack.n\fR: Create and manipulate C-level stack objects
 .TP
 \fBstruct::queue\fR
 \fIfiles/queuec/struct_queue_c.n\fR: Create and manipulate Tcl queue objects, C implementation

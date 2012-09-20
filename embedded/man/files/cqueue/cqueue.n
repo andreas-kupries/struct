@@ -240,7 +240,7 @@ Database Class:	\\fB\\$3\\fR
 .TH "c::queue" n 1 doc "Tcl Data Structures"
 .BS
 .SH NAME
-c::queue \- Create and manipulate queues
+c::queue \- Create and manipulate C-level queue objects
 .SH SYNOPSIS
 package require \fBTcl  8.5\fR
 .sp

@@ -3,7 +3,7 @@
 [comment {- - -- --- ----- -------- ------------- ---------------------}]
 [manpage_begin c::slice n 1]
 [include ../include/general.inc]
-[titledesc {Create and manipulate slices}]
+[titledesc {Create and manipulate C-level array slices}]
 [require c::slice [opt 1]]
 [keywords  slice {array slice}]
 [description]
