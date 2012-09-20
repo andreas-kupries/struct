@@ -102,7 +102,7 @@ test queue-2.1 {instance, bad method name} -setup {
 } -cleanup {
     myqueue destroy
 } -returnCodes error \
-    -result [badmethod foo {append clear destroy get head pop prepend size tail}]
+    -result [badmethod foo {all append clear destroy get head pop prepend size tail}]
 
 # # ## ### ##### ######## ############# #####################
 
@@ -589,108 +589,282 @@ foreach {k n at result} {
 }
 
 # # ## ### ##### ######## ############# #####################
+
+test queue-8.0 {all, wrong#args, too many} -setup {
+    struct queue create myqueue
+} -body {
+    myqueue all X
+} -cleanup {
+    myqueue destroy
+} -returnCodes error -result {wrong # args: should be "myqueue all"}
+
+test queue-8.1 {all, single} -setup {
+    struct queue create myqueue
+    myqueue append x
+} -body {
+    myqueue all
+} -cleanup {
+    myqueue destroy
+} -result x
+
+test queue-8.2 {all, single} -setup {
+    struct queue create myqueue
+    myqueue append {a b}
+} -body {
+    myqueue all
+} -cleanup {
+    myqueue destroy
+} -result {{a b}}
+
+test queue-8.3 {all, multiple} -setup {
+    struct queue create myqueue
+    myqueue append a {b c} d
+} -body {
+    myqueue all
+} -cleanup {
+    myqueue destroy
+} -result {a {b c} d}
+
+test queue-8.4 {all, empty} -setup {
+    struct queue create myqueue
+} -body {
+    myqueue all
+} -cleanup {
+    myqueue destroy
+} -result {}
+
+# # ## ### ##### ######## ############# #####################
+
+test queue-9.0 {append, wrong#args, not enough} -setup {
+    struct queue create myqueue
+} -body {
+    myqueue append
+} -cleanup {
+    myqueue destroy
+} -returnCodes error -result {wrong # args: should be "myqueue append item ..."}
+
+test queue-9.1 {append, single} -setup {
+    struct queue create myqueue
+} -body {
+    myqueue append x
+    list [myqueue size] [myqueue all]
+} -cleanup {
+    myqueue destroy
+} -result {1 x}
+
+test queue-9.2 {append, multiple} -setup {
+    struct queue create myqueue
+} -body {
+    myqueue append a b c d
+    list [myqueue size] [myqueue all]
+} -cleanup {
+    myqueue destroy
+} -result {4 {a b c d}}
+
+# # ## ### ##### ######## ############# #####################
+
+test queue-10.0 {prepend, wrong#args, not enough} -setup {
+    struct queue create myqueue
+} -body {
+    myqueue prepend
+} -cleanup {
+    myqueue destroy
+} -returnCodes error -result {wrong # args: should be "myqueue prepend item ..."}
+
+test queue-10.1 {prepend, single} -setup {
+    struct queue create myqueue
+} -body {
+    myqueue prepend x
+    list [myqueue size] [myqueue all]
+} -cleanup {
+    myqueue destroy
+} -result {1 x}
+
+test queue-10.2 {prepend, multiple} -setup {
+    struct queue create myqueue
+} -body {
+    myqueue prepend a b c d
+    list [myqueue size] [myqueue all]
+} -cleanup {
+    myqueue destroy
+} -result {4 {d c b a}}
+
+# # ## ### ##### ######## ############# #####################
+
+test queue-11.0 {clear, wrong#args, too many} -setup {
+    struct queue create myqueue
+} -body {
+    myqueue clear X
+} -cleanup {
+    myqueue destroy
+} -returnCodes error -result {wrong # args: should be "myqueue clear"}
+
+test queue-11.1 {clear} -setup {
+    struct queue create myqueue
+    myqueue append _ a b c d
+    myqueue pop head ; # put tail into middle
+    myqueue append  e f g h ; # new tail
+    myqueue prepend i j k l ; # and head
+} -body {
+    list \
+	[myqueue size] [myqueue all] \
+	[myqueue clear] \
+	[myqueue size] [myqueue all]
+} -cleanup {
+    myqueue destroy
+} -result {12 {l k j i a b c d e f g h} {} 0 {}}
+
+# # ## ### ##### ######## ############# #####################
+
+test queue-12.0 {pop, wrong#args, not enough} -setup {
+    struct queue create myqueue
+} -body {
+    myqueue pop
+} -cleanup {
+    myqueue destroy
+} -returnCodes error -result {wrong # args: should be "myqueue pop where ?n?"}
+
+test queue-12.1 {pop, wrong#args, too many} -setup {
+    struct queue create myqueue
+} -body {
+    myqueue pop X Y Z
+} -cleanup {
+    myqueue destroy
+} -returnCodes error -result {wrong # args: should be "myqueue pop where ?n?"}
+
+test queue-12.2 {pop, bad where} -setup {
+    struct queue create myqueue
+} -body {
+    myqueue pop X
+} -cleanup {
+    myqueue destroy
+} -returnCodes error -result {bad location "X": must be head or tail}
+
+test queue-12.3 {pop, bad size} -setup {
+    struct queue create myqueue
+} -body {
+    myqueue pop head X
+} -cleanup {
+    myqueue destroy
+} -returnCodes error -result {expected positive integer but got "X"}
+
+test queue-12.4 {pop, bad size} -setup {
+    struct queue create myqueue
+} -body {
+    myqueue pop head 0
+} -cleanup {
+    myqueue destroy
+} -returnCodes error -result {expected positive integer but got "0"}
+
+test queue-12.5 {pop, bad size} -setup {
+    struct queue create myqueue
+    myqueue append a b c d
+} -body {
+    myqueue pop head 5
+} -cleanup {
+    myqueue destroy
+} -returnCodes error -result {not enough elements}
+
+test queue-12.6 {pop, bad size} -setup {
+    struct queue create myqueue
+    myqueue append a b c d
+} -body {
+    myqueue pop head -1
+} -cleanup {
+    myqueue destroy
+} -returnCodes error -result {expected positive integer but got "-1"}
+
+test queue-12.7 {pop, bad size} -setup {
+    struct queue create myqueue
+} -body {
+    myqueue pop head
+} -cleanup {
+    myqueue destroy
+} -returnCodes error -result {not enough elements}
+
+test queue-12.8 {pop, bad size} -setup {
+    struct queue create myqueue
+} -body {
+    myqueue pop tail X
+} -cleanup {
+    myqueue destroy
+} -returnCodes error -result {expected positive integer but got "X"}
+
+test queue-12.9 {pop, bad size} -setup {
+    struct queue create myqueue
+} -body {
+    myqueue pop tail 0
+} -cleanup {
+    myqueue destroy
+} -returnCodes error -result {expected positive integer but got "0"}
+
+test queue-12.10 {pop, bad size} -setup {
+    struct queue create myqueue
+    myqueue append a b c d
+} -body {
+    myqueue pop tail 5
+} -cleanup {
+    myqueue destroy
+} -returnCodes error -result {not enough elements}
+
+test queue-12.11 {pop, bad size} -setup {
+    struct queue create myqueue
+    myqueue append a b c d
+} -body {
+    myqueue pop tail -1
+} -cleanup {
+    myqueue destroy
+} -returnCodes error -result {expected positive integer but got "-1"}
+
+test queue-12.12 {pop, bad size} -setup {
+    struct queue create myqueue
+} -body {
+    myqueue pop tail
+} -cleanup {
+    myqueue destroy
+} -returnCodes error -result {not enough elements}
+
+foreach {k take result} {
+    13  1 {l 11 {k j i a b c d e f g h}}
+    14  4 {{l k j i} 8 {a b c d e f g h}}
+    15  5 {{l k j i a} 7 {b c d e f g h}}
+    16  8 {{l k j i a b c d} 4 {e f g h}}
+    17  9 {{l k j i a b c d e} 3 {f g h}}
+    18 12 {{l k j i a b c d e f g h} 0 {}}
+} {
+    test queue-12.$k {pop, head} -setup {
+	struct queue create myqueue
+	myqueue append _ a b c d
+	myqueue pop head ; # put tail into middle
+	myqueue append  e f g h ; # new tail
+	myqueue prepend i j k l ; # and head
+    } -body {
+	list [myqueue pop head $take] [myqueue size] [myqueue all]
+    } -cleanup {
+	myqueue destroy
+    } -result $result
+}
+
+foreach {k take result} {
+    19  1 {h 11 {l k j i a b c d e f g}}
+    20  4 {{e f g h} 8 {l k j i a b c d}}
+    21  5 {{d e f g h} 7 {l k j i a b c}}
+    22  8 {{a b c d e f g h} 4 {l k j i}}
+    23  9 {{i a b c d e f g h} 3 {l k j}}
+    24 12 {{l k j i a b c d e f g h} 0 {}}
+} {
+    test queue-12.$k {pop, tail} -setup {
+	struct queue create myqueue
+	myqueue append _ a b c d
+	myqueue pop head ; # put tail into middle
+	myqueue append  e f g h ; # new tail
+	myqueue prepend i j k l ; # and head
+    } -body {
+	list [myqueue pop tail $take] [myqueue size] [myqueue all]
+    } -cleanup {
+	myqueue destroy
+    } -result $result
+}
+
+# # ## ### ##### ######## ############# #####################
 return
-
-
-
-#----------------------------------------------------------------------
-    
-test queue-4.1 {put operation} {
-    queue myqueue
-    catch {myqueue put} msg
-    myqueue destroy
-    set msg
-} "wrong # args: should be \"myqueue put item ?item ...?\""
-
-test queue-4.2 {put operation, singleton items} {
-    queue myqueue
-    myqueue put a
-    myqueue put b
-    myqueue put c
-    set result [list [myqueue get] [myqueue get] [myqueue get]]
-    myqueue destroy
-    set result
-} {a b c}
-
-test queue-4.3 {put operation, multiple items} {
-    queue myqueue
-    myqueue put a b c
-    set result [list [myqueue get] [myqueue get] [myqueue get]]
-    myqueue destroy
-    set result
-} {a b c}
-
-test queue-4.4 {put operation, spaces in items} {
-    queue myqueue
-    myqueue put a b "foo bar"
-    set result [list [myqueue get] [myqueue get] [myqueue get]]
-    myqueue destroy
-    set result
-} {a b {foo bar}}
-
-test queue-4.5 {put operation, bad chars in items} {
-    queue myqueue
-    myqueue put a b \{
-    set result [list [myqueue get] [myqueue get] [myqueue get]]
-    myqueue destroy
-    set result
-} [list a b \{]
-
-#----------------------------------------------------------------------
-
-test queue-7.1 {clear operation} {
-    queue myqueue
-    myqueue put a
-    myqueue put b
-    myqueue put c
-    set result [list [myqueue peek 3]]
-    myqueue clear
-    lappend result [myqueue size]
-    myqueue destroy
-    set result
-} {{a b c} 0}
-
-#----------------------------------------------------------------------
-
-test queue-8.1 {unget operation, not enough arguments} {
-    queue myqueue
-    catch {myqueue unget} msg
-    myqueue destroy
-    set msg
-} [tmWrong unget {item} 0]
-
-test queue-8.2 {unget operation, too many arguments} {
-    queue myqueue
-    catch {myqueue unget a b} msg
-    myqueue destroy
-    set msg
-} [tmTooMany unget {item}]
-
-test queue-8.3 {unget, empty queue} {
-    queue myqueue
-    myqueue unget foo
-    set res [myqueue peek [myqueue size]]
-    myqueue destroy
-    set res
-} {foo}
-
-test queue-8.4 {unget, nonempty queue, at beginning of queue} {
-    queue myqueue
-    myqueue put a b c
-    myqueue unget foo
-    set res [myqueue peek [myqueue size]]
-    myqueue destroy
-    set res
-} {foo a b c}
-
-test queue-8.5 {unget, nonempty queue, middle of queue} {
-    queue myqueue
-    myqueue put a b c d e f
-    myqueue get 3
-    myqueue unget foo
-    set res [myqueue peek [myqueue size]]
-    myqueue destroy
-    set res
-} {foo d e f}
-
-#----------------------------------------------------------------------

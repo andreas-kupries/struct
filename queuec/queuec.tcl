@@ -223,6 +223,19 @@ critcl::class::define ::struct::queue {
 	}
     }
 
+    method all proc {} sTcl_Obj* {
+	int n = cqueue_size (instance);
+	if (!n) {
+	    return Tcl_NewListObj (0,NULL);
+	} else {
+	    Tcl_Obj* result;
+	    CSLICE s = cqueue_head (instance, n);
+	    result = cslice_to_list (s);
+	    cslice_destroy (s);
+	    return result;
+	}
+    }
+
     # # ## ### ##### ######## ############# #####################
 
     method clear proc {} void {
@@ -279,12 +292,14 @@ critcl::class::define ::struct::queue {
 	return TCL_OK;
     }
 
-    method pop proc {where istail queuecount {n 1}} sTcl_Obj* {
+    method pop proc {where where queuecount {n 1}} sTcl_Obj* {
 	Tcl_Obj* result;
+	int istail = where; /* 'where' is better name for error messages,
+	                     * 'istail' is better for internal semantics */
 
 	if (n > cqueue_size (instance)) {
 	    Tcl_AppendResult (interp, "not enough elements", NULL);
-	    return TCL_ERROR;
+	    return 0;
 	}
 
 	if (istail) {
