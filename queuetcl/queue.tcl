@@ -41,7 +41,7 @@ oo::class create ::struct::queue {
 	return [expr { [llength $mymiddle] + [llength $mytail] + [llength $myhead] - $myat }]
     }
 
-    method get {at {n 1}} {
+    method at {at {n 1}} {
 	my CheckIndex at
 	my CheckGetSize $n
 	if {$at+$n > [my size]} {

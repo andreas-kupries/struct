@@ -211,7 +211,7 @@ critcl::class::define ::struct::queue {
 	return TCL_OK;
     }
 
-    method get proc {queueindex at qgetsize {n 1}} sTcl_Obj* {
+    method at proc {queueindex at qgetsize {n 1}} sTcl_Obj* {
 	if ((at+n) > cqueue_size (instance)) {
 	    Tcl_AppendResult (interp, "not enough elements", NULL);
 	    return 0;

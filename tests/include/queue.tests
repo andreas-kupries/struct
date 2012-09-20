@@ -102,7 +102,7 @@ test queue-2.1 {instance, bad method name} -setup {
 } -cleanup {
     myqueue destroy
 } -returnCodes error \
-    -result [badmethod foo {all append clear destroy get head pop prepend size tail}]
+    -result [badmethod foo {all append at clear destroy head pop prepend size tail}]
 
 # # ## ### ##### ######## ############# #####################
 
@@ -457,21 +457,21 @@ test queue-6.20 {tail, single, that element} -setup {
 
 # # ## ### ##### ######## ############# #####################
 
-test queue-7.0 {get, wrong#args, not enough} -setup {
+test queue-7.0 {at, wrong#args, not enough} -setup {
     struct queue create myqueue
 } -body {
-    myqueue get
+    myqueue at
 } -cleanup {
     myqueue destroy
-} -returnCodes error -result {wrong # args: should be "myqueue get at ?n?"}
+} -returnCodes error -result {wrong # args: should be "myqueue at at ?n?"}
 
-test queue-7.1 {get, wrong#args, too many} -setup {
+test queue-7.1 {at, wrong#args, too many} -setup {
     struct queue create myqueue
 } -body {
-    myqueue get X Y Z
+    myqueue at X Y Z
 } -cleanup {
     myqueue destroy
-} -returnCodes error -result {wrong # args: should be "myqueue get at ?n?"}
+} -returnCodes error -result {wrong # args: should be "myqueue at at ?n?"}
 
 foreach {k index} {
     2 X
@@ -481,10 +481,10 @@ foreach {k index} {
     6 1+M
     7 1-M
 } {
-    test queue-7.$k {get, bad index} -setup {
+    test queue-7.$k {at, bad index} -setup {
 	struct queue create myqueue
     } -body {
-	myqueue get $index 1
+	myqueue at $index 1
     } -cleanup {
 	myqueue destroy
     } -returnCodes error \
@@ -498,57 +498,57 @@ foreach {k index rindex} {
     11 6-1  5
     12 0-1 -1
 } {
-    test queue-7.$k {get, bad index} -setup {
+    test queue-7.$k {at, bad index} -setup {
 	struct queue create myqueue
 	myqueue append a b c d
     } -body {
-	myqueue get $index 1
+	myqueue at $index 1
     } -cleanup {
 	myqueue destroy
     } -returnCodes error -result "invalid index \"$rindex\""
 }
 
-test queue-7.13 {get, bad size} -setup {
+test queue-7.13 {at, bad size} -setup {
     struct queue create myqueue
     myqueue append a b c d
 } -body {
-    myqueue get 0 X
+    myqueue at 0 X
 } -cleanup {
     myqueue destroy
 } -returnCodes error -result {expected positive integer but got "X"}
 
-test queue-7.14 {get, bad size} -setup {
+test queue-7.14 {at, bad size} -setup {
     struct queue create myqueue
     myqueue append a b c d
 } -body {
-    myqueue get 0 5
+    myqueue at 0 5
 } -cleanup {
     myqueue destroy
 } -returnCodes error -result {not enough elements}
 
-test queue-7.15 {get, bad size} -setup {
+test queue-7.15 {at, bad size} -setup {
     struct queue create myqueue
     myqueue append a b c d
 } -body {
-    myqueue get 2 3
+    myqueue at 2 3
 } -cleanup {
     myqueue destroy
 } -returnCodes error -result {not enough elements}
 
-test queue-7.16 {get, bad size} -setup {
+test queue-7.16 {at, bad size} -setup {
     struct queue create myqueue
     myqueue append a b c d
 } -body {
-    myqueue get 2 0
+    myqueue at 2 0
 } -cleanup {
     myqueue destroy
 } -returnCodes error -result {expected positive integer but got "0"}
 
-test queue-7.17 {get, bad size} -setup {
+test queue-7.17 {at, bad size} -setup {
     struct queue create myqueue
     myqueue append a b c d
 } -body {
-    myqueue get 2 -1
+    myqueue at 2 -1
 } -cleanup {
     myqueue destroy
 } -returnCodes error -result {expected positive integer but got "-1"}
@@ -585,24 +585,24 @@ foreach {k n at result} {
 } {
     # l k j i a b c d e f g h
     # 0 1 2 3 4 5 6 7 8 9 1011
-    test queue-7.$k {get, span} -setup {
+    test queue-7.$k {at, span} -setup {
 	struct queue create myqueue
 	myqueue append _ a b c d
 	myqueue pop head ; # put tail into middle
 	myqueue append  e f g h ; # new tail
 	myqueue prepend i j k l ; # and head
     } -body {
-	myqueue get $at $n
+	myqueue at $at $n
     } -cleanup {
 	myqueue destroy
     } -result $result
 }
 
-test queue-7.39 {get, single, that element} -setup {
+test queue-7.39 {at, single, that element} -setup {
     struct queue create myqueue
     myqueue append {a b}
 } -body {
-    myqueue get 0
+    myqueue at 0
 } -cleanup {
     myqueue destroy
 } -result {a b}
