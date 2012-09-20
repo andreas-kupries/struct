@@ -409,6 +409,50 @@ size, or smaller. In that case the result is the empty list.
 This method is a variant of method \fBtrim\fR which does not return
 the removed elements, and only performs any necessary shrinking.
 .PP
+.SH CHANGES
+.SS "CHANGES FOR VERSION 2"
+Version 2 introduces incompatible changes to the API of stack objects,
+therefore the change to the major version number.
+.PP
+The changes in detail are:
+.IP [1]
+Version 2 requires Tcl 8.5 or higher. Tcl 8.4 or less is not
+supported anymore.
+.IP [2]
+Instance creation syntax has changed.
+For comparison, the old syntax is
+.CS
+
+
+	struct::stack FOO       ; # or
+	set foo [struct::stack]
+
+.CE
+.IP
+whereas the new is
+.CS
+
+
+	struct stack create FOO ; # or
+	set foo [struct stack new]
+
+.CE
+.IP [3]
+Method \fBgetr\fR has been dropped. Use
+.CS
+
+
+	lreverse [FOO get]
+
+.CE
+.IP
+instead, assuming that \fBFOO\fR is a stack instance.
+.IP [4]
+The methods \fBpeek\fR and \fBpeekr\fR have been renamed
+to \fBtop\fR and \fBbottom\fR, respectively.
+.IP [5]
+The method \fBat\fR is new.
+.PP
 .SH LICENSE
 This package, written by Andreas Kupries, is BSD licensed.
 .SH "BUGS, IDEAS, FEEDBACK"

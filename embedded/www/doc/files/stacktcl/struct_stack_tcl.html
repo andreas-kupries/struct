@@ -112,8 +112,13 @@
 <li class="section"><a href="#section1">Description</a></li>
 <li class="section"><a href="#section2">Class API</a></li>
 <li class="section"><a href="#section3">Instance API</a></li>
-<li class="section"><a href="#section4">License</a></li>
-<li class="section"><a href="#section5">Bugs, Ideas, Feedback</a></li>
+<li class="section"><a href="#section4">Changes</a>
+<ul>
+<li class="subsection"><a href="#subsection1">Changes for version 2</a></li>
+</ul>
+</li>
+<li class="section"><a href="#section5">License</a></li>
+<li class="section"><a href="#section6">Bugs, Ideas, Feedback</a></li>
 <li class="section"><a href="#keywords">Keywords</a></li>
 <li class="section"><a href="#category">Category</a></li>
 </ul>
@@ -249,10 +254,41 @@ size, or smaller. In that case the result is the empty list.</p></dd>
 the removed elements, and only performs any necessary shrinking.</p></dd>
 </dl>
 </div>
-<div id="section4" class="section"><h2><a name="section4">License</a></h2>
+<div id="section4" class="section"><h2><a name="section4">Changes</a></h2>
+<div id="subsection1" class="subsection"><h3><a name="subsection1">Changes for version 2</a></h3>
+<p>Version 2 introduces incompatible changes to the API of stack objects,
+therefore the change to the major version number.</p>
+<p>The changes in detail are:</p>
+<ol class="enumerated">
+<li><p>Version 2 requires Tcl 8.5 or higher. Tcl 8.4 or less is not
+	supported anymore.</p></li>
+<li><p>Instance creation syntax has changed.
+	For comparison, the old syntax is</p>
+<pre class="example">
+	struct::stack FOO       ; # or
+	set foo [struct::stack]
+</pre>
+<p>whereas the new is</p>
+<pre class="example">
+	struct stack create FOO ; # or
+	set foo [struct stack new]
+</pre>
+</li>
+<li><p>Method <b class="method">getr</b> has been dropped. Use</p>
+<pre class="example">
+	lreverse [FOO get]	
+</pre>
+<p>instead, assuming that <b class="cmd">FOO</b> is a stack instance.</p></li>
+<li><p>The methods <b class="method">peek</b> and <b class="method">peekr</b> have been renamed
+	to <b class="method">top</b> and <b class="method">bottom</b>, respectively.</p></li>
+<li><p>The method <b class="method">at</b> is new.</p></li>
+</ol>
+</div>
+</div>
+<div id="section5" class="section"><h2><a name="section5">License</a></h2>
 <p>This package, written by Andreas Kupries, is BSD licensed.</p>
 </div>
-<div id="section5" class="section"><h2><a name="section5">Bugs, Ideas, Feedback</a></h2>
+<div id="section6" class="section"><h2><a name="section6">Bugs, Ideas, Feedback</a></h2>
 <p>This document, and the package it describes, will undoubtedly contain
 bugs and other problems.
 Please report such at the

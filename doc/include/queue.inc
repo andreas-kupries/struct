@@ -151,5 +151,6 @@ elements to satisfy the request, i.e. less than [arg count] elements.
 [list_end]
 
 [comment {= = == === ===== ======== ============= =====================}]
+[include queue_changes.inc]
 [include license.inc]
 [include feedback.inc]

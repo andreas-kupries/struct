@@ -164,5 +164,6 @@ the removed elements, and only performs any necessary shrinking.
 [list_end]
 
 [comment {= = == === ===== ======== ============= =====================}]
+[include stack_changes.inc]
 [include license.inc]
 [include feedback.inc]
