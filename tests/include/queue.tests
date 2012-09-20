@@ -299,6 +299,15 @@ foreach {k take result} {
     } -result $result
 }
 
+test queue-5.20 {head, single, that element} -setup {
+    struct queue create myqueue
+    myqueue append {a b}
+} -body {
+    myqueue head
+} -cleanup {
+    myqueue destroy
+} -result {a b}
+
 # # ## ### ##### ######## ############# #####################
 
 test queue-6.0 {tail, wrong#args, too many} -setup {
@@ -437,6 +446,15 @@ foreach {k take result} {
     } -result $result
 }
 
+test queue-6.20 {tail, single, that element} -setup {
+    struct queue create myqueue
+    myqueue append {a b}
+} -body {
+    myqueue tail
+} -cleanup {
+    myqueue destroy
+} -result {a b}
+
 # # ## ### ##### ######## ############# #####################
 
 test queue-7.0 {get, wrong#args, not enough} -setup {
@@ -445,31 +463,23 @@ test queue-7.0 {get, wrong#args, not enough} -setup {
     myqueue get
 } -cleanup {
     myqueue destroy
-} -returnCodes error -result {wrong # args: should be "myqueue get at n"}
+} -returnCodes error -result {wrong # args: should be "myqueue get at ?n?"}
 
-test queue-7.1 {get, wrong#args, not enough} -setup {
-    struct queue create myqueue
-} -body {
-    myqueue get X
-} -cleanup {
-    myqueue destroy
-} -returnCodes error -result {wrong # args: should be "myqueue get at n"}
-
-test queue-7.2 {get, wrong#args, too many} -setup {
+test queue-7.1 {get, wrong#args, too many} -setup {
     struct queue create myqueue
 } -body {
     myqueue get X Y Z
 } -cleanup {
     myqueue destroy
-} -returnCodes error -result {wrong # args: should be "myqueue get at n"}
+} -returnCodes error -result {wrong # args: should be "myqueue get at ?n?"}
 
 foreach {k index} {
-    3 X
-    4 end-X
-    5 N+1
-    6 N-1
-    7 1+M
-    8 1-M
+    2 X
+    3 end-X
+    4 N+1
+    5 N-1
+    6 1+M
+    7 1-M
 } {
     test queue-7.$k {get, bad index} -setup {
 	struct queue create myqueue
@@ -482,11 +492,11 @@ foreach {k index} {
 }
 
 foreach {k index rindex} {
-     9  5   5
-    10 -1  -1
-    11 4+1  5
-    12 6-1  5
-    13 0-1 -1
+     8  5   5
+     9 -1  -1
+    10 4+1  5
+    11 6-1  5
+    12 0-1 -1
 } {
     test queue-7.$k {get, bad index} -setup {
 	struct queue create myqueue
@@ -498,7 +508,7 @@ foreach {k index rindex} {
     } -returnCodes error -result "invalid index \"$rindex\""
 }
 
-test queue-7.14 {get, bad size} -setup {
+test queue-7.13 {get, bad size} -setup {
     struct queue create myqueue
     myqueue append a b c d
 } -body {
@@ -507,7 +517,7 @@ test queue-7.14 {get, bad size} -setup {
     myqueue destroy
 } -returnCodes error -result {expected positive integer but got "X"}
 
-test queue-7.15 {get, bad size} -setup {
+test queue-7.14 {get, bad size} -setup {
     struct queue create myqueue
     myqueue append a b c d
 } -body {
@@ -516,7 +526,7 @@ test queue-7.15 {get, bad size} -setup {
     myqueue destroy
 } -returnCodes error -result {not enough elements}
 
-test queue-7.16 {get, bad size} -setup {
+test queue-7.15 {get, bad size} -setup {
     struct queue create myqueue
     myqueue append a b c d
 } -body {
@@ -525,7 +535,7 @@ test queue-7.16 {get, bad size} -setup {
     myqueue destroy
 } -returnCodes error -result {not enough elements}
 
-test queue-7.17 {get, bad size} -setup {
+test queue-7.16 {get, bad size} -setup {
     struct queue create myqueue
     myqueue append a b c d
 } -body {
@@ -534,7 +544,7 @@ test queue-7.17 {get, bad size} -setup {
     myqueue destroy
 } -returnCodes error -result {expected positive integer but got "0"}
 
-test queue-7.18 {get, bad size} -setup {
+test queue-7.17 {get, bad size} -setup {
     struct queue create myqueue
     myqueue append a b c d
 } -body {
@@ -551,27 +561,27 @@ test queue-7.18 {get, bad size} -setup {
 #       variables ?
 
 foreach {k n at result} {
-    19 2  0 {l k}
-    20 2  1 {k j}
-    21 2  3 {i a}
-    22 2  7 {d e}
-    23 2 10 {g h}
-    24 3  0 {l k j}
-    25 3  2 {j i a}
-    26 3  3 {i a b}
-    27 3  5 {b c d}
-    28 3  6 {c d e}
-    29 3  7 {d e f}
-    30 3  9 {f g h}
-    31 4  0 {l k j i}
-    32 4  2 {j i a b}
-    33 4  4 {a b c d}
-    34 4  6 {c d e f}
-    35 4  8 {e f g h}
-    36 9  0 {l k j i a b c d e}
-    37 9  1 {k j i a b c d e f}
-    38 9  2 {j i a b c d e f g} 
-    39 9  3 {i a b c d e f g h}
+    18 2  0 {l k}
+    19 2  1 {k j}
+    20 2  3 {i a}
+    21 2  7 {d e}
+    22 2 10 {g h}
+    23 3  0 {l k j}
+    24 3  2 {j i a}
+    25 3  3 {i a b}
+    26 3  5 {b c d}
+    27 3  6 {c d e}
+    28 3  7 {d e f}
+    29 3  9 {f g h}
+    30 4  0 {l k j i}
+    31 4  2 {j i a b}
+    32 4  4 {a b c d}
+    33 4  6 {c d e f}
+    34 4  8 {e f g h}
+    35 9  0 {l k j i a b c d e}
+    36 9  1 {k j i a b c d e f}
+    37 9  2 {j i a b c d e f g} 
+    38 9  3 {i a b c d e f g h}
 } {
     # l k j i a b c d e f g h
     # 0 1 2 3 4 5 6 7 8 9 1011
@@ -587,6 +597,15 @@ foreach {k n at result} {
 	myqueue destroy
     } -result $result
 }
+
+test queue-7.39 {get, single, that element} -setup {
+    struct queue create myqueue
+    myqueue append {a b}
+} -body {
+    myqueue get 0
+} -cleanup {
+    myqueue destroy
+} -result {a b}
 
 # # ## ### ##### ######## ############# #####################
 

@@ -211,13 +211,18 @@ critcl::class::define ::struct::queue {
 	return TCL_OK;
     }
 
-    method get proc {queueindex at qgetsize n} sTcl_Obj* {
+    method get proc {queueindex at qgetsize {n 1}} sTcl_Obj* {
 	if ((at+n) > cqueue_size (instance)) {
 	    Tcl_AppendResult (interp, "not enough elements", NULL);
 	    return 0;
 	} else {
 	    CSLICE s        = cqueue_get (instance, at, n);
-	    Tcl_Obj* result = cslice_to_list (s);
+	    Tcl_Obj* result;
+	    if (n == 1) {
+		result = (Tcl_Obj*) cslice_at (s, 0);
+	    } else {
+		result = cslice_to_list (s);
+	    }
 	    cslice_destroy (s);
 	    return result;
 	}

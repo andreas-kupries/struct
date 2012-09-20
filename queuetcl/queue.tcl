@@ -41,65 +41,78 @@ oo::class create ::struct::queue {
 	return [expr { [llength $mymiddle] + [llength $mytail] + [llength $myhead] - $myat }]
     }
 
-    method get {at n} {
+    method get {at {n 1}} {
 	my CheckIndex at
 	my CheckGetSize $n
 	if {$at+$n > [my size]} {
 	    return -code error {not enough elements}
 	}
 
-	#my DumpState H($n@$at)\t
+	set take $n
+
+	#my DumpState H($take@$at)\t
 
 	set have [llength $myhead]
 	if {$at >= $have} {
 	    incr at -$have
-	} elseif {($at+$n) <= $have} {
-	    set  stop $at
-	    incr stop -1
-	    incr stop $n
-	    return [lrange [lreverse $myhead] $at $stop]
+	} elseif {($at+$take) <= $have} {
+	    if {$n == 1} {
+		return [lindex [lreverse $myhead] $at]
+	    } else {
+		set  stop $at
+		incr stop -1
+		incr stop $take
+		return [lrange [lreverse $myhead] $at $stop]
+	    }
 	} else {
 	    lappend result {*}[lrange [lreverse $myhead] $at end]
-	    incr n -$have
-	    incr n $at
+	    incr take -$have
+	    incr take $at
 	    set at 0
 	}
 
-	#my DumpState M($n@$at)\t
+	#my DumpState M($take@$at)\t
 
 	set  have [llength $mymiddle]
 	incr have -$myat
 	if {$at >= $have} {
 	    incr at -$have
-	} elseif {($at+$n) <= $have} {
+	} elseif {($at+$take) <= $have} {
 	    set  start $myat
 	    incr start $at
-	    set stop $start
-	    incr stop $n
-	    incr stop -1
-	    lappend result {*}[lrange $mymiddle $start $stop]
-	    return $result
+	    if {$n == 1} {
+		return [lindex $mymiddle $start]
+	    } else {
+		set stop $start
+		incr stop $take
+		incr stop -1
+		lappend result {*}[lrange $mymiddle $start $stop]
+		return $result
+	    }
 	} else {
 	    set  start $myat
 	    incr start $at
 	    lappend result {*}[lrange $mymiddle $start end]
-	    incr n -$have
-	    incr n $at
+	    incr take -$have
+	    incr take $at
 	    set at 0
 	}
 
-	#my DumpState T($n@$at)\t
+	#my DumpState T($take@$at)\t
 
 	set  have [llength $mytail]
 	if {$at >= $have} {
 	    return -code error Impossible
-	} elseif {($at+$n) <= $have} {
-	    set  start $at
-	    set  stop $start
-	    incr stop $n
-	    incr stop -1
-	    lappend result {*}[lrange $mytail $start $stop]
-	    return $result
+	} elseif {($at+$take) <= $have} {
+	    if {$n == 1} {
+		return [lindex $mytail $at]
+	    } else {
+		set  stop $at
+		incr stop $take
+		incr stop -1
+		lappend result {*}[lrange $mytail $at $stop]
+		return $result
+	    }
 	} else {
 	    return -code error Impossible
 	}
@@ -242,7 +255,7 @@ oo::class create ::struct::queue {
 	if {$n == 1} {
 	    # Handle this as a special case
 	    # Single item gets are not listified
-	    set result [lindex $result 0]
+	    return [lindex $result 0]
 	}
 	return [lreverse $result]
     }
