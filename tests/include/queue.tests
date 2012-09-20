@@ -162,6 +162,281 @@ test queue-4.3 {size} -setup {
 } -result 4
 
 # # ## ### ##### ######## ############# #####################
+
+test queue-5.0 {head, wrong#args, too many} -setup {
+    struct queue create myqueue
+} -body {
+    myqueue head X Y
+} -cleanup {
+    myqueue destroy
+} -returnCodes error -result {wrong # args: should be "myqueue head ?n?"}
+
+test queue-5.1 {head, bad size} -setup {
+    struct queue create myqueue
+} -body {
+    myqueue head X
+} -cleanup {
+    myqueue destroy
+} -returnCodes error -result {expected positive integer but got "X"}
+
+test queue-5.2 {head, bad size} -setup {
+    struct queue create myqueue
+} -body {
+    myqueue head 0
+} -cleanup {
+    myqueue destroy
+} -returnCodes error -result {expected positive integer but got "0"}
+
+test queue-5.3 {head, bad size} -setup {
+    struct queue create myqueue
+    myqueue append a b c d
+} -body {
+    myqueue head 5
+} -cleanup {
+    myqueue destroy
+} -returnCodes error -result {not enough elements}
+
+test queue-5.4 {head, bad size} -setup {
+    struct queue create myqueue
+    myqueue append a b c d
+} -body {
+    myqueue head -1
+} -cleanup {
+    myqueue destroy
+} -returnCodes error -result {expected positive integer but got "-1"}
+
+test queue-5.5 {head, bad size} -setup {
+    struct queue create myqueue
+} -body {
+    myqueue head
+} -cleanup {
+    myqueue destroy
+} -returnCodes error -result {not enough elements}
+
+# The tricky thing about head and the others is to create all the
+# possible states the internal queue buffers can be in, so that we
+# actual cover all the branches.
+#
+# TODO: Break abstraction and introspect the C and Tcl instance
+#       variables ?
+
+test queue-5.6 {head, single, tail} -setup {
+    struct queue create myqueue
+    myqueue append a b c d
+} -body {
+    myqueue head
+} -cleanup {
+    myqueue destroy
+} -result a
+
+test queue-5.7 {head, single, head} -setup {
+    struct queue create myqueue
+    myqueue prepend a b c d
+} -body {
+    myqueue head
+} -cleanup {
+    myqueue destroy
+} -result d
+
+test queue-5.8 {head, single, middle} -setup {
+    struct queue create myqueue
+    myqueue append a b c d
+    myqueue pop head ; # Should shift tail -> middle.
+} -body {
+    myqueue head
+} -cleanup {
+    myqueue destroy
+} -result b
+
+test queue-5.9 {head, multi, tail} -setup {
+    struct queue create myqueue
+    myqueue append a b c d
+} -body {
+    myqueue head 2
+} -cleanup {
+    myqueue destroy
+} -result {a b}
+
+test queue-5.10 {head, multi, head} -setup {
+    struct queue create myqueue
+    myqueue prepend a b c d
+} -body {
+    myqueue head 2
+} -cleanup {
+    myqueue destroy
+} -result {d c}
+
+test queue-5.11 {head, multi, middle} -setup {
+    struct queue create myqueue
+    myqueue append a b c d
+    myqueue pop head ; # Should shift tail -> middle.
+} -body {
+    myqueue head 2
+} -cleanup {
+    myqueue destroy
+} -result {b c}
+
+foreach {k take result} {
+    12  5 {l k j i a}
+    13  6 {l k j i a b}
+    14  7 {l k j i a b c}
+    15  8 {l k j i a b c d}
+    16  9 {l k j i a b c d e}
+    17 10 {l k j i a b c d e f}
+    18 11 {l k j i a b c d e f g}
+    19 12 {l k j i a b c d e f g h}
+} {
+    test queue-5.$k {head, span} -setup {
+	struct queue create myqueue
+	myqueue append _ a b c d
+	myqueue pop head ; # put tail into middle
+	myqueue append  e f g h ; # new tail
+	myqueue prepend i j k l ; # and head
+    } -body {
+	myqueue head $take
+    } -cleanup {
+	myqueue destroy
+    } -result $result
+}
+# # ## ### ##### ######## ############# #####################
+
+test queue-6.0 {tail, wrong#args, too many} -setup {
+    struct queue create myqueue
+} -body {
+    myqueue tail X Y
+} -cleanup {
+    myqueue destroy
+} -returnCodes error -result {wrong # args: should be "myqueue tail ?n?"}
+
+test queue-6.1 {tail, bad size} -setup {
+    struct queue create myqueue
+} -body {
+    myqueue tail X
+} -cleanup {
+    myqueue destroy
+} -returnCodes error -result {expected positive integer but got "X"}
+
+test queue-6.2 {tail, bad size} -setup {
+    struct queue create myqueue
+} -body {
+    myqueue tail 0
+} -cleanup {
+    myqueue destroy
+} -returnCodes error -result {expected positive integer but got "0"}
+
+test queue-6.3 {tail, bad size} -setup {
+    struct queue create myqueue
+    myqueue append a b c d
+} -body {
+    myqueue tail 5
+} -cleanup {
+    myqueue destroy
+} -returnCodes error -result {not enough elements}
+
+test queue-6.4 {tail, bad size} -setup {
+    struct queue create myqueue
+    myqueue append a b c d
+} -body {
+    myqueue tail -1
+} -cleanup {
+    myqueue destroy
+} -returnCodes error -result {expected positive integer but got "-1"}
+
+test queue-6.5 {tail, bad size} -setup {
+    struct queue create myqueue
+} -body {
+    myqueue tail
+} -cleanup {
+    myqueue destroy
+} -returnCodes error -result {not enough elements}
+
+# The tricky thing about tail and the others is to create all the
+# possible states the internal queue buffers can be in, so that we
+# actual cover all the branches.
+#
+# TODO: Break abstraction and introspect the C and Tcl instance
+#       variables ?
+
+test queue-6.6 {tail, single, head} -setup {
+    struct queue create myqueue
+    myqueue prepend a b c d
+} -body {
+    myqueue tail
+} -cleanup {
+    myqueue destroy
+} -result a
+
+test queue-6.7 {tail, single, tail} -setup {
+    struct queue create myqueue
+    myqueue append a b c d
+} -body {
+    myqueue tail
+} -cleanup {
+    myqueue destroy
+} -result d
+
+test queue-6.8 {tail, single, middle} -setup {
+    struct queue create myqueue
+    myqueue append a b c d
+    myqueue pop head ; # Should shift tail -> middle.
+} -body {
+    myqueue tail
+} -cleanup {
+    myqueue destroy
+} -result d
+
+test queue-6.9 {tail, multi, head} -setup {
+    struct queue create myqueue
+    myqueue prepend a b c d
+} -body {
+    myqueue tail 2
+} -cleanup {
+    myqueue destroy
+} -result {b a}
+
+test queue-6.10 {tail, multi, tail} -setup {
+    struct queue create myqueue
+    myqueue append a b c d
+} -body {
+    myqueue tail 2
+} -cleanup {
+    myqueue destroy
+} -result {c d}
+
+test queue-6.11 {tail, multi, middle} -setup {
+    struct queue create myqueue
+    myqueue append a b c d
+    myqueue pop head ; # Should shift tail -> middle.
+} -body {
+    myqueue tail 2
+} -cleanup {
+    myqueue destroy
+} -result {c d}
+
+foreach {k take result} {
+    12  5 {d e f g h}
+    13  6 {c d e f g h}
+    14  7 {b c d e f g h}
+    15  8 {a b c d e f g h}
+    16  9 {i a b c d e f g h}
+    17 10 {j i a b c d e f g h}
+    18 11 {k j i a b c d e f g h}
+    19 12 {l k j i a b c d e f g h}
+} {
+    test queue-6.$k {tail, span} -setup {
+	struct queue create myqueue
+	myqueue append _ a b c d
+	myqueue pop head ; # put tail into middle
+	myqueue append  e f g h ; # new tail
+	myqueue prepend i j k l ; # and head
+    } -body {
+	myqueue tail $take
+    } -cleanup {
+	myqueue destroy
+    } -result $result
+}
+
+# # ## ### ##### ######## ############# #####################
 return
 
 
@@ -230,47 +505,6 @@ test queue-5.2 {get operation, multiple items} {
     myqueue destroy
     set result
 } {a b c}
-
-#----------------------------------------------------------------------
-
-test queue-6.1 {peek operation} {
-    queue myqueue
-    myqueue put a
-    myqueue put b
-    myqueue put c
-    set result [list [myqueue peek] [myqueue peek] [myqueue peek]]
-    myqueue destroy
-    set result
-} {a a a}
-
-test queue-6.2 {peek operation} {
-    queue myqueue
-    catch {myqueue peek 0} msg
-    myqueue destroy
-    set msg
-} {invalid item count 0}
-
-test queue-6.3 {peek operation} {
-    queue myqueue
-    catch {myqueue peek -1} msg
-    myqueue destroy
-    set msg
-} {invalid item count -1}
-
-test queue-6.4 {peek operation} {
-    queue myqueue
-    catch {myqueue peek} msg
-    myqueue destroy
-    set msg
-} {insufficient items in queue to fill request}
-
-test queue-6.5 {peek operation} {
-    queue myqueue
-    myqueue put a
-    catch {myqueue peek 2} msg
-    myqueue destroy
-    set msg
-} {insufficient items in queue to fill request}
 
 test queue-6.6 {get operation, multiple items} {
     queue myqueue

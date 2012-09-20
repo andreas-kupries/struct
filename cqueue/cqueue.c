@@ -112,7 +112,7 @@ cqueue_head (CQUEUE q, long int take)
 	pull = MIN (take, size);
 
 	take -= pull;
-	result = cslice_reverse (cstack_get (q->head, 0, pull));
+	result = cslice_reverse (cstack_get (q->head, pull-1, pull));
 
 	if (!take) return result;
     }
