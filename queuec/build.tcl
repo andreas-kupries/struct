@@ -120,6 +120,8 @@ proc _recipes {} {
     puts [lsort -dict $r]
     return
 }
+proc Hinstall {} { return "?destination?\n\tInstall binary package.\n\tdestination = path of package directory, default \[info library\]." }
+proc _install-c {{ldir {}} {config {}}} { eval [lreplace [info level 0] 0 0 _install] }
 proc Hinstall {} { return "?destination?\n\tInstall all packages.\n\tdestination = path of package directory, default \[info library\]." }
 proc _install {{ldir {}} {config {}}} {
     global packages

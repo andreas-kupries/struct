@@ -120,6 +120,10 @@ proc _recipes {} {
     puts [lsort -dict $r]
     return
 }
+proc Hinstall {} { return "?destination?\n\tInstall Tcl package.\n\tdestination = path of package directory, default \[info library\]." }
+proc _install-tcl {{ldir {}}} {
+    eval [lreplace [info level 0] 0 0 _install]
+ }
 proc Hinstall {} { return "?destination?\n\tInstall all packages.\n\tdestination = path of package directory, default \[info library\]." }
 proc _install {{ldir {}}} {
     global packages
