@@ -49,9 +49,19 @@ critcl::tsources policy.tcl
 # # ## ### ##### ######## ############# #####################
 ## Implementation
 
+# qgetsize:   integer,    > 0
 # queuesize:  integer,    >= 0
 # queueindex: list index, >= 0, <  cqueue_size(s)
 # queuecount: integer,    >  0, <= cqueue_size(s) [checked in proc bodies!]
+
+critcl::argtype qgetsize {
+    if ((Tcl_GetIntFromObj (interp, @@, &@A) != TCL_OK) || (@A < 1)) {
+	Tcl_ResetResult  (interp);
+	Tcl_AppendResult (interp, "expected positive integer but got \"",
+			  Tcl_GetString (@@), "\"", NULL);
+	return TCL_ERROR;
+    }
+} int int
 
 critcl::argtype queuesize {
     if ((Tcl_GetIntFromObj (interp, @@, &@A) != TCL_OK) || (@A < 0)) {
@@ -201,8 +211,16 @@ critcl::class::define ::struct::queue {
 	return TCL_OK;
     }
 
-    method get proc {queueindex at int n} sTcl_Obj* {
-	// XXXX todo get
+    method get proc {queueindex at qgetsize n} sTcl_Obj* {
+	if ((at+n) > cqueue_size (instance)) {
+	    Tcl_AppendResult (interp, "not enough elements", NULL);
+	    return 0;
+	} else {
+	    CSLICE s        = cqueue_get (instance, at, n);
+	    Tcl_Obj* result = cslice_to_list (s);
+	    cslice_destroy (s);
+	    return result;
+	}
     }
 
     # # ## ### ##### ######## ############# #####################
