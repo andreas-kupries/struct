@@ -103,7 +103,7 @@
 ] <hr>
 <h1 class="title">struct::queue(n) 2 doc &quot;Tcl Data Structures&quot;</h1>
 <div id="name" class="section"><h2><a name="name">Name</a></h2>
-<p>struct::queue - Create and manipulate queues, Tcl</p>
+<p>struct::queue - Create and manipulate Tcl queue objects, C implementation</p>
 </div>
 <div id="toc" class="section"><h2><a name="toc">Table Of Contents</a></h2>
 <ul class="toc">
@@ -122,6 +122,7 @@
 <div class="synopsis">
 <ul class="requirements">
 <li>package require <b class="pkgname">Tcl 8.5</b></li>
+<li>package require <b class="pkgname">c::index <span class="opt">?1?</span></b></li>
 <li>package require <b class="pkgname">c::slice <span class="opt">?1?</span></b></li>
 <li>package require <b class="pkgname">c::stack <span class="opt">?1?</span></b></li>
 <li>package require <b class="pkgname">c::queue <span class="opt">?1?</span></b></li>
@@ -130,13 +131,17 @@
 <ul class="syntax">
 <li><a href="#1"><b class="cmd">::struct queue</b> <b class="method">new</b></a></li>
 <li><a href="#2"><b class="cmd">::struct queue</b> <b class="method">create</b> <i class="arg">name</i></a></li>
-<li><a href="#3"><i class="arg">queueObj</i> <b class="cmd">destroy</b></a></li>
-<li><a href="#4"><i class="arg">queueObj</i> <b class="cmd">size</b></a></li>
-<li><a href="#5"><i class="arg">queueObj</i> <b class="cmd">peek</b> <span class="opt">?<i class="arg">count</i>?</span></a></li>
-<li><a href="#6"><i class="arg">queueObj</i> <b class="cmd">get</b> <span class="opt">?<i class="arg">count</i>?</span></a></li>
-<li><a href="#7"><i class="arg">queueObj</i> <b class="cmd">clear</b></a></li>
-<li><a href="#8"><i class="arg">queueObj</i> <b class="cmd">put</b> <i class="arg">item</i> <span class="opt">?<i class="arg">...</i>?</span></a></li>
-<li><a href="#9"><i class="arg">queueObj</i> <b class="cmd">unget</b> <i class="arg">item</i> <span class="opt">?<i class="arg">...</i>?</span></a></li>
+<li><a href="#3"><i class="arg">queueObj</i> <b class="method">all</b></a></li>
+<li><a href="#4"><i class="arg">queueObj</i> <b class="method">append</b> <i class="arg">item</i> <span class="opt">?<i class="arg">...</i>?</span></a></li>
+<li><a href="#5"><i class="arg">queueObj</i> <b class="method">at</b> <i class="arg">index</i> <span class="opt">?<i class="arg">count</i>?</span></a></li>
+<li><a href="#6"><i class="arg">queueObj</i> <b class="method">clear</b></a></li>
+<li><a href="#7"><i class="arg">queueObj</i> <b class="method">destroy</b></a></li>
+<li><a href="#8"><i class="arg">queueObj</i> <b class="method">head</b> <span class="opt">?<i class="arg">count</i>?</span></a></li>
+<li><a href="#9"><i class="arg">queueObj</i> <b class="method">pop head</b> <span class="opt">?<i class="arg">n</i>?</span></a></li>
+<li><a href="#10"><i class="arg">queueObj</i> <b class="method">pop tail</b> <span class="opt">?<i class="arg">n</i>?</span></a></li>
+<li><a href="#11"><i class="arg">queueObj</i> <b class="method">prepend</b> <i class="arg">item</i> <span class="opt">?<i class="arg">...</i>?</span></a></li>
+<li><a href="#12"><i class="arg">queueObj</i> <b class="method">size</b></a></li>
+<li><a href="#13"><i class="arg">queueObj</i> <b class="method">tail</b> <span class="opt">?<i class="arg">count</i>?</span></a></li>
 </ul>
 </div>
 </div>
@@ -167,43 +172,69 @@ argument of the method.</p></dd>
 <p>All instances of queues created through the <span class="sectref"><a href="#section2">Class API</a></span>
 support the following API:</p>
 <dl class="definitions">
-<dt><a name="3"><i class="arg">queueObj</i> <b class="cmd">destroy</b></a></dt>
-<dd><p>This method destroys the stack instance and the associated Tcl
-command, releasing any associated resurces.</p>
-<p>The method returns the empty string as its result.</p></dd>
-<dt><a name="4"><i class="arg">queueObj</i> <b class="cmd">size</b></a></dt>
-<dd><p>This method returns the number of elements stored in the queue.</p></dd>
-<dt><a name="5"><i class="arg">queueObj</i> <b class="cmd">peek</b> <span class="opt">?<i class="arg">count</i>?</span></a></dt>
-<dd><p>This method returns the front <i class="arg">count</i> elements of the queue, without
-removing them from the queue. The count defaults to <b class="const">1</b>.</p>
-<p>If more than one element is requested the result will be a list
-of elements, with the front element of the queue as the first
-element of the result. If only one element is requested the result is
-that element.</p>
-<p>An error will be thrown if the queue does not hold enough
-elements to satisfy the request, i.e. less than <i class="arg">count</i> elements.</p></dd>
-<dt><a name="6"><i class="arg">queueObj</i> <b class="cmd">get</b> <span class="opt">?<i class="arg">count</i>?</span></a></dt>
-<dd><p>This method returns the front <i class="arg">count</i> elements of the queue, and
-removes them from the queue. The count defaults to <b class="const">1</b>.</p>
-<p>If more than one element is requested the result will be a list
-of elements, with the front element of the queue as the first
-element of the result. If only one element is requested the result is
-that element.</p>
-<p>An error will be thrown if the queue does not hold enough
-elements to satisfy the request, i.e. less than <i class="arg">count</i> elements.</p></dd>
-<dt><a name="7"><i class="arg">queueObj</i> <b class="cmd">clear</b></a></dt>
-<dd><p>This method removes all elements from the queue.</p>
-<p>The method returns the empty string as its result.</p></dd>
-<dt><a name="8"><i class="arg">queueObj</i> <b class="cmd">put</b> <i class="arg">item</i> <span class="opt">?<i class="arg">...</i>?</span></a></dt>
+<dt><a name="3"><i class="arg">queueObj</i> <b class="method">all</b></a></dt>
+<dd><p>This method returns all elements stored in the queue as a list,
+without removing them from the queue. The first element of the queue
+is returned as the first element of the list, while the last element
+of the queue is matched to the last element of the list.</p></dd>
+<dt><a name="4"><i class="arg">queueObj</i> <b class="method">append</b> <i class="arg">item</i> <span class="opt">?<i class="arg">...</i>?</span></a></dt>
 <dd><p>This method adds the specified <i class="arg">item</i> or items at the end of the queue.
 If more than one <i class="arg">item</i> is given, they will be added in the order
 they are listed.</p>
 <p>The method returns the empty string as its result.</p>
 <p>The pair of methods <b class="method">put</b> and <b class="method">get</b> manage a queue.</p></dd>
-<dt><a name="9"><i class="arg">queueObj</i> <b class="cmd">unget</b> <i class="arg">item</i> <span class="opt">?<i class="arg">...</i>?</span></a></dt>
-<dd><p>This method is a variant of <b class="method">put</b> above, except that it adds the
-elements at the front of the queue.</p>
-<p>The pair of methods <b class="method">unget</b> and <b class="method">get</b> manage a stack.</p></dd>
+<dt><a name="5"><i class="arg">queueObj</i> <b class="method">at</b> <i class="arg">index</i> <span class="opt">?<i class="arg">count</i>?</span></a></dt>
+<dd><p>This method returns the segment of <i class="arg">count</i> elements starting at
+the <i class="arg">index</i> of the queue, without removing them from the queue.
+The count defaults to <b class="const">1</b>.</p>
+<p>If more than one element is requested the result will be a list
+of elements, with the front element of the queue as the first
+element of the result. If only one element is requested the result is
+that element.</p>
+<p>An error will be thrown if the queue does not hold enough
+elements to satisfy the request, i.e. <i class="arg">at</i>+<i class="arg">count</i> reaching
+beyond the end of the queue.</p>
+<p>The first element of the queue is at index <b class="const">0</b>.</p>
+<p>Note that the method accepts for <i class="arg">index</i> all syntactical
+forms supported by the Tcl builtin <b class="cmd">lindex</b>.</p></dd>
+<dt><a name="6"><i class="arg">queueObj</i> <b class="method">clear</b></a></dt>
+<dd><p>This method removes all elements from the queue.</p>
+<p>The method returns the empty string as its result.</p></dd>
+<dt><a name="7"><i class="arg">queueObj</i> <b class="method">destroy</b></a></dt>
+<dd><p>This method destroys the queue instance and the associated Tcl
+command, releasing any associated resurces.</p>
+<p>The method returns the empty string as its result.</p></dd>
+<dt><a name="8"><i class="arg">queueObj</i> <b class="method">head</b> <span class="opt">?<i class="arg">count</i>?</span></a></dt>
+<dd><p>This method returns the first <i class="arg">count</i> elements of the queue,
+without removing them from the queue. The count defaults to <b class="const">1</b>.</p>
+<p>If more than one element is requested the result will be a list
+of elements, with the front element of the queue as the first
+element of the result. If only one element is requested the result is
+that element.</p>
+<p>An error will be thrown if the queue does not hold enough
+elements to satisfy the request, i.e. less than <i class="arg">count</i> elements.</p></dd>
+<dt><a name="9"><i class="arg">queueObj</i> <b class="method">pop head</b> <span class="opt">?<i class="arg">n</i>?</span></a></dt>
+<dd><p>This method behaves like method <b class="method">head</b>, except that it removes
+the returned element(s) as well.</p></dd>
+<dt><a name="10"><i class="arg">queueObj</i> <b class="method">pop tail</b> <span class="opt">?<i class="arg">n</i>?</span></a></dt>
+<dd><p>This method behaves like method <b class="method">tail</b>, except that it removes
+the returned element(s) as well.</p></dd>
+<dt><a name="11"><i class="arg">queueObj</i> <b class="method">prepend</b> <i class="arg">item</i> <span class="opt">?<i class="arg">...</i>?</span></a></dt>
+<dd><p>This method behaves like method <b class="method">append</b>, except that it adds
+the elements at the <em>beginning</em> of the queue.</p>
+<p>The pair of methods <b class="method">prepend</b> and <b class="method">pop head</b>
+manage a stack.</p></dd>
+<dt><a name="12"><i class="arg">queueObj</i> <b class="method">size</b></a></dt>
+<dd><p>This method returns the number of elements stored in the queue.</p></dd>
+<dt><a name="13"><i class="arg">queueObj</i> <b class="method">tail</b> <span class="opt">?<i class="arg">count</i>?</span></a></dt>
+<dd><p>This method returns the last <i class="arg">count</i> elements of the queue,
+without removing them from the queue. The count defaults to <b class="const">1</b>.</p>
+<p>If more than one element is requested the result will be a list
+of elements, with the front element of the queue as the first
+element of the result. If only one element is requested the result is
+that element.</p>
+<p>An error will be thrown if the queue does not hold enough
+elements to satisfy the request, i.e. less than <i class="arg">count</i> elements.</p></dd>
 </dl>
 </div>
 <div id="section4" class="section"><h2><a name="section4">License</a></h2>

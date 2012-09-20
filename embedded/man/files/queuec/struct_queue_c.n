@@ -240,9 +240,11 @@ Database Class:	\\fB\\$3\\fR
 .TH "struct::queue" n 2 doc "Tcl Data Structures"
 .BS
 .SH NAME
-struct::queue \- Create and manipulate queues, Tcl
+struct::queue \- Create and manipulate Tcl queue objects, C implementation
 .SH SYNOPSIS
 package require \fBTcl  8.5\fR
+.sp
+package require \fBc::index  ?1?\fR
 .sp
 package require \fBc::slice  ?1?\fR
 .sp
@@ -256,19 +258,27 @@ package require \fBstruct::queue  ?2?\fR
 .sp
 \fB::struct queue\fR \fBcreate\fR \fIname\fR
 .sp
-\fIqueueObj\fR \fBdestroy\fR
+\fIqueueObj\fR \fBall\fR
 .sp
-\fIqueueObj\fR \fBsize\fR
+\fIqueueObj\fR \fBappend\fR \fIitem\fR ?\fI...\fR?
 .sp
-\fIqueueObj\fR \fBpeek\fR ?\fIcount\fR?
-.sp
-\fIqueueObj\fR \fBget\fR ?\fIcount\fR?
+\fIqueueObj\fR \fBat\fR \fIindex\fR ?\fIcount\fR?
 .sp
 \fIqueueObj\fR \fBclear\fR
 .sp
-\fIqueueObj\fR \fBput\fR \fIitem\fR ?\fI...\fR?
+\fIqueueObj\fR \fBdestroy\fR
 .sp
-\fIqueueObj\fR \fBunget\fR \fIitem\fR ?\fI...\fR?
+\fIqueueObj\fR \fBhead\fR ?\fIcount\fR?
+.sp
+\fIqueueObj\fR \fBpop head\fR ?\fIn\fR?
+.sp
+\fIqueueObj\fR \fBpop tail\fR ?\fIn\fR?
+.sp
+\fIqueueObj\fR \fBprepend\fR \fIitem\fR ?\fI...\fR?
+.sp
+\fIqueueObj\fR \fBsize\fR
+.sp
+\fIqueueObj\fR \fBtail\fR ?\fIcount\fR?
 .sp
 .BE
 .SH DESCRIPTION
@@ -299,45 +309,13 @@ argument of the method.
 All instances of queues created through the \fBClass API\fR
 support the following API:
 .TP
-\fIqueueObj\fR \fBdestroy\fR
-This method destroys the stack instance and the associated Tcl
-command, releasing any associated resurces.
-.sp
-The method returns the empty string as its result.
+\fIqueueObj\fR \fBall\fR
+This method returns all elements stored in the queue as a list,
+without removing them from the queue. The first element of the queue
+is returned as the first element of the list, while the last element
+of the queue is matched to the last element of the list.
 .TP
-\fIqueueObj\fR \fBsize\fR
-This method returns the number of elements stored in the queue.
-.TP
-\fIqueueObj\fR \fBpeek\fR ?\fIcount\fR?
-This method returns the front \fIcount\fR elements of the queue, without
-removing them from the queue. The count defaults to \fB1\fR.
-.sp
-If more than one element is requested the result will be a list
-of elements, with the front element of the queue as the first
-element of the result. If only one element is requested the result is
-that element.
-.sp
-An error will be thrown if the queue does not hold enough
-elements to satisfy the request, i.e. less than \fIcount\fR elements.
-.TP
-\fIqueueObj\fR \fBget\fR ?\fIcount\fR?
-This method returns the front \fIcount\fR elements of the queue, and
-removes them from the queue. The count defaults to \fB1\fR.
-.sp
-If more than one element is requested the result will be a list
-of elements, with the front element of the queue as the first
-element of the result. If only one element is requested the result is
-that element.
-.sp
-An error will be thrown if the queue does not hold enough
-elements to satisfy the request, i.e. less than \fIcount\fR elements.
-.TP
-\fIqueueObj\fR \fBclear\fR
-This method removes all elements from the queue.
-.sp
-The method returns the empty string as its result.
-.TP
-\fIqueueObj\fR \fBput\fR \fIitem\fR ?\fI...\fR?
+\fIqueueObj\fR \fBappend\fR \fIitem\fR ?\fI...\fR?
 This method adds the specified \fIitem\fR or items at the end of the queue.
 If more than one \fIitem\fR is given, they will be added in the order
 they are listed.
@@ -346,11 +324,77 @@ The method returns the empty string as its result.
 .sp
 The pair of methods \fBput\fR and \fBget\fR manage a queue.
 .TP
-\fIqueueObj\fR \fBunget\fR \fIitem\fR ?\fI...\fR?
-This method is a variant of \fBput\fR above, except that it adds the
-elements at the front of the queue.
+\fIqueueObj\fR \fBat\fR \fIindex\fR ?\fIcount\fR?
+This method returns the segment of \fIcount\fR elements starting at
+the \fIindex\fR of the queue, without removing them from the queue.
+The count defaults to \fB1\fR.
 .sp
-The pair of methods \fBunget\fR and \fBget\fR manage a stack.
+If more than one element is requested the result will be a list
+of elements, with the front element of the queue as the first
+element of the result. If only one element is requested the result is
+that element.
+.sp
+An error will be thrown if the queue does not hold enough
+elements to satisfy the request, i.e. \fIat\fR+\fIcount\fR reaching
+beyond the end of the queue.
+.sp
+The first element of the queue is at index \fB0\fR.
+.sp
+Note that the method accepts for \fIindex\fR all syntactical
+forms supported by the Tcl builtin \fBlindex\fR.
+.TP
+\fIqueueObj\fR \fBclear\fR
+This method removes all elements from the queue.
+.sp
+The method returns the empty string as its result.
+.TP
+\fIqueueObj\fR \fBdestroy\fR
+This method destroys the queue instance and the associated Tcl
+command, releasing any associated resurces.
+.sp
+The method returns the empty string as its result.
+.TP
+\fIqueueObj\fR \fBhead\fR ?\fIcount\fR?
+This method returns the first \fIcount\fR elements of the queue,
+without removing them from the queue. The count defaults to \fB1\fR.
+.sp
+If more than one element is requested the result will be a list
+of elements, with the front element of the queue as the first
+element of the result. If only one element is requested the result is
+that element.
+.sp
+An error will be thrown if the queue does not hold enough
+elements to satisfy the request, i.e. less than \fIcount\fR elements.
+.TP
+\fIqueueObj\fR \fBpop head\fR ?\fIn\fR?
+This method behaves like method \fBhead\fR, except that it removes
+the returned element(s) as well.
+.TP
+\fIqueueObj\fR \fBpop tail\fR ?\fIn\fR?
+This method behaves like method \fBtail\fR, except that it removes
+the returned element(s) as well.
+.TP
+\fIqueueObj\fR \fBprepend\fR \fIitem\fR ?\fI...\fR?
+This method behaves like method \fBappend\fR, except that it adds
+the elements at the \fIbeginning\fR of the queue.
+.sp
+The pair of methods \fBprepend\fR and \fBpop head\fR
+manage a stack.
+.TP
+\fIqueueObj\fR \fBsize\fR
+This method returns the number of elements stored in the queue.
+.TP
+\fIqueueObj\fR \fBtail\fR ?\fIcount\fR?
+This method returns the last \fIcount\fR elements of the queue,
+without removing them from the queue. The count defaults to \fB1\fR.
+.sp
+If more than one element is requested the result will be a list
+of elements, with the front element of the queue as the first
+element of the result. If only one element is requested the result is
+that element.
+.sp
+An error will be thrown if the queue does not hold enough
+elements to satisfy the request, i.e. less than \fIcount\fR elements.
 .PP
 .SH LICENSE
 This package, written by Andreas Kupries, is BSD licensed.
