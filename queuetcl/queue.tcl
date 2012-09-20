@@ -141,6 +141,13 @@ oo::class create ::struct::queue {
 	# XXX todo tail
     }
 
+    method all {} {
+	lappend r {*}[lreverse $myhead]
+	lappend r {*}[lrange $mymiddle $myat end]
+	lappend r {*}$mytail
+	return $r
+    }
+
     # # ## ### ##### ######## ############# #####################
     ## Manipulators
 
@@ -172,6 +179,9 @@ oo::class create ::struct::queue {
 		set result [my tail $n]
 		my DropTail $n
 	    }
+	    default {
+		return -code error "bad location \"$where\": must be head or tail"
+	    }
 	}
 	return $result
     }
@@ -180,7 +190,42 @@ oo::class create ::struct::queue {
     ## Internals. Drop elements from the head, or tail of the queue.
 
     method DropHead {n} {
-	# XXX todo drop head
+	set have [llength $myhead]
+	if {$n >= $have} {
+	    # Drop everything, and continue
+	    incr n -$have
+	    set myhead {}
+	    if {!$n} return
+	} else {
+	    # Drop partial, and stop.
+	    set myhead [lrange [my K $myhead [unset myhead]] 0 end-$n]
+	    return
+	}
+
+	set  have [llength $mymiddle]
+	incr have -$myat
+
+	while {1} {
+	    if {$n >= $have} {
+		# Drop everything, and continue
+		incr n -$have
+		set mymiddle {}
+		set myat 0
+		if {!$n} return
+
+		# Shift tail to middle, and retry.
+		set mymiddle $mytail
+		set mytail {}
+		set  have [llength $mymiddle]
+		continue
+	    } else {
+		# Drop partial, and stop.
+		incr myat $n
+		return
+	    }
+	}
+
+	return -code error "Bad drop head"
     }
 
     method DropTail {n} {
