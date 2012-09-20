@@ -42,19 +42,68 @@ oo::class create ::struct::queue {
     }
 
     method get {at n} {
-	my CheckIndex $at
-	# check n, > 0, at+n < queue_size
-	# xxx todo get
-
-
-
-
-
-	if {$n == 1} {
-	    # Handle this as a special case
-	    # Single item gets are not listified
-	    set result [lindex $result 0]
+	my CheckIndex at
+	my CheckGetSize $n
+	if {$at+$n > [my size]} {
+	    return -code error {not enough elements}
 	}
+
+	#my DumpState H($n@$at)\t
+
+	set have [llength $myhead]
+	if {$at >= $have} {
+	    incr at -$have
+	} elseif {($at+$n) <= $have} {
+	    set  stop $at
+	    incr stop -1
+	    incr stop $n
+	    return [lrange [lreverse $myhead] $at $stop]
+	} else {
+	    lappend result {*}[lrange [lreverse $myhead] $at end]
+	    incr n -$have
+	    incr n $at
+	    set at 0
+	}
+
+	#my DumpState M($n@$at)\t
+
+	set  have [llength $mymiddle]
+	incr have -$myat
+	if {$at >= $have} {
+	    incr at -$have
+	} elseif {($at+$n) <= $have} {
+	    set  start $myat
+	    incr start $at
+	    set stop $start
+	    incr stop $n
+	    incr stop -1
+	    lappend result {*}[lrange $mymiddle $start $stop]
+	    return $result
+	} else {
+	    set  start $myat
+	    incr start $at
+	    lappend result {*}[lrange $mymiddle $start end]
+	    incr n -$have
+	    incr n $at
+	    set at 0
+	}
+
+	#my DumpState T($n@$at)\t
+
+	set  have [llength $mytail]
+	if {$at >= $have} {
+	    return -code error Impossible
+	} elseif {($at+$n) <= $have} {
+	    set  start $at
+	    set  stop $start
+	    incr stop $n
+	    incr stop -1
+	    lappend result {*}[lrange $mytail $start $stop]
+	    return $result
+	} else {
+	    return -code error Impossible
+	}
+
 	return $result
     }
 
@@ -138,7 +187,64 @@ oo::class create ::struct::queue {
 	# satisfy the request, even if each buffer alone does not have
 	# enough.
 
-	# XXX todo tail
+	set missing $n
+	if {$missing} {
+	    # Check the append buffer first.
+	    set k [llength $mytail]
+	    if {$missing >= $k} {
+		# We need equal or more than is found in this
+		# buffer. We take everything.
+		lappend result {*}[lreverse $mytail]
+		incr missing -$k
+	    } else {
+		# This buffer contains more than the whole request.
+		incr missing -1
+		lappend result {*}[lrange [lreverse $mytail] 0 $missing]
+		set missing 0
+	    }
+	}
+
+	if {$missing} {
+	    # Try the regular return buffer next, if needed.
+	    set k [expr {[llength $mymiddle] - $myat}]
+	    if {$missing >= $k} {
+		# We need equal or more than is found in this
+		# buffer. We take everything.
+		lappend result {*}[lreverse [lrange $mymiddle $myat end]]
+		incr missing -$k
+	    } else {
+		# This buffer contains more than the whole request.
+		incr missing -1
+		lappend result {*}[lreverse [lrange $mymiddle end-$missing end]]
+		set missing 0
+	    }
+	}
+
+	if {[llength $myhead]} {
+	    # Pull from the prepend buffer last
+	    set k [llength $myhead]
+	    if {$missing >= $k} {
+		# We need equal or more than is in this buffer. We take everything.
+		lappend result {*}$myhead
+		incr missing -$k
+	    } else {
+		# This buffer contains more than the whole request.
+		incr missing -1
+		lappend result {*}[lrange $myhead 0 $missing]
+		set missing 0
+	    }
+	}
+
+	if {$missing} {
+	    return -code error "Queue size information inconsistency"
+	}
+
+	if {$n == 1} {
+	    # Handle this as a special case
+	    # Single item gets are not listified
+	    set result [lindex $result 0]
+	}
+	return [lreverse $result]
     }
 
     method all {} {
@@ -229,7 +335,46 @@ oo::class create ::struct::queue {
     }
 
     method DropTail {n} {
-	# XXX todo drop tail
+	set have [llength $mytail]
+	if {$n >= $have} {
+	    # Drop everything, and continue
+	    incr n -$have
+	    set mytail {}
+	    if {!$n} return
+	} else {
+	    # Drop partial, and stop.
+	    set mytail [lrange [my K $mytail [unset mytail]] 0 end-$n]
+	    return
+	}
+
+	set  have [llength $mymiddle]
+	incr have -$myat
+	if {$n >= $have} {
+	    # Drop everything, and continue
+	    incr n -$have
+	    set mymiddle {}
+	    set myat 0
+	    if {!$n} return
+	} else {
+	    # Drop partial, and stop.
+	    set mymiddle [lrange [my K $mymiddle [unset mymiddle]] $myat end-$n]
+	    set myat 0
+	    return
+	}
+
+	set have [llength $myhead]
+	if {$n >= $have} {
+	    # Drop everything, and continue
+	    incr n -$have
+	    set myhead {}
+	    if {!$n} return
+	} else {
+	    # Drop partial, and stop.
+	    set myhead [lreverse [lrange [lreverse [my K $myhead [unset myhead]]] 0 end-$n]]
+	    return
+	}
+
+	return -code error "Bad drop tail"
     }
 
     # # ## ### ##### ######## ############# #####################
@@ -244,6 +389,12 @@ oo::class create ::struct::queue {
     method CheckSize {n} {
 	if {![string is int -strict $n] || ($n < 0)} {
 	    return -code error "expected non-negative integer but got \"$n\""
+	}
+    }
+
+    method CheckGetSize {n} {
+	if {![string is int -strict $n] || ($n < 1)} {
+	    return -code error "expected positive integer but got \"$n\""
 	}
     }
 
@@ -313,6 +464,12 @@ oo::class create ::struct::queue {
     method ReportBadIndex {index} {
 	return -code error "bad index \"$index\": must be integer?\[+-]integer? or end?\[+-]integer?"
     }
+
+    method DumpState {{prefix {}}} {
+	puts stderr ${prefix}[self]=@$myat|([lreverse $myhead])_($mymiddle)_($mytail)
+	return
+    }
+    #export DumpState
 
     # # ## ### ##### ######## ############# #####################
 }
