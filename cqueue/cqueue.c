@@ -112,7 +112,7 @@ cqueue_head (CQUEUE q, long int take)
 	pull = MIN (take, size);
 
 	take -= pull;
-	result = cslice_reverse (cstack_get (q->head, 0, pull));
+	result = cslice_reverse (cstack_get (q->head, pull-1, pull));
 
 	if (!take) return result;
     }
@@ -123,7 +123,7 @@ cqueue_head (CQUEUE q, long int take)
 	long int pull = MIN (take, size);
 
 	take -= pull;
-	tmp = cstack_getr (q->head, q->at, pull);
+	tmp = cstack_getr (q->middle, q->at, pull);
 	result = (!result)
 	    ? tmp
 	    : cslice_concat (result, tmp);
@@ -179,7 +179,7 @@ cqueue_tail (CQUEUE q, long int take)
 	long int pull = MIN (take, size);
 
 	take -= pull;
-	tmp = cstack_get (q->head, pull-1, pull);
+	tmp = cstack_get (q->middle, pull-1, pull);
 	result = (!result)
 	    ? tmp
 	    : cslice_concat (tmp, result);
@@ -221,56 +221,93 @@ cqueue_get (CQUEUE q, long int at, long int take)
      */
 
     if (q->head) {
-	long int sz, pull, size = cstack_size (q->head);
+	long int have = cstack_size (q->head);
 
-	ASSERT (size > 0, "non-null head is empty");
+	ASSERT (have > 0, "non-null head is empty");
 
-	sz = size - at;
-	if (sz > 0) {
-	    pull = MIN (take, sz);
+	if (at >= have) {
+	    /* The slice starts behind this buffer.
+	     * Skip.
+	     */
+	    at -= have;
+	} else if ((at+take) <= have) {
+	    /* The slice is fully contained in this buffer.
+	     * Take it and stop.
+	     */
+	    return cslice_reverse (cstack_get (q->head, at+take-1, take));
 
-	    take -= pull;
-	    result = cslice_reverse (cstack_get (q->head, at, pull));
-
-	    if (!take) return result;
+	} else /* (at+take > have) */ {
+	    /* The slice starts in this buffer and extends into the next.
+	     * Take prefix and continue.
+	     *
+	     * Math:
+	     *   at+take-have => excess (size of the part in the next buffer(s).
+	     *   take-excess  => here   (size of the part in this buffer)
+	     *   = take-(at+take-have)
+	     *   = take-at-take+have
+	     *   = have-at
+	     */
+	    result = cslice_reverse (cstack_getr (q->head, 0, have-at));
+	    take -= have-at;
+	    at = 0;
 	}
-	at -= size;
     }
 
+    if (q->middle) {
+	long int have = cstack_size (q->middle) - q->at;
 
-    if (q->middle && (q->at < cstack_size (q->middle))) {
-	CSLICE tmp;
-	long int pull, size = cstack_size (q->middle) - q->at;
-	long int sz = size - at;
-
-	if (sz > 0) {
-	    pull = MIN (take, sz);
-
-	    take -= pull;
-	    tmp = cstack_getr (q->head, q->at, pull);
-	    result = (!result)
+	if (at >= have) {
+	    /* The slice starts behind this buffer.
+	     * Skip.
+	     */
+	    at -= have;
+	} else if ((at+take) <= have) {
+	    /* The slice is fully contained in this buffer.
+	     * Take it and stop.
+	     * Integrate a prefix saved before, if there is any.
+	     */
+	    CSLICE tmp = cstack_getr (q->middle, q->at + at, take);
+	    return (!result)
 		? tmp
 		: cslice_concat (result, tmp);
 
-	    if (!take) return result;
+	} else /* (at+take > have) */ {
+	    /* The slice starts in this buffer and extends into the next.
+	     * Take prefix and continue.
+	     * Integrate a prefix saved before, if there is any.
+	     */
+	    CSLICE tmp = cstack_getr (q->middle, q->at + at, have-at);
+	    take -= have-at;
+	    at = 0;
+	    result = (!result)
+		? tmp
+		: cslice_concat (result, tmp);
 	}
-	at -= size;
     }
 
     if (q->tail) {
-	long int sz, pull, size = cstack_size (q->tail);
-	CSLICE tmp;
+	long int have = cstack_size (q->tail);
 
-	ASSERT (size > 0, "non-null tail is empty");
-	sz = size - at;
-	if (sz > 0) {
-	    pull = MIN (take, size);
-
-	    take -= pull;
-	    tmp = cstack_getr (q->tail, 0, pull);
-	    result = (!result)
+	if (at >= have) {
+	    /* The slice starts behind this buffer.
+	     * That should not be possible.
+	     */
+	    ASSERT (0, "cqueue_get retrieval inconsistency");
+	} else if ((at+take) <= have) {
+	    /* The slice is fully contained in this buffer.
+	     * Take it and stop.
+	     * Integrate a prefix saved before, if there is any.
+	     */
+	    CSLICE tmp = cstack_getr (q->tail, at, take);
+	    return (!result)
 		? tmp
 		: cslice_concat (result, tmp);
+
+	} else /* (at+take > have) */ {
+	    /* The slice starts in this buffer and extends into the next.
+	     * That should not be possible.
+	     */
+	    ASSERT (0, "cqueue_get retrieval inconsistency");
 	}
     }
 
@@ -372,6 +409,16 @@ cqueue_remove_head (CQUEUE q, long int take)
 	/* drop == take < size ---> take-drop == 0, stop. */
 	q->at += drop;
 	return;
+    }
+
+    if (q->tail) {
+	if (q->middle) {
+	    HoldStack (q, &q->middle);
+	}
+	q->middle = q->tail;
+	q->tail   = 0;
+	q->at     = 0;
+	goto again;
     }
 
     /* We are not accessing tail, because this has been done already,

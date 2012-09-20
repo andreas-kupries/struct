@@ -1,107 +1,39 @@
 # -*- tcl -*-
-# queue.test:  tests for the queue package.
-#
-# This file contains a collection of tests for one or more of the Tcl
-# built-in commands.  Sourcing this file into Tcl runs the tests and
-# generates output for errors.  No output means no errors were found.
-#
-# Copyright (c) 1998-2000 by Ajuba Solutions.
-# Copyright (c) 2008 Andreas Kupries
-# All rights reserved.
-#
-# RCS: @(#) $Id: queue.test,v 1.18 2010/03/24 06:13:00 andreas_kupries Exp $
+# # ## ### ##### ######## ############# #####################
+## queue.test:  tests for the queue package.
 
-# -------------------------------------------------------------------------
+source [file dirname [file dirname [file normalize [info script]]]]/include/utilities.tcl
 
-source [file join \
-	[file dirname [file dirname [file join [pwd] [info script]]]] \
-	devtools testutilities.tcl]
+testsNeedTcl     8.5
+testsNeedTcltest 2 ; # 8.5 does not have tcltest 1.x
 
-testsNeedTcl     8.2
-testsNeedTcltest 1.0
-
+support {
+    useC _local/lib/cindex* c::index
+    useC _local/lib/cslice* c::slice
+    useC _local/lib/cstack* c::stack
+    useC _local/lib/cqueue* c::queue
+}
 testing {
-    useAccel [useTcllibC] struct/queue.tcl struct::queue
-    TestAccelInit                          struct::queue
+    useC _local/lib/queuec* struct::queue
 }
 
-#----------------------------------------------------------------------
+# # ## ### ##### ######## ############# #####################
 
-# The global variable 'impl' is part of the public API the testsuite
-# (in queue.testsuite) can expect from the environment.
-
-TestAccelDo struct::queue impl {
-    namespace import -force struct::queue
-
-    switch -exact -- $impl {
-	critcl {
-	    set MY myqueue
-
-	    proc tmWrong {m loarg n {xarg {}}} {
-		return [tcltest::wrongNumArgs "myqueue $m" $loarg $n]
-	    }
-
-	    proc tmTooMany {m loarg {xarg {}}} {
-		return [tcltest::tooManyArgs "myqueue $m" $loarg]
-	    }
-
-	    proc tmTake {tcl c} { return $c }
-	}
-	tcl {
-	    set MY ::myqueue
-
-	    if {[package vsatisfies [package provide Tcl] 8.5]} {
-		if {[catch {package present TclOO}]} {
-		    # Without TclOO
-		    proc tmWrong {m loarg n {xarg {}}} {
-			if {$xarg == {}} {set xarg $loarg}
-			if {$xarg != {}} {set xarg " $xarg"}
-			incr n
-			return [tcltest::wrongNumArgs "I $m" "name$xarg" $n]
-		    }
-
-		    proc tmTooMany {m loarg {xarg {}}} {
-			if {$xarg == {}} {set xarg $loarg}
-			if {$xarg != {}} {set xarg " $xarg"}
-			return [tcltest::tooManyArgs "I $m" "name$xarg"]
-		    }
-		} else {
-		    # OO implementation.
-		    proc tmWrong {m loarg n {xarg {}}} {
-			if {$xarg == {}} {set xarg $loarg}
-			if {$xarg != {}} {set xarg " $xarg"}
-			incr n
-			return [tcltest::wrongNumArgs "myqueue $m" "$loarg" $n]
-		    }
-
-		    proc tmTooMany {m loarg {xarg {}}} {
-			if {$xarg == {}} {set xarg $loarg}
-			if {$xarg != {}} {set xarg " $xarg"}
-			return [tcltest::tooManyArgs "myqueue $m" "$loarg"]
-		    }
-		}
-	    } else {
-		proc tmWrong {m loarg n {xarg {}}} {
-		    if {$xarg == {}} {set xarg $loarg}
-		    if {$xarg != {}} {set xarg " $xarg"}
-		    incr n
-		    return [tcltest::wrongNumArgs "::struct::queue::I::$m" "name$xarg" $n]
-		}
-
-		proc tmTooMany {m loarg {xarg {}}} {
-		    if {$xarg == {}} {set xarg $loarg}
-		    if {$xarg != {}} {set xarg " $xarg"}
-		    return [tcltest::tooManyArgs "::struct::queue::I::$m" "name$xarg"]
-		}
-	    }
-
-	    proc tmTake {tcl c} { return $tcl }
-	}
-    }
-
-    source [localPath queue.testsuite]
+proc already {cmd} {
+    return "command \"::$cmd\" already exists, unable to create ::struct::queue instance"
 }
 
-#----------------------------------------------------------------------
-TestAccelExit struct::queue
+proc badmethod {m real} {
+    set real [linsert [join $real {, }] end-1 or]
+    return "bad option \"$m\": must be $real"
+}
+
+::tcltest::testConstraint queue_c   1
+::tcltest::testConstraint queue_tcl 0
+
+# # ## ### ##### ######## ############# #####################
+
+source [localPath ../include/queue.tests]
+
+# # ## ### ##### ######## ############# #####################
 testsuiteCleanup

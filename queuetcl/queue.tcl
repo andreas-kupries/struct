@@ -41,95 +41,93 @@ oo::class create ::struct::queue {
 	return [expr { [llength $mymiddle] + [llength $mytail] + [llength $myhead] - $myat }]
     }
 
-    method get {{n 1}} {
-	if {$n < 1} {
-	    return -code error "invalid item count $n"
-	}
-	set len [my size]
-	if {$n > $len} {
-	    return -code error "insufficient items in queue to fulfill request"
+    method at {at {n 1}} {
+	my CheckIndex at
+	my CheckGetSize $n
+	if {$at+$n > [my size]} {
+	    return -code error {not enough elements}
 	}
 
-	# Incremental accumulation of the result from the unget,
-	# return, and append buffers. Because of the check above we
-	# know that their total contains enough elements, even if each
-	# buffer alone does not have enough.
+	set take $n
 
-	set missing $n
-	if {[llength $myhead]} {
-	    # Pull from the unget buffer first.
-	    set k [llength $myhead]
-	    if {$missing >= $k} {
-		# We need equal or more than is in this buffer. We take everything.
-		lappend result {*}[lreverse $myhead]
-		incr missing -$k
-		set myhead {}
+	#my DumpState H($take@$at)\t
+
+	set have [llength $myhead]
+	if {$at >= $have} {
+	    incr at -$have
+	} elseif {($at+$take) <= $have} {
+	    if {$n == 1} {
+		return [lindex [lreverse $myhead] $at]
 	    } else {
-		# This buffer contains more than the whole request.
-		incr missing -1
-		lappend result {*}[lreverse [lrange $myhead end-$missing end]]
-		incr missing
-		set myhead [lrange $myhead 0 end-$missing]
-		set missing 0
+		set  stop $at
+		incr stop -1
+		incr stop $take
+		return [lrange [lreverse $myhead] $at $stop]
 	    }
+	} else {
+	    lappend result {*}[lrange [lreverse $myhead] $at end]
+	    incr take -$have
+	    incr take $at
+	    set at 0
 	}
 
-	# We try the regular buffer twice. The second time through we
-	# are actually looking at the data from the append buffer
-	# which got shifted in in branch (*).
-	foreach _ {0 1} {
-	    if {$missing} {
-		# Try the regular return buffer next, if needed.
-		set k [expr {[llength $mymiddle] - $myat}]
-		if {$missing >= $k} {
-		    # We need equal or more than is found in this
-		    # buffer. We take everything. And shift (*).
-		    lappend result {*}[lrange $mymiddle $myat end]
-		    incr missing -$k
-		    my Shift
-		} else {
-		    # This buffer contains more than the whole request.
-		    set  stop $myat
-		    incr stop $missing
-		    incr stop -1
-		    lappend result {*}[lrange $mymiddle $myat $stop]
-		    incr stop
-		    set myat $stop
-		    set missing 0
-		    break
-		}
+	#my DumpState M($take@$at)\t
+
+	set  have [llength $mymiddle]
+	incr have -$myat
+	if {$at >= $have} {
+	    incr at -$have
+	} elseif {($at+$take) <= $have} {
+	    set  start $myat
+	    incr start $at
+	    if {$n == 1} {
+		return [lindex $mymiddle $start]
+	    } else {
+		set stop $start
+		incr stop $take
+		incr stop -1
+		lappend result {*}[lrange $mymiddle $start $stop]
+		return $result
 	    }
+	} else {
+	    set  start $myat
+	    incr start $at
+	    lappend result {*}[lrange $mymiddle $start end]
+	    incr take -$have
+	    incr take $at
+	    set at 0
 	}
 
-	if {$missing} {
-	    return -code error "Queue size information inconsistency"
+	#my DumpState T($take@$at)\t
+
+	set  have [llength $mytail]
+	if {$at >= $have} {
+	    return -code error Impossible
+	} elseif {($at+$take) <= $have} {
+	    if {$n == 1} {
+		return [lindex $mytail $at]
+	    } else {
+		set  stop $at
+		incr stop $take
+		incr stop -1
+		lappend result {*}[lrange $mytail $at $stop]
+		return $result
+	    }
+	} else {
+	    return -code error Impossible
 	}
 
-	if {$n == 1} {
-	    # Handle this as a special case
-	    # Single item gets are not listified
-	    set result [lindex $result 0]
-	}
 	return $result
     }
 
+    method head {{n 1}} {
+	my CheckCount $n
 
-    method peek {{n 1}} {
-	# Peeking is slightly different from 'get' because the buffers
-	# are only queried, and not changed.
-
-	if {$n < 1} {
-	    return -code error "invalid item count $n"
-	}
-	set len [my size]
-	if {$n > $len} {
-	    return -code error "insufficient items in queue to fulfill request"
-	}
-
-	# Incremental accumulation of the result from the unget,
-	# return, and append buffers. Because of the check above we
-	# know that their total contains enough elements, even if each
-	# buffer alone does not have enough.
+	# Incremental accumulation of the result from the head,
+	# middle, and tail buffers (in this order). Because of the
+	# check above we know that they contain enough elements to
+	# satisfy the request, even if each buffer alone does not have
+	# enough.
 
 	set missing $n
 	if {[llength $myhead]} {
@@ -193,35 +191,298 @@ oo::class create ::struct::queue {
 	return $result
     }
 
+    method tail {{n 1}} {
+	my CheckCount $n
+
+	# Incremental accumulation of the result from the head,
+	# middle, and tail buffers (in reverse order). Because of the
+	# check above we know that they contain enough elements to
+	# satisfy the request, even if each buffer alone does not have
+	# enough.
+
+	set missing $n
+	if {$missing} {
+	    # Check the append buffer first.
+	    set k [llength $mytail]
+	    if {$missing >= $k} {
+		# We need equal or more than is found in this
+		# buffer. We take everything.
+		lappend result {*}[lreverse $mytail]
+		incr missing -$k
+	    } else {
+		# This buffer contains more than the whole request.
+		incr missing -1
+		lappend result {*}[lrange [lreverse $mytail] 0 $missing]
+		set missing 0
+	    }
+	}
+
+	if {$missing} {
+	    # Try the regular return buffer next, if needed.
+	    set k [expr {[llength $mymiddle] - $myat}]
+	    if {$missing >= $k} {
+		# We need equal or more than is found in this
+		# buffer. We take everything.
+		lappend result {*}[lreverse [lrange $mymiddle $myat end]]
+		incr missing -$k
+	    } else {
+		# This buffer contains more than the whole request.
+		incr missing -1
+		lappend result {*}[lreverse [lrange $mymiddle end-$missing end]]
+		set missing 0
+	    }
+	}
+
+	if {[llength $myhead]} {
+	    # Pull from the prepend buffer last
+	    set k [llength $myhead]
+	    if {$missing >= $k} {
+		# We need equal or more than is in this buffer. We take everything.
+		lappend result {*}$myhead
+		incr missing -$k
+	    } else {
+		# This buffer contains more than the whole request.
+		incr missing -1
+		lappend result {*}[lrange $myhead 0 $missing]
+		set missing 0
+	    }
+	}
+
+	if {$missing} {
+	    return -code error "Queue size information inconsistency"
+	}
+
+	if {$n == 1} {
+	    # Handle this as a special case
+	    # Single item gets are not listified
+	    return [lindex $result 0]
+	}
+	return [lreverse $result]
+    }
+
+    method all {} {
+	lappend r {*}[lreverse $myhead]
+	lappend r {*}[lrange $mymiddle $myat end]
+	lappend r {*}$mytail
+	return $r
+    }
+
     # # ## ### ##### ######## ############# #####################
     ## Manipulators
 
     method clear {} {
 	set myat     0
 	set mymiddle {}
-	set mytail {}
-	set myhead  {}
+	set mytail   {}
+	set myhead   {}
 	return
     }
 
-    method put {item args} {
+    method append {item args} {
 	lappend mytail $item {*}$args
 	return
     }
 
-    method unget {item args} {
+    method prepend {item args} {
 	lappend myhead $item {*}$args
 	return
     }
 
-    # # ## ### ##### ######## ############# #####################
+    method pop {where {n 1}} {
+	switch -exact -- $where {
+	    head {
+		set result [my head $n]
+		my DropHead $n
+	    }
+	    tail {
+		set result [my tail $n]
+		my DropTail $n
+	    }
+	    default {
+		return -code error "bad location \"$where\": must be head or tail"
+	    }
+	}
+	return $result
+    }
 
-    method Shift {} {
-	set myat 0
-	set mymiddle $mytail
-	set mytail {}
+    # # ## ### ##### ######## ############# #####################
+    ## Internals. Drop elements from the head, or tail of the queue.
+
+    method DropHead {n} {
+	set have [llength $myhead]
+	if {$n >= $have} {
+	    # Drop everything, and continue
+	    incr n -$have
+	    set myhead {}
+	    if {!$n} return
+	} else {
+	    # Drop partial, and stop.
+	    set myhead [lrange [my K $myhead [unset myhead]] 0 end-$n]
+	    return
+	}
+
+	set  have [llength $mymiddle]
+	incr have -$myat
+
+	while {1} {
+	    if {$n >= $have} {
+		# Drop everything, and continue
+		incr n -$have
+		set mymiddle {}
+		set myat 0
+		if {!$n} return
+
+		# Shift tail to middle, and retry.
+		set mymiddle $mytail
+		set mytail {}
+		set  have [llength $mymiddle]
+		continue
+	    } else {
+		# Drop partial, and stop.
+		incr myat $n
+		return
+	    }
+	}
+
+	return -code error "Bad drop head"
+    }
+
+    method DropTail {n} {
+	set have [llength $mytail]
+	if {$n >= $have} {
+	    # Drop everything, and continue
+	    incr n -$have
+	    set mytail {}
+	    if {!$n} return
+	} else {
+	    # Drop partial, and stop.
+	    set mytail [lrange [my K $mytail [unset mytail]] 0 end-$n]
+	    return
+	}
+
+	set  have [llength $mymiddle]
+	incr have -$myat
+	if {$n >= $have} {
+	    # Drop everything, and continue
+	    incr n -$have
+	    set mymiddle {}
+	    set myat 0
+	    if {!$n} return
+	} else {
+	    # Drop partial, and stop.
+	    set mymiddle [lrange [my K $mymiddle [unset mymiddle]] $myat end-$n]
+	    set myat 0
+	    return
+	}
+
+	set have [llength $myhead]
+	if {$n >= $have} {
+	    # Drop everything, and continue
+	    incr n -$have
+	    set myhead {}
+	    if {!$n} return
+	} else {
+	    # Drop partial, and stop.
+	    set myhead [lreverse [lrange [lreverse [my K $myhead [unset myhead]]] 0 end-$n]]
+	    return
+	}
+
+	return -code error "Bad drop tail"
+    }
+
+    # # ## ### ##### ######## ############# #####################
+    ## Internals - Helper to manage refcounts.
+
+    method K {x y} { set x }
+
+    # size:  integer,    >= 0
+    # count: integer,    >= 0, < cqueue_size(s)
+    # index: list index, >= 0, < cqueue_size(s)
+
+    method CheckSize {n} {
+	if {![string is int -strict $n] || ($n < 0)} {
+	    return -code error "expected non-negative integer but got \"$n\""
+	}
+    }
+
+    method CheckGetSize {n} {
+	if {![string is int -strict $n] || ($n < 1)} {
+	    return -code error "expected positive integer but got \"$n\""
+	}
+    }
+
+    method CheckCount {n} {
+	if {![string is int -strict $n] || ($n < 1)} {
+	    return -code error "expected positive integer but got \"$n\""
+	}
+	if {[my size] < $n} {
+	    return -code error "not enough elements"
+	}
+    }
+
+    method CheckIndex {iv} {
+	upvar 1 $iv index
+
+	if {$index eq "end"} {
+	    set index 0
+	    return
+	}
+
+	if {[string is int -strict $index]} {
+	    my CheckIndexRange index
+	    return
+	}
+
+	if {[regexp {^end-(.+)$} $index -> a]} {
+	    # end-x        ==> x
+	    # end-0 == end ==> 0 == bottom
+	    if {![string is int -strict $a]} { my ReportBadIndex $index }
+	    set index $a
+	    my CheckIndexRange index
+	    return
+	}
+
+	if {[regexp {^([^-]+)-([^-]+)$} $index -> a b]} {
+	    # N-M
+	    if {![string is int -strict $a]} { my ReportBadIndex $index }
+	    if {![string is int -strict $b]} { my ReportBadIndex $index }
+
+	    set index [expr {$a - $b}]
+	    my CheckIndexRange index
+	    return
+	}
+
+	if {[regexp {^([^-]+)[+]([^-]+)$} $index -> a b]} {
+	    # N+M
+	    if {![string is int -strict $a]} { my ReportBadIndex $index }
+	    if {![string is int -strict $b]} { my ReportBadIndex $index }
+
+	    set index [expr {$a + $b}]
+	    my CheckIndexRange index
+	    return
+	}
+
+	my ReportBadIndex $index
+    }
+
+    method CheckIndexRange {iv} {
+	upvar 1 $iv index
+	set sz [my size]
+	if {($index < 0) || ($sz <= $index)} {
+	    return -code error "invalid index \"$index\""
+	}
 	return
     }
+
+    method ReportBadIndex {index} {
+	return -code error "bad index \"$index\": must be integer?\[+-]integer? or end?\[+-]integer?"
+    }
+
+    method DumpState {{prefix {}}} {
+	puts stderr ${prefix}[self]=@$myat|([lreverse $myhead])_($mymiddle)_($mytail)
+	return
+    }
+    #export DumpState
 
     # # ## ### ##### ######## ############# #####################
 }
