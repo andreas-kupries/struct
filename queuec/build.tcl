@@ -91,7 +91,7 @@ proc log {args} {
     return
 }
 proc +x {path} {
-    catch { file attributes $path -permissions u+x }
+    catch { file attributes $path -permissions ugo+x }
     return
 }
 proc grep {file pattern} {
