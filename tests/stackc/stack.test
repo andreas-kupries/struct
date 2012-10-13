@@ -2,21 +2,14 @@
 # # ## ### ##### ######## ############# #####################
 ## stack.test:  tests for the stack package.
 
-#source [file dirname [file dirname [file normalize [info script]]]]/include/utilities.tcl
+kt check Tcl     8.5
+kt check tcltest 2
 
-kt::check Tcl     8.5
-kt::check tcltest 2
+kt local support c::index
+kt local support c::slice
+kt local support c::stack
 
-
-
-support {
-    useC $kt::localprefix/lib/cindex* c::index
-    useC $kt::localprefix/lib/cslice* c::slice
-    useC $kt::localprefix/lib/cstack* c::stack
-}
-testing {
-    useC $kt::localprefix/lib/stackc* struct::stack
-}
+kt local testing struct::stack
 
 # # ## ### ##### ######## ############# #####################
 
@@ -34,7 +27,7 @@ proc badmethod {m real} {
 
 # # ## ### ##### ######## ############# #####################
 
-source [localPath ../include/stack.tests]
+kt::source ../include/stack.tests
 
 # # ## ### ##### ######## ############# #####################
-testsuiteCleanup
+cleanupTests

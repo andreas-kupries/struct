@@ -550,9 +550,11 @@ proc useC {glob name {outsideallowed yes}} {
 		puts "$::testutils::tag $name [package present $name]"
 		#puts "$::testutils::tag $name = [package ifneeded $name [package present $name]]"
 		return
+	    } else {
+		return -code error "Unable to find package $name"
 	    }
 	} else {
-	    return -code error "Unable to find package"	    
+	    return -code error "Unable to find package $name"
 	}
     }
 
