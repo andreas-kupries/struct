@@ -1,19 +1,21 @@
-# -*- tcl -*-
+# -*- tcl -*- tcl.tk//DSL tcltest//EN//2.0
 # # ## ### ##### ######## ############# #####################
 ## stack.test:  tests for the stack package.
 
-source [file dirname [file dirname [file normalize [info script]]]]/include/utilities.tcl
+#source [file dirname [file dirname [file normalize [info script]]]]/include/utilities.tcl
 
-testsNeedTcl     8.5
-testsNeedTcltest 2 ; # 8.5 does not have tcltest 1.x
+kt::check Tcl     8.5
+kt::check tcltest 2
+
+
 
 support {
-    useC _local/lib/cindex* c::index
-    useC _local/lib/cslice* c::slice
-    useC _local/lib/cstack* c::stack
+    useC $kt::localprefix/lib/cindex* c::index
+    useC $kt::localprefix/lib/cslice* c::slice
+    useC $kt::localprefix/lib/cstack* c::stack
 }
 testing {
-    useC _local/lib/stackc* struct::stack
+    useC $kt::localprefix/lib/stackc* struct::stack
 }
 
 # # ## ### ##### ######## ############# #####################
