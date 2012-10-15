@@ -1,18 +1,13 @@
-# -*- tcl -*- tcl.tk//DSL tcltest//EN//2.0
+# -*- tcl -*- tcl.tk//DSL tcltest//EN//2.0 tcl.tk//DSL tcltest//EN//2.0
 # # ## ### ##### ######## ############# #####################
 ## queue.test:  tests for the queue package.
 
-source [file dirname [file dirname [file normalize [info script]]]]/include/utilities.tcl
+kt check Tcl     8.5
+kt check tcltest 2
 
-testsNeedTcl     8.5
-testsNeedTcltest 2 ; # 8.5 does not have tcltest 1.x
+kt require support TclOO
 
-support {
-    useC n/a TclOO
-}
-testing {
-    use queuetcl/queue.tcl struct::queue
-}
+kt local   testing struct::queue
 
 # # ## ### ##### ######## ############# #####################
 
