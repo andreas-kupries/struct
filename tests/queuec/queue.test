@@ -28,7 +28,7 @@ proc badmethod {m real} {
 
 # # ## ### ##### ######## ############# #####################
 
-kt::source ../include/queue.tests
+kt source ../include/queue.tests
 
 # # ## ### ##### ######## ############# #####################
 cleanupTests

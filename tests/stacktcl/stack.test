@@ -25,7 +25,7 @@ proc badmethod {m real} {
 
 # # ## ### ##### ######## ############# #####################
 
-kt::source ../include/stack.tests
+kt source ../include/stack.tests
 
 # # ## ### ##### ######## ############# #####################
 cleanupTests
