@@ -1,0 +1,239 @@
+## -*- tcl -*-
+# # ## ### ##### ######## ############# #####################
+## Tcl Benchmarks for "struct::stack"
+
+# Called on by the benchmark entrypoints of both "stackc" and
+# "stacktcl".  The procedure [id] returns a string telling us which
+# entrypoint is in use.
+
+# # ## ### ##### ######## ############# #####################
+## Helper commands.
+
+proc iota {n} {
+    set res {}
+    while {$n} { lappend res $n ; incr n -1 }
+    return $res
+}
+
+proc push {n} { ::s push [iota $n] }
+proc make {n} {
+    struct stack create ::s
+    push $n
+}
+
+# ### ### ### ######### ######### ######### ###########################
+## Benchmarks.
+
+# * size
+# - at i
+# * get
+# - top n
+# - bottom n
+# - pop n
+# * clear
+# - push ...
+# - rotate n s
+# - trim nsize
+
+set series {0 1 10 100 1000 10000}
+
+# ### ### ### ######### ######### ######### ###########################
+
+# size - Time to query size of stack containing N elements.
+# N in { 0 1 10 100 1000 10000 }
+# Expected O(1).
+
+foreach n $series {
+    bench -desc "stack|[id] size $n" -pre {
+	make $n
+    } -body {
+	s size
+    } -post {
+	s destroy
+    }
+}
+
+# ### ### ### ######### ######### ######### ###########################
+
+# clear - Time to clear a stack containing N elements.
+# N in { 0 1 10 100 1000 10000 }
+# Expected O(n), n = size of stack
+
+foreach n $series {
+    bench -desc "stack|[id] clear $n" -ipre {
+	make $n
+    } -body {
+	s clear
+    } -ipost {
+	s destroy
+    }
+}
+
+# ### ### ### ######### ######### ######### ###########################
+
+# get - Time to return a list of all elements from a stack containing
+#       N elements.
+# N in { 0 1 10 100 1000 10000 }
+# Expected O(n), n = size of stack
+
+foreach n $series {
+    bench -desc "stack|[id] get $n" -ipre {
+	make $n
+    } -body {
+	s get
+    } -ipost {
+	s destroy
+    }
+}
+
+
+
+
+# ### ### ### ######### ######### ######### ###########################
+return
+
+
+# ### ### ### ######### ######### ######### ###########################
+
+# peek/pop:
+# - Time to retrieve/remove 1/10/100/1000 elements incrementally from a stack.
+# - Time to retrieve/remove X elements at once from a stack.
+# - Stack sizes X 10/100/1000/1000 and pop only elements less than size.
+
+# Expected: Amortized linear time in number of retrieved/removed
+# elements.
+
+    foreach base {10 100 1000 10000} {
+
+	bench -desc "stack|[id] trim once $base/0" -ipre {
+	    makeN $base
+	} -body {
+	    s trim 0
+	} -ipost {
+	    s destroy
+	}
+
+	foreach remove {1 10 100 1000 10000} {
+	    if {$remove > $base} continue
+
+	    bench -desc "stack|[id] pop once $base/$remove" -ipre {
+		makeN $base
+	    } -body {
+		s pop $remove
+	    } -ipost {
+		s destroy
+	    }
+
+	    set newsize [expr {$base - $remove}]
+
+	    bench -desc "stack|[id] trim once $base/$remove" -ipre {
+		makeN $base
+	    } -body {
+		s trim $newsize
+	    } -ipost {
+		s destroy
+	    }
+
+	    bench -desc "stack|[id] pop incr $base/$remove" -pre {
+		set cmd {}
+		foreach x [struct::list iota $remove] {
+		    lappend cmd [list s pop]
+		}
+		proc foo {} [join $cmd \n]
+		catch {foo} ;# compile
+	    } -ipre {
+		makeN $base
+	    } -body {
+		foo
+	    } -ipost {
+		s destroy
+	    } -post {
+		rename foo {}
+	    }
+
+	    bench -desc "stack|[id] peek $base/$remove" -ipre {
+		makeN $base
+	    } -body {
+		s peek $remove
+	    } -ipost {
+		s destroy
+	    }
+	}
+
+	bench -desc "stack|[id] get $base" -ipre {
+	    makeN $base
+	} -body {
+	    s get
+	} -ipost {
+	    s destroy
+	}
+    }
+
+    # rotate
+    # - Time to rotate 1,N/4,N/2,N-1 steps of 10/100/1000 elements atop 10/100/1000/10000
+    # Expected: Linear time in number of rotating elements.
+    # C:   As expected.
+    # Tcl: Linear in both number of rotating elements and number of steps! Fix this.
+
+    foreach n {10 100 1000 10000} {
+	foreach top {10 100 1000} {
+	    if {$top > $n} continue
+	    foreach s [list 1 [expr {$top >> 2}] [expr {$top >> 1}] [expr {$top - 1}]] {
+		bench -desc "stack|[id] rotate $n/$top/$s" -pre {
+		    makeN $n
+		} -body {
+		    s rotate $top $s
+		} -post {
+		    s destroy
+		}
+	    }
+	}
+    }
+
+    # push:
+    # - Time to add 1/10/100/1000 elements incrementally to an empty stack
+    # - Time to add ............. elements at once to an empty stack.
+    # - As above, to a stack containing 1/10/100/1000 elements already.
+    # Expected: Amortized linear time in number of elements added.
+
+    foreach base  {0 1 10 100 1000 10000} {
+	foreach add {1 10 100 1000 10000} {
+	    bench -desc "stack|[id] push once $base/$add" -ipre {
+		makeN $base
+		set cmd [makeNcmd $add]
+	    } -body {
+		eval $cmd
+	    } -ipost {
+		s destroy
+	    }
+	    bench -desc "stack|[id] push incr $base/$add" -pre {
+		set cmd {}
+		foreach x [struct::list iota $add] {
+		    lappend cmd [list s push $x]
+		}
+		proc foo {} [join $cmd \n]
+		catch {foo} ;# compile
+	    } -ipre {
+		makeN $base
+	    } -body {
+		foo
+	    } -ipost {
+		s destroy
+	    } -post {
+		rename foo {}
+	    }
+	}
+    }
+
+
+
+
+
+
+# ### ### ### ######### ######### ######### ###########################
+## Complete
+
+return
+
+# ### ### ### ######### ######### ######### ###########################
+## Notes ...
