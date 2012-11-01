@@ -140,14 +140,32 @@ oo::class create ::struct::stack {
 	set len   [llength $mystack]
 	set start [expr {$len - $n}]
 
-	for {set i 0} {$i < $steps} {incr i} {
-	    set item [lindex $mystack end]
-	    set mystack [linsert \
-			     [lreplace \
-				  [my K $mystack [unset mystack]] \
-				  end end] $start $item]
+	if {$start == 0} {
+	    # Rotate the whole stack.
+	    set mystack [my ROT $steps \
+			     [my K $mystack [unset mystack]]]
+	} else {
+	    # Rotate the head of the stack, and rejoin with the
+	    # unchanging remainder.
+	    set bottom [lrange $mystack 0 ${start}-1]
+	    set head   [my ROT $steps \
+			    [lrange [my K $mystack [unset mystack]] \
+				 $start end]]
+
+	    set     mystack $bottom
+	    lappend mystack {*}$head
 	}
 	return
+    }
+
+    method ROT {n list} {
+	if {$n == 0} { return $list }
+	# Rotate list right by n steps, in one step. Done by taking
+	# the n last elements and putting them before the size-n first
+	# elements.
+	incr n -1 ; set     new    [lrange $list end-$n end]
+	incr n    ; lappend new {*}[lrange $list 0 end-$n]
+	return $new
     }
 
     method trim {n} {
