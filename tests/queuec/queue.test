@@ -1,21 +1,16 @@
-# -*- tcl -*-
+# -*- tcl -*- tcl.tk//DSL tcltest//EN//2.0
 # # ## ### ##### ######## ############# #####################
 ## queue.test:  tests for the queue package.
 
-source [file dirname [file dirname [file normalize [info script]]]]/include/utilities.tcl
+kt check Tcl     8.5
+kt check tcltest 2
 
-testsNeedTcl     8.5
-testsNeedTcltest 2 ; # 8.5 does not have tcltest 1.x
+kt local support c::index
+kt local support c::slice
+kt local support c::stack
+kt local support c::queue
 
-support {
-    useC _local/lib/cindex* c::index
-    useC _local/lib/cslice* c::slice
-    useC _local/lib/cstack* c::stack
-    useC _local/lib/cqueue* c::queue
-}
-testing {
-    useC _local/lib/queuec* struct::queue
-}
+kt local testing struct::queue
 
 # # ## ### ##### ######## ############# #####################
 
@@ -33,7 +28,7 @@ proc badmethod {m real} {
 
 # # ## ### ##### ######## ############# #####################
 
-source [localPath ../include/queue.tests]
+kt source ../include/queue.tests
 
 # # ## ### ##### ######## ############# #####################
-testsuiteCleanup
+cleanupTests

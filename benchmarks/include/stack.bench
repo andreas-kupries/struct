@@ -1,0 +1,372 @@
+## -*- tcl -*-
+# # ## ### ##### ######## ############# #####################
+## Tcl Benchmarks for "struct::stack"
+
+# Called on by the benchmark entrypoints of both "stackc" and
+# "stacktcl".  The procedure [id] returns a string telling us which
+# entrypoint is in use.
+
+#puts [join [info loaded] \n]
+
+# # ## ### ##### ######## ############# #####################
+## Helper commands.
+
+proc iota {n} {
+    set res {}
+    while {$n} { lappend res $n ; incr n -1 }
+    return $res
+}
+
+proc push {n} {
+    if {$n <= 0} return
+    ::s push {*}[iota $n]
+    return
+}
+
+proc make {n} {
+    struct stack create ::s
+    push $n
+    return
+}
+
+# ### ### ### ######### ######### ######### ###########################
+## Benchmarks.
+
+# * at i
+# * bottom n
+# * clear
+# * get
+# * pop n
+# * push ...
+# * rotate n s
+# * size
+# * top n
+# * trim nsize
+# * trim* nsize
+
+set series {0 1 10 100 1000 10000}
+
+# ### ### ### ######### ######### ######### ###########################
+
+# size - Time to query size of stack containing N elements.
+# N in { 0 1 10 100 1000 10000 }
+# Expected O(1).
+
+foreach n $series {
+    bench -desc "stack size $n" -pre {
+	make $n
+    } -body {
+	s size
+    } -post {
+	s destroy
+    }
+}
+
+# ### ### ### ######### ######### ######### ###########################
+
+### XXX FUTURE: iota as is generates n distinct elements.
+###             (minimal sharing of the underlying Tcl_Obj*)
+##
+###             What happens if we use the same value for all elements
+###             (maximal sharing of the underlying Tcl_Obj*).
+
+# ### ### ### ######### ######### ######### ###########################
+
+# clear - Time to clear a stack containing N elements.
+# N in { 0 1 10 100 1000 10000 }
+# Expected O(n), n = size of stack
+
+# For size 0 'clear' is idempotent and can be run multiple times in one go.
+bench -desc "stack clear 0" -pre {
+    make 0
+} -body {
+    s clear
+} -post {
+    s destroy
+}
+
+# For size > 0 we have to re-make the stack for each iteration.
+# FUTURE: See if we can somehow integrate a sampling profiler to makr
+# the interesting region, allowing us to put setup code into benchmark
+# while not counting the time spent in it.
+
+foreach n $series {
+    if {$n == 0} continue
+
+    bench -desc "stack clear $n" -ipre {
+	make $n
+    } -body {
+	s clear
+    } -ipost {
+	s destroy
+    }
+}
+
+# ### ### ### ######### ######### ######### ###########################
+
+# get - Time to return a list of all elements from a stack containing
+#       N elements.
+# N in { 0 1 10 100 1000 10000 }
+# Expected O(n), n = size of stack
+
+foreach n $series {
+    bench -desc "stack get $n" -pre {
+	make $n
+    } -body {
+	s get
+    } -post {
+	s destroy
+    }
+}
+
+# ### ### ### ######### ######### ######### ###########################
+
+# top - Time to return a list of the top M elements from a stack
+#       containing N elements.
+
+# N in { 0 1 10 100 1000 10000 }
+# M in {   1 10 ... N }
+
+# Expected O(m), m = size of result.
+
+foreach n $series {
+    foreach m $series {
+	if {$m == 0} continue
+	if {$m > $n} continue
+
+	bench -desc "stack top $n/$m" -pre {
+	    make $n
+	} -body {
+	    s top $m
+	} -post {
+	    s destroy
+	}
+    }
+}
+
+# ### ### ### ######### ######### ######### ###########################
+
+# bottom - Time to return a list of the bottom M elements from a stack
+#          containing N elements.
+
+# N in { 0 1 10 100 1000 10000 }
+# M in {   1 10 ... N }
+
+# Expected O(m), m = size of result.
+
+foreach n $series {
+    foreach m $series {
+	if {$m == 0} continue
+	if {$m > $n} continue
+
+	bench -desc "stack bottom $n/$m" -pre {
+	    make $n
+	} -body {
+	    s bottom $m
+	} -post {
+	    s destroy
+	}
+    }
+}
+
+# ### ### ### ######### ######### ######### ###########################
+
+# at - Time to return the M'th element from a stack
+#          containing N elements.
+
+# N in { 0 1 10 100 1000 10000 }
+# M in { 0 1 10 ... pred(N) }
+
+# Expected O(1)
+
+foreach n $series {
+    foreach m $series {
+	if {$m >= $n} continue
+
+	bench -desc "stack at $n/$m" -pre {
+	    make $n
+	} -body {
+	    s at $m
+	} -post {
+	    s destroy
+	}
+    }
+}
+
+# ### ### ### ######### ######### ######### ###########################
+
+# pop - Time to return a list of the top M elements from a stack
+#       containing N elements, plus removal of these elements
+#       from the stack.
+#
+#       2 variants of doing this.
+#       (a) pop all at once.
+#       (b) pop them one at a time.
+
+# N in { 0 1 10 100 1000 10000 }
+# M in {   1 10 ... N }
+
+# Expected O(m), m = size of result.
+
+foreach n $series {
+    foreach m $series {
+	if {$m == 0} continue
+	if {$m > $n} continue
+
+	bench -desc "stack pop all $n/$m" -ipre {
+	    make $n
+	} -body {
+	    s pop $m
+	} -ipost {
+	    s destroy
+	}
+
+	bench -desc "stack pop inc $n/$m" -pre {
+	    proc foo {} [join [lrepeat $m {s pop}] \n]
+	    catch {foo} ;# compile
+	} -ipre {
+	    make $n
+	} -body {
+	    foo
+	} -ipost {
+	    s destroy
+	} -post {
+	    rename foo {}
+	}
+    }
+}
+
+# ### ### ### ######### ######### ######### ###########################
+
+# trim - Time to return a list of the top N-M elements from a stack
+#       containing N elements, plus removal of these elements
+#       from the stack. This leaves the stack at new size M.
+#
+#       (M == 0) --> 'trim*' becomes 'clear'.
+
+# N in { 0 1 10 100 1000 10000 }
+# M in { 0 1 10 ... N }
+
+# Expected O(n-m)
+
+foreach n $series {
+    foreach m $series {
+	if {$m > $n} continue
+
+	bench -desc "stack trim $n/$m" -ipre {
+	    make $n
+	} -body {
+	    s trim $m
+	} -ipost {
+	    s destroy
+	}
+    }
+}
+
+# ### ### ### ######### ######### ######### ###########################
+
+# trim* - Time to trim a stack containing N elements down to size M.
+#         The removed elements are _not_ returned.
+
+# N in { 0 1 10 100 1000 10000 }
+# M in { 0 1 10 ... N }
+
+# Expected O(n-m)
+
+foreach n $series {
+    foreach m $series {
+	if {$m > $n} continue
+
+	bench -desc "stack trim* $n/$m" -ipre {
+	    make $n
+	} -body {
+	    s trim* $m
+	} -ipost {
+	    s destroy
+	}
+    }
+}
+
+
+# ### ### ### ######### ######### ######### ###########################
+
+# rotate - Rotate the top M elements of a stack containing N elements.
+#          Use 1, M/4, M/2, M-1 steps.
+
+# N in { 0 1 10 100 1000 10000 }
+# M in { 0 1 10 ... N }
+
+# Expected O(m), m = number of elements rotated.
+# - C is ok.
+# - Tcl is linear in the product elements*steps.
+#   Because the code runs each step as is.
+#   C does all steps in one go, in comparison.
+#   Must fix!
+
+foreach n $series {
+    foreach m $series {
+	if {$m == 0} continue
+	if {$m > $n} continue
+	foreach s [lsort -unique [list 1 [expr {$m >> 2}] [expr {$m >> 1}] [expr {$m - 1}]]] {
+
+	    bench -desc "stack rotate $n/$m/$s" -pre {
+		make $n
+	    } -body {
+		s rotate $m $s
+	    } -post {
+		s destroy
+	    }
+	}
+    }
+}
+
+# ### ### ### ######### ######### ######### ###########################
+
+# push - Time to add N elements to an empty stack.
+#
+#       2 variants of doing this.
+#       (a) push all at once.
+#       (b) push them one at a time.
+
+# N in { 0 1 10 100 1000 10000 }
+
+# Expected O(n), n = size of resulting stack.
+# Variant (b) should have higher overhead however.
+
+foreach n $series {
+    if {$n == 0} continue
+
+    set nel [iota $n]
+    set cmd {} ; foreach x $nel { lappend cmd [list s push $x] }
+
+    bench -desc "stack push all $n" -ipre {
+	make 0
+    } -body {
+	s push {*}$nel
+    } -ipost {
+	s destroy
+    }
+
+    bench -desc "stack push inc $n" -pre {
+	proc foo {} [join $cmd \n]
+	catch {foo} ;# compile
+    } -ipre {
+	make 0
+    } -body {
+	foo
+    } -ipost {
+	s destroy
+    } -post {
+	rename foo {}
+    }
+
+    unset nel cmd
+}
+
+# ### ### ### ######### ######### ######### ###########################
+## Complete
+
+return
+
+# ### ### ### ######### ######### ######### ###########################
+## Notes ...

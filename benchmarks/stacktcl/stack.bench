@@ -1,0 +1,19 @@
+# -*- tcl -*- tcl.tk//DSL tclbench//EN//2.0
+# # ## ### ##### ######## ############# #####################
+## stackbench:  benchmarks for the stack package.
+
+kb check Tcl 8.5
+
+kb require support   TclOO
+kb local   benchmark struct::stack
+
+# # ## ### ##### ######## ############# #####################
+
+proc id {} { return "tcl" }
+
+# # ## ### ##### ######## ############# #####################
+
+kb source ../include/stack.bench
+
+# # ## ### ##### ######## ############# #####################
+
