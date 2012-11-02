@@ -1,232 +1,364 @@
-# -*- tcl -*-
-# Tcl Benchmark File
-#
-# This file contains a number of benchmarks for the 'struct::queue'
-# data structure to allow developers to monitor package performance.
-#
-# (c) 2008-2010 Andreas Kupries <andreas_kupries@users.sourceforge.net>
+## -*- tcl -*-
+# # ## ### ##### ######## ############# #####################
+## Tcl Benchmarks for "struct::queue"
+## (c) 2012 Andreas Kupries
 
-# We need at least version 8.4 for the package and thus the
-# benchmarks.
+# Called on by the benchmark entrypoints of both "queuec" and
+# "queuetcl".  The procedure [id] returns a string telling us which
+# entrypoint is in use.
 
-if {![package vsatisfies [package present Tcl] 8.4]} {
-    bench_puts "Need Tcl 8.4+, found Tcl [package present Tcl]"
+#puts [join [info loaded] \n]
+
+# # ## ### ##### ######## ############# #####################
+## Helper commands.
+
+proc iota {n} {
+    set res {}
+    while {$n} { lappend res $n ; incr n -1 }
+    return $res
+}
+
+proc push {n} {
+    if {$n <= 0} return
+    ::q append {*}[iota $n]
+    return
+}
+
+proc make {n} {
+    struct queue create ::q
+    push $n
     return
 }
 
 # ### ### ### ######### ######### ######### ###########################
-## Setting up the environment ...
+## Benchmarked methods.
 
-package require Tcl 8.4
+# * all
+# * append ...
+# * at I N
+# * clear
+# * head ?N?
+# * pop head|tail ?N?
+# * prepend ...
+# * size
+# * tail ?N?
 
-package forget struct::list
-package forget struct::queue
-
-set self  [file join [pwd] [file dirname [info script]]]
-set mod   [file dirname $self]
-set index [file join [file dirname $self] tcllibc pkgIndex.tcl]
-
-if 1 {
-    if {[file exists $index]} {
-	set ::dir [file dirname $index]
-	uplevel #0 [list source $index]
-	unset ::dir
-	package require tcllibc
-    }
-}
-
-source [file join $mod  cmdline cmdline.tcl]
-source [file join $self list.tcl]
-source [file join $self queue.tcl]
-
+set series {0 1 10 100 1000 10000}
 
 # ### ### ### ######### ######### ######### ###########################
 
-proc makeNcmd {n} {
-    return [linsert [struct::list iota $n] 0 s put]
-}
+# XXX NOTE: The queue has internal structure (multiple stacks) which
+#           can influence speed. Right now we are profiling a queue in
+#           basic state with only the tail stack filled. We should
+#           profile other states as well, with the other stacks
+#           containing data, forcing the operations through the more
+#           complex branches of the system.
 
-proc makeN {n} {
-    struct::queue s
-    if {$n > 0} { eval [makeNcmd $n] }
-    return
-}
-
-# ### ### ### ######### ######### ######### ###########################
-## Get all the possible implementations
-
-struct::queue::SwitchTo {}
-foreach e [struct::queue::KnownImplementations] {
-    ::struct::queue::LoadAccelerator $e
-}
-
-# ### ### ### ######### ######### ######### ###########################
-## Benchmarks.
-
-# We have only 6 queue operations
+# XXX FUTURE: iota as is generates n distinct elements.
+#             (minimal sharing of the underlying Tcl_Obj*)
 #
-# * clear  - Remove all elements from the queue.
-# * get    - Destructively retrieve N elements, N > 0
-# * peek   - Retrieve N elements, keep on queue, N > 0
-# * put    - Add N elements to the queue, N > 0
-# * size   - Query the size of the queue.
-# * unget  - Add N elements to _front_ of the queue, N > 0
+#             What happens if we use the same value for all elements
+#             (maximal sharing of the underlying Tcl_Obj*).
 
-# note on peek, get:
-# - current testing is fine for single queue area.
-# - split return/append => should check performance of peek crossing boundaries
-# - split unget/return/append ? ditto, now possibly crossing 2 boundaries.
+# ### ### ### ######### ######### ######### ###########################
 
-# peek/put:
-# - Time to retrieve/remove 1/10/100/1000 elements incrementally from a queue.
-# - Time to retrieve/remove ............. elements at once from a queue.
-# - Queue sizes 10/100/1000/1000 and pop only elements less than size.
-# Expected: Amortized linear time in number of retrieved/removed elements.
+# size - Time to query the size of a queue containing N elements.
+# N in { 0 1 10 100 1000 10000 }
+# Expected O(1).
 
-foreach queueimpl [struct::queue::Implementations] {
-    struct::queue::SwitchTo $queueimpl
-
-    bench_puts {=== get/peek =========}
-
-    foreach base {10 100 1000 10000} {
-	foreach remove {1 10 100 1000 10000} {
-	    if {$remove > $base} continue
-
-	    bench -desc "queue get once $base/$remove queue($queueimpl)" -ipre {
-		makeN $base
-	    } -body {
-		s get $remove
-	    } -ipost {
-		s destroy
-	    }
-
-	    bench -desc "queue get incr $base/$remove queue($queueimpl)" -pre {
-		set cmd {}
-		foreach x [struct::list iota $remove] {
-		    lappend cmd [list s get]
-		}
-		proc foo {} [join $cmd \n]
-		catch {foo} ;# compile
-	    } -ipre {
-		makeN $base
-	    } -body {
-		foo
-	    } -ipost {
-		s destroy
-	    } -post {
-		rename foo {}
-	    }
-
-	    bench -desc "queue peek $base/$remove queue($queueimpl)" -ipre {
-		makeN $base
-	    } -body {
-		s peek $remove
-	    } -ipost {
-		s destroy
-	    }
-	}
+foreach n $series {
+    bench -desc "queue size $n" -pre {
+	make $n
+    } -body {
+	q size
+    } -post {
+	q destroy
     }
+}
 
-    # put:
-    # - Time to add 1/10/100/1000 elements incrementally to an empty queue
-    # - Time to add ............. elements at once to an empty queue.
-    # - As above, to a queue containing 1/10/100/1000 elements already.
-    # Expected: Amortized linear time in number of elements added.
+# ### ### ### ######### ######### ######### ###########################
 
-    bench_puts {=== put/unget =========}
+# clear - Time to clear a queue containing N elements.
+# N in { 0 1 10 100 1000 10000 }
+# Expected O(n), n = size of queue
 
-    foreach base  {0 1 10 100 1000} {
-	foreach add {1 10 100 1000} {
+# For size 0 'clear' is idempotent and can be run multiple times in one go.
+bench -desc "queue clear 0" -pre {
+    make 0
+} -body {
+    q clear
+} -post {
+    q destroy
+}
 
-	    bench -desc "queue put once $base/$add queue($queueimpl)" -ipre {
-		makeN $base
-		set cmd [makeNcmd $add]
-	    } -body {
-		eval $cmd
-	    } -ipost {
-		s destroy
-	    }
+# For size > 0 we have to re-make the queue for each iteration.
+# FUTURE: See if we can somehow integrate a sampling profiler to mark
+# the interesting region, allowing us to put setup code into benchmark
+# while not counting the time spent in it.
 
-	    bench -desc "queue put incr $base/$add queue($queueimpl)" -pre {
-		set cmd {}
-		foreach x [struct::list iota $add] {
-		    lappend cmd [list s put $x]
-		}
-		proc foo {} [join $cmd \n]
-		catch {foo} ;# compile
-	    } -ipre {
-		makeN $base
-	    } -body {
-		foo
-	    } -ipost {
-		s destroy
-	    } -post {
-		rename foo {}
-	    }
+foreach n $series {
+    if {$n == 0} continue
 
-	    bench -desc "queue unget incr $base/$add queue($queueimpl)" -pre {
-		set cmd {}
-		foreach x [struct::list iota $add] {
-		    lappend cmd [list s unget $x]
-		}
-		proc foo {} [join $cmd \n]
-		catch {foo} ;# compile
-	    } -ipre {
-		makeN $base
-	    } -body {
-		foo
-	    } -ipost {
-		s destroy
-	    } -post {
-		rename foo {}
-	    }
-	}
+    bench -desc "queue clear $n" -ipre {
+	make $n
+    } -body {
+	q clear
+    } -ipost {
+	q destroy
     }
+}
 
-    # size
-    # - Time to query size of queue containing 0/1/10/100/1000/10000 elements.
-    # Expected: Constant time.
+# ### ### ### ######### ######### ######### ###########################
 
-    bench_puts {=== size =========}
+# all - Time to return a list of all elements from a queue containing
+#       N elements.
+# N in { 0 1 10 100 1000 10000 }
+# Expected O(n), n = size of queue
 
-    foreach n {0 1 10 100 1000 10000} {
-	bench -desc "queue size $n queue($queueimpl)" -pre {
-	    makeN $n
+foreach n $series {
+    bench -desc "queue all $n" -pre {
+	make $n
+    } -body {
+	q all
+    } -post {
+	q destroy
+    }
+}
+
+# ### ### ### ######### ######### ######### ###########################
+
+# head - Time to return a list of the first M elements from a queue
+#        containing N elements.
+
+# N in { 0 1 10 100 1000 10000 }
+# M in {   1 10 ... N }
+
+# Expected O(m), m = size of result.
+
+foreach n $series {
+    foreach m $series {
+	if {$m == 0} continue
+	if {$m > $n} continue
+
+	bench -desc "queue head $n/$m" -pre {
+	    make $n
 	} -body {
-	    s size
+	    q head $m
 	} -post {
-	    s destroy
+	    q destroy
 	}
     }
+}
 
-    # clear
-    # - Time to clear a queue containing 0/1/10/100/1000/10000 elements.
-    # Expected: Constant to linear time in number of elements to clear.
+# ### ### ### ######### ######### ######### ###########################
 
-    bench_puts {=== clear =========}
+# tail - Time to return a list of the last M elements from a queue
+#        containing N elements.
 
-    foreach n {0 1 10 100 1000 10000} {
-	bench -desc "queue clear $n queue($queueimpl)" -ipre {
-	    makeN $n
+# N in { 0 1 10 100 1000 10000 }
+# M in {   1 10 ... N }
+
+# Expected O(m), m = size of result.
+
+foreach n $series {
+    foreach m $series {
+	if {$m == 0} continue
+	if {$m > $n} continue
+
+	bench -desc "queue tail $n/$m" -pre {
+	    make $n
 	} -body {
-	    s clear
-	} -ipost {
-	    s destroy
+	    q tail $m
+	} -post {
+	    q destroy
 	}
     }
+}
+
+# ### ### ### ######### ######### ######### ###########################
+
+# at - Time to return the M'th element from a queue
+#          containing N elements.
+
+# XXX NOTE: Extend to profile slices > 1
+#           (at is generalized head/tail)
+
+# N in { 0 1 10 100 1000 10000 }
+# M in { 0 1 10 ... pred(N) }
+
+# Expected O(1)
+
+foreach n $series {
+    foreach m $series {
+	if {$m >= $n} continue
+
+	bench -desc "queue at $n/$m" -pre {
+	    make $n
+	} -body {
+	    q at $m
+	} -post {
+	    q destroy
+	}
+    }
+}
+
+# ### ### ### ######### ######### ######### ###########################
+
+# pop - Time to return a list of the first/last M elements from a
+#       queue containing N elements, plus removal of these elements
+#       from the queue.
+#
+#       2 variants of doing this.
+#       (a) pop all at once.
+#       (b) pop them one at a time.
+
+# N in { 0 1 10 100 1000 10000 }
+# M in {   1 10 ... N }
+
+# Expected O(m), m = size of result.
+
+foreach n $series {
+    foreach m $series {
+	if {$m == 0} continue
+	if {$m > $n} continue
+
+	# Disabled. C-coded pop head|tail in various forms crash in
+	# the iterations below. Investigate.
+	if {[id] eq "c"} continue
+	# XXX TODO : Create utility command to report the disabled
+	# XXX TODO : benchmarks as skipped, or broken?
+
+	bench -desc "queue pop head all $n/$m" -ipre {
+	    make $n
+	} -body {
+	    q pop head $m
+	} -ipost {
+	    q destroy
+	}
+
+	bench -desc "queue pop head inc $n/$m" -pre {
+	    proc foo {} [join [lrepeat $m {q pop head}] \n]
+	    catch {foo} ;# compile
+	} -ipre {
+	    make $n
+	} -body {
+	    foo
+	} -ipost {
+	    q destroy
+	} -post {
+	    rename foo {}
+	}
+
+	bench -desc "queue pop tail all $n/$m" -ipre {
+	    make $n
+	} -body {
+	    q pop tail $m
+	} -ipost {
+	    q destroy
+	}
+
+	bench -desc "queue pop tail inc $n/$m" -pre {
+	    proc foo {} [join [lrepeat $m {q pop tail}] \n]
+	    catch {foo} ;# compile
+	} -ipre {
+	    make $n
+	} -body {
+	    foo
+	} -ipost {
+	    q destroy
+	} -post {
+	    rename foo {}
+	}
+    }
+}
+
+# ### ### ### ######### ######### ######### ###########################
+
+# append - Time to add N elements to an empty queue.
+#
+#       2 variants of doing this.
+#       (a) append all at once.
+#       (b) append them one at a time.
+
+# N in { 0 1 10 100 1000 10000 }
+
+# Expected O(n), n = size of resulting queue.
+# Variant (b) should have higher overhead however.
+
+foreach n $series {
+    if {$n == 0} continue
+
+    set nel [iota $n]
+    set cmd {} ; foreach x $nel { lappend cmd [list q append $x] }
+
+    bench -desc "queue append all $n" -ipre {
+	make 0
+    } -body {
+	q append {*}$nel
+    } -ipost {
+	q destroy
+    }
+
+    bench -desc "queue append inc $n" -pre {
+	proc foo {} [join $cmd \n]
+	catch {foo} ;# compile
+    } -ipre {
+	make 0
+    } -body {
+	foo
+    } -ipost {
+	q destroy
+    } -post {
+	rename foo {}
+    }
+
+    unset nel cmd
+}
+
+# ### ### ### ######### ######### ######### ###########################
+
+# prepend - Time to add N elements to an empty queue.
+#
+#       2 variants of doing this.
+#       (a) prepend all at once.
+#       (b) prepend them one at a time.
+
+# N in { 0 1 10 100 1000 10000 }
+
+# Expected O(n), n = size of resulting queue.
+# Variant (b) should have higher overhead however.
+
+foreach n $series {
+    if {$n == 0} continue
+
+    set nel [iota $n]
+    set cmd {} ; foreach x $nel { lappend cmd [list q prepend $x] }
+
+    bench -desc "queue prepend all $n" -ipre {
+	make 0
+    } -body {
+	q prepend {*}$nel
+    } -ipost {
+	q destroy
+    }
+
+    bench -desc "queue prepend inc $n" -pre {
+	proc foo {} [join $cmd \n]
+	catch {foo} ;# compile
+    } -ipre {
+	make 0
+    } -body {
+	foo
+    } -ipost {
+	q destroy
+    } -post {
+	rename foo {}
+    }
+
+    unset nel cmd
 }
 
 # ### ### ### ######### ######### ######### ###########################
 ## Complete
 
 return
-
-# ### ### ### ######### ######### ######### ###########################
-## Notes ...
-
-# Notes on optimizations we can do.
-#
-# Tcl - Cache structural data - depth, ancestors ...
-# C   - Cache results, like child lists (Tcl_Obj's!)
-#       Maybe use Tcl_Obj/List for child arrays instead
-#       of N* ? Effect on modification performance ?
