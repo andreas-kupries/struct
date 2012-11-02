@@ -1,6 +1,7 @@
 # -*- tcl -*- tcl.tk//DSL tclbench//EN//2.0
 # # ## ### ##### ######## ############# #####################
-## stackbench:  benchmarks for the stack package.
+## stack.bench:  benchmarks for the stack package.
+## (c) 2012 Andreas Kupries
 
 kb check Tcl 8.5
 

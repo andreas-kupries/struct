@@ -1,6 +1,7 @@
 ## -*- tcl -*-
 # # ## ### ##### ######## ############# #####################
 ## Tcl Benchmarks for "struct::stack"
+## (c) 2012 Andreas Kupries
 
 # Called on by the benchmark entrypoints of both "stackc" and
 # "stacktcl".  The procedure [id] returns a string telling us which
@@ -30,19 +31,19 @@ proc make {n} {
 }
 
 # ### ### ### ######### ######### ######### ###########################
-## Benchmarks.
+## Benchmarked methods.
 
-# * at i
-# * bottom n
+# * at I
+# * bottom ?N?
 # * clear
 # * get
-# * pop n
+# * pop ?N?
 # * push ...
-# * rotate n s
+# * rotate N S
 # * size
-# * top n
-# * trim nsize
-# * trim* nsize
+# * top ?N?
+# * trim Nsize
+# * trim* Nsize
 
 set series {0 1 10 100 1000 10000}
 
@@ -86,7 +87,7 @@ bench -desc "stack clear 0" -pre {
 }
 
 # For size > 0 we have to re-make the stack for each iteration.
-# FUTURE: See if we can somehow integrate a sampling profiler to makr
+# FUTURE: See if we can somehow integrate a sampling profiler to mark
 # the interesting region, allowing us to put setup code into benchmark
 # while not counting the time spent in it.
 
