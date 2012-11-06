@@ -85,7 +85,6 @@ ___dump (const char* s, CQUEUE q)
 #define DUMPS(s,q)
 #endif
 
-
 /*
  * = = == === ===== ======== ============= =====================
  * Client data management.
@@ -339,8 +338,6 @@ void
 cqueue_append (CQUEUE q, void* item)
 {
     cstack_push (q->tail, item);
-
-    DUMP ("append/1",q);
 }
 
 void
@@ -353,8 +350,6 @@ void
 cqueue_append_slice (CQUEUE q, CSLICE s)
 {
     cstack_push_slice (q->tail, s);
-
-    DUMP ("append/s",q);
 }
 
 void
@@ -371,36 +366,36 @@ cqueue_remove_head (CQUEUE q, long int take)
     ASSERT (take <= total, "Not enough elements in the cqueue");
     ASSERT (take >= 0, "Bad removal count");
 
-    DUMP ("rh/in",q);
-
     if (take == 0) return;
     if (take == total) {
 	/* (**) Drop everything. */
 	cqueue_clear (q);
-	DUMP ("rh/all",q);
 	return;
     }
 
-    {
+ again: {
 	long int size = cstack_size (q->head);
 	long int drop = MIN (take, size);
 
 	if (drop == size) {
 	    /* drop == size <= take --> take-drop >= 0, continue */
 	    cstack_clear (q->head);
+
+	    /* Head is empty, tail is not, shift data over, early */
+	    if (cstack_size (q->tail)) Rebalance (&q->head, &q->tail);
+
 	    take -= drop;
-	    if (!take) {
-		DUMP ("rh/1",q);
-		return;
-	    }
+	    if (!take) return;
+
+	    goto again;
 	} else {
 	    /* drop == take < size ---> take-drop == 0, stop. */
 	    cstack_pop (q->head, drop);
-	    DUMP ("rh/2",q);
 	    return;
 	}
     }
 
+    ASSERT (0,"");
     {
 	/* Head is empty here. Move the data to keep into it. Then clear the
 	 * remainder in the tail. At last move half of the data back to
@@ -427,11 +422,9 @@ cqueue_remove_head (CQUEUE q, long int take)
 	 */
 	SWAP (q->head,q->tail);
 	cstack_reverse_all (q->tail);
-
 	DUMP ("rh/3",q);
 
 	Rebalance (&q->head, &q->tail);
-
 	DUMP ("rh/4",q);
     }
 
@@ -453,15 +446,21 @@ cqueue_remove_tail (CQUEUE q, long int take)
 	return;
     }
 
-    {
+ again: {
 	long int size = cstack_size (q->tail);
 	long int drop = MIN (take, size);
 
 	if (drop == size) {
 	    /* drop == size <= take --> take-drop >= 0, continue */
 	    cstack_clear (q->tail);
+
+	    /* Tail is empty, head is not, shift data over, early */
+	    if (cstack_size (q->head)) Rebalance (&q->tail, &q->head);
+
 	    take -= drop;
 	    if (!take) return;
+
+	    goto again;
 	} else {
 	    /* drop == take < size ---> take-drop == 0, stop. */
 	    cstack_pop (q->tail, drop);
@@ -469,6 +468,7 @@ cqueue_remove_tail (CQUEUE q, long int take)
 	}
     }
 
+    ASSERT (0,"");
     {
 	/* Tail is empty here. Move the data to keep into it. Then clear the
 	 * remainder in the head. At last move half of the data back to
@@ -524,7 +524,7 @@ cqueue_drop_head (CQUEUE q, long int take)
 	return;
     }
 
-    {
+ again: {
 	long int size = cstack_size (q->head);
 	long int drop = MIN (take, size);
 
@@ -534,14 +534,21 @@ cqueue_drop_head (CQUEUE q, long int take)
 	    /* Because everything was dropped already from head we do not
 	     * release anything (== no remove).
 	     */
+
+	    /* Head is empty, tail is not, shift data over, early */
+	    if (cstack_size (q->tail)) Rebalance (&q->head, &q->tail);
+
 	    take -= drop;
 	    if (!take) return;
+
+	    goto again;
 	} else {
 	    /* drop == take < size ---> take-drop == 0, stop. */
 	    return;
 	}
     }
 
+    ASSERT (0,"");
     {
 	long int size = cstack_size (q->tail);
 	long int drop = MIN (take, size);
@@ -581,7 +588,7 @@ cqueue_drop_tail (CQUEUE q, long int take)
 	return;
     }
 
-    {
+ again: {
 	long int size = cstack_size (q->tail);
 	long int drop = MIN (take, size);
 
@@ -593,12 +600,15 @@ cqueue_drop_tail (CQUEUE q, long int take)
 	     */
 	    take -= drop;
 	    if (!take) return;
+
+	    goto again;
 	} else {
 	    /* drop == take < size ---> take-drop == 0, stop. */
 	    return;
 	}
     }
 
+    ASSERT (0,"");
     {
 	/* Tail is empty here. Move the data to keep into it. Then clear the
 	 * remainder in the head. At last move half of the data back to
