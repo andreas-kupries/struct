@@ -1,0 +1,307 @@
+<html><head>
+<title>struct::stack - Tcl Data Structures</title>
+<style type="text/css"><!--
+    HTML {
+	background: 	#FFFFFF;
+	color: 		black;
+    }
+    BODY {
+	background: 	#FFFFFF;
+	color:	 	black;
+    }
+    DIV.doctools {
+	margin-left:	10%;
+	margin-right:	10%;
+    }
+    DIV.doctools H1,DIV.doctools H2 {
+	margin-left:	-5%;
+    }
+    H1, H2, H3, H4 {
+	margin-top: 	1em;
+	font-family:	sans-serif;
+	font-size:	large;
+	color:		#005A9C;
+	background: 	transparent;
+	text-align:		left;
+    }
+    H1.title {
+	text-align: center;
+    }
+    UL,OL {
+	margin-right: 0em;
+	margin-top: 3pt;
+	margin-bottom: 3pt;
+    }
+    UL LI {
+	list-style: disc;
+    }
+    OL LI {
+	list-style: decimal;
+    }
+    DT {
+	padding-top: 	1ex;
+    }
+    UL.toc,UL.toc UL, UL.toc UL UL {
+	font:		normal 12pt/14pt sans-serif;
+	list-style:	none;
+    }
+    LI.section, LI.subsection {
+	list-style: 	none;
+	margin-left: 	0em;
+	text-indent:	0em;
+	padding: 	0em;
+    }
+    PRE {
+	display: 	block;
+	font-family:	monospace;
+	white-space:	pre;
+	margin:		0%;
+	padding-top:	0.5ex;
+	padding-bottom:	0.5ex;
+	padding-left:	1ex;
+	padding-right:	1ex;
+	width:		100%;
+    }
+    PRE.example {
+	color: 		black;
+	background: 	#f5dcb3;
+	border:		1px solid black;
+    }
+    UL.requirements LI, UL.syntax LI {
+	list-style: 	none;
+	margin-left: 	0em;
+	text-indent:	0em;
+	padding:	0em;
+    }
+    DIV.synopsis {
+	color: 		black;
+	background: 	#80ffff;
+	border:		1px solid black;
+	font-family:	serif;
+	margin-top: 	1em;
+	margin-bottom: 	1em;
+    }
+    UL.syntax {
+	margin-top: 	1em;
+	border-top:	1px solid black;
+    }
+    UL.requirements {
+	margin-bottom: 	1em;
+	border-bottom:	1px solid black;
+    }
+--></style>
+</head>
+<! -- Generated from file '/net/nas/data/andreask/Dev/Struct/struct/embedded/www/doc/files/stackc/struct_stack_c.html' by tcllib/doctools with format 'html'
+   -->
+<! -- CVS: $Id$ struct::stack.n
+   -->
+<body><div class="doctools">
+<hr> [
+  <a href="../../../toc.html">Main Table Of Contents</a>
+| <a href="../../toc.html">Table Of Contents</a>
+| <a href="../../../index.html">Keyword Index</a>
+] <hr>
+<h1 class="title">struct::stack(n) 2 doc &quot;Tcl Data Structures&quot;</h1>
+<div id="name" class="section"><h2><a name="name">Name</a></h2>
+<p>struct::stack - Create and manipulate Tcl stack objects, C implementation</p>
+</div>
+<div id="toc" class="section"><h2><a name="toc">Table Of Contents</a></h2>
+<ul class="toc">
+<li class="section"><a href="#toc">Table Of Contents</a></li>
+<li class="section"><a href="#synopsis">Synopsis</a></li>
+<li class="section"><a href="#section1">Description</a></li>
+<li class="section"><a href="#section2">Class API</a></li>
+<li class="section"><a href="#section3">Instance API</a></li>
+<li class="section"><a href="#section4">Changes</a>
+<ul>
+<li class="subsection"><a href="#subsection1">Changes for version 2</a></li>
+</ul>
+</li>
+<li class="section"><a href="#section5">License</a></li>
+<li class="section"><a href="#section6">Bugs, Ideas, Feedback</a></li>
+<li class="section"><a href="#keywords">Keywords</a></li>
+<li class="section"><a href="#category">Category</a></li>
+</ul>
+</div>
+<div id="synopsis" class="section"><h2><a name="synopsis">Synopsis</a></h2>
+<div class="synopsis">
+<ul class="requirements">
+<li>package require <b class="pkgname">Tcl 8.5</b></li>
+<li>package require <b class="pkgname">c::index <span class="opt">?1?</span></b></li>
+<li>package require <b class="pkgname">c::slice <span class="opt">?1?</span></b></li>
+<li>package require <b class="pkgname">c::stack <span class="opt">?1?</span></b></li>
+<li>package require <b class="pkgname">struct::stack <span class="opt">?2?</span></b></li>
+</ul>
+<ul class="syntax">
+<li><a href="#1"><b class="cmd">::struct stack</b> <b class="method">new</b></a></li>
+<li><a href="#2"><b class="cmd">::struct stack</b> <b class="method">create</b> <i class="arg">name</i></a></li>
+<li><a href="#3"><i class="arg">stackObj</i> <b class="method">at</b> <i class="arg">index</i></a></li>
+<li><a href="#4"><i class="arg">stackObj</i> <b class="method">bottom</b> <span class="opt">?<i class="arg">count</i>?</span></a></li>
+<li><a href="#5"><i class="arg">stackObj</i> <b class="method">clear</b></a></li>
+<li><a href="#6"><i class="arg">stackObj</i> <b class="method">destroy</b></a></li>
+<li><a href="#7"><i class="arg">stackObj</i> <b class="method">get</b></a></li>
+<li><a href="#8"><i class="arg">stackObj</i> <b class="method">pop</b> <span class="opt">?<i class="arg">count</i>?</span></a></li>
+<li><a href="#9"><i class="arg">stackObj</i> <b class="method">push</b> <i class="arg">item</i> <span class="opt">?<i class="arg">item...</i>?</span></a></li>
+<li><a href="#10"><i class="arg">stackObj</i> <b class="method">rotate</b> <i class="arg">count</i> <i class="arg">steps</i></a></li>
+<li><a href="#11"><i class="arg">stackObj</i> <b class="method">size</b></a></li>
+<li><a href="#12"><i class="arg">stackObj</i> <b class="method">top</b> <span class="opt">?<i class="arg">count</i>?</span></a></li>
+<li><a href="#13"><i class="arg">stackObj</i> <b class="method">trim</b> <span class="opt">?<i class="arg">newsize</i>?</span></a></li>
+<li><a href="#14"><i class="arg">stackObj</i> <b class="method">trim*</b> <span class="opt">?<i class="arg">newsize</i>?</span></a></li>
+</ul>
+</div>
+</div>
+<div id="section1" class="section"><h2><a name="section1">Description</a></h2>
+<p>Welcome to Struct, a set of packages providing various data structures
+to Tcl, and additional operations for existing Tcl structures.</p>
+<p>This manpage documents the C implementation of the
+<b class="package">struct::stack</b> package. It provides the same API as the Tcl
+implementation, although details like the exact wording of error
+messages may differ.</p>
+</div>
+<div id="section2" class="section"><h2><a name="section2">Class API</a></h2>
+<p>The <b class="namespace">::struct</b> namespace contains a single command with
+multiple methods for the creation of stack objects. These are:</p>
+<dl class="definitions">
+<dt><a name="1"><b class="cmd">::struct stack</b> <b class="method">new</b></a></dt>
+<dd><p>This class method creates a new stack instance with an associated
+global Tcl command and returns the fully qualified name of this
+command. The name is auto-generated.</p></dd>
+<dt><a name="2"><b class="cmd">::struct stack</b> <b class="method">create</b> <i class="arg">name</i></a></dt>
+<dd><p>This class method creates a new stack instance with an associated
+global Tcl command and returns the fully qualified name of this
+command. The <i class="arg">name</i> is chosen by the user and provided as the
+argument of the method.</p></dd>
+</dl>
+</div>
+<div id="section3" class="section"><h2><a name="section3">Instance API</a></h2>
+<p>All instances of stacks created through the <span class="sectref"><a href="#section2">Class API</a></span>
+support the following API:</p>
+<dl class="definitions">
+<dt><a name="3"><i class="arg">stackObj</i> <b class="method">at</b> <i class="arg">index</i></a></dt>
+<dd><p>This method returns the requested element stored without removing it
+from the stack. The topmost element of the stack is addressed by index
+<b class="const">0</b>, whereas the bottommost element can be addressed as either
+<b class="variable">size</b>-1, or <b class="const">end</b>. This addressing order matches the order
+used by method <b class="method">get</b> to return the stack.</p>
+<p>An error is thrown if the specified index is not within the
+boundaries of the stack.</p>
+<p>Note that the method accepts for <i class="arg">index</i> all syntactical
+forms supported by the Tcl builtin <b class="cmd">lindex</b>.</p></dd>
+<dt><a name="4"><i class="arg">stackObj</i> <b class="method">bottom</b> <span class="opt">?<i class="arg">count</i>?</span></a></dt>
+<dd><p>This method returns the bottom <i class="arg">count</i> elements of the stack,
+without removing them from the stack. The count defaults to <b class="const">1</b>.</p>
+<p>If only one element is requested the result is that element. If
+more than one element is requested the result will be a list of
+elements, with the bottommost element of the stack returned as the
+last element of the result. This matches the ordering of method
+<b class="method">get</b>.</p>
+<p>An error will be thrown if the stack does not hold enough
+elements to satisfy the request, i.e. less than <i class="arg">count</i> elements.</p></dd>
+<dt><a name="5"><i class="arg">stackObj</i> <b class="method">clear</b></a></dt>
+<dd><p>This method removes all elements from the stack.</p>
+<p>The method returns the empty string as its result.</p></dd>
+<dt><a name="6"><i class="arg">stackObj</i> <b class="method">destroy</b></a></dt>
+<dd><p>This method destroys the stack instance and the associated Tcl
+command, releasing any associated resurces.</p>
+<p>The method returns the empty string as its result.</p></dd>
+<dt><a name="7"><i class="arg">stackObj</i> <b class="method">get</b></a></dt>
+<dd><p>This method returns all elements stored in the stack as a list,
+without removing them from the stack. The topmost element of the stack
+is returned as the first element of the list, while the bottom-most
+element of the stack is matched to the last element of the list.</p>
+<p>In other words, writing the list in left-to-right order the top
+of the stack will be at the left, and the bottom at the right.</p></dd>
+<dt><a name="8"><i class="arg">stackObj</i> <b class="method">pop</b> <span class="opt">?<i class="arg">count</i>?</span></a></dt>
+<dd><p>This method returns the top <i class="arg">count</i> items of the stack, and
+removes them from the stack. The count defaults to <b class="const">1</b>.</p>
+<p>If only one element is requested the result is that element. If
+more than one element is requested the result will be a list of
+elements, with the topmost element of the stack as the first element
+of the result. This matches the ordering of method <b class="method">get</b>.</p>
+<p>An error will be thrown if the stack does not hold enough
+elements to satisfy the request, i.e. less than <i class="arg">count</i> elements.</p></dd>
+<dt><a name="9"><i class="arg">stackObj</i> <b class="method">push</b> <i class="arg">item</i> <span class="opt">?<i class="arg">item...</i>?</span></a></dt>
+<dd><p>This method pushes the specified <i class="arg">item</i> or items onto the stack.
+If more than one <i class="arg">item</i> is given, they will be pushed in the order
+they are listed.</p>
+<p>The method returns the empty string as its result.</p></dd>
+<dt><a name="10"><i class="arg">stackObj</i> <b class="method">rotate</b> <i class="arg">count</i> <i class="arg">steps</i></a></dt>
+<dd><p>This method rotates the top <i class="arg">count</i> elements of the stack by the
+specified number of <i class="arg">steps</i>.</p>
+<p>Rotating 1 element (i.e. &quot;<i class="arg">count</i> == 1&quot;) is a no-op.
+Similarly &quot;<i class="arg">steps</i> == 0 mod <i class="arg">n</i>&quot; is a no-op as well.</p>
+<p>Laying out the contents of the stack as returned by method
+<b class="method">get</b>, i.e. top at the left, a positive number of steps rotates
+the elements left, whereas a negative <i class="arg">steps</i> rotates to the
+right.</p>
+<p>The result of the method is the empty string.</p></dd>
+<dt><a name="11"><i class="arg">stackObj</i> <b class="method">size</b></a></dt>
+<dd><p>This method returns the number of elements stored in the stack.</p></dd>
+<dt><a name="12"><i class="arg">stackObj</i> <b class="method">top</b> <span class="opt">?<i class="arg">count</i>?</span></a></dt>
+<dd><p>This method returns the top <i class="arg">count</i> elements of the stack, without
+removing them from the stack. The count defaults to <b class="const">1</b>.</p>
+<p>If only one element is requested the result is that element. If
+more than one element is requested the result will be a list of
+elements, with the topmost element of the stack returned as the first
+element of the result. This matches the ordering of method <b class="method">get</b>.</p>
+<p>An error will be thrown if the stack does not hold enough
+elements to satisfy the request, i.e. less than <i class="arg">count</i> elements.</p></dd>
+<dt><a name="13"><i class="arg">stackObj</i> <b class="method">trim</b> <span class="opt">?<i class="arg">newsize</i>?</span></a></dt>
+<dd><p>This method shrinks the stack to contain at most <i class="arg">newsize</i>
+elements and returns a list containing the elements which were
+removed. Nothing is done if the stack is already at the specified
+size, or smaller. In that case the result is the empty list.</p></dd>
+<dt><a name="14"><i class="arg">stackObj</i> <b class="method">trim*</b> <span class="opt">?<i class="arg">newsize</i>?</span></a></dt>
+<dd><p>This method is a variant of method <b class="method">trim</b> which does not return
+the removed elements, and only performs any necessary shrinking.</p></dd>
+</dl>
+</div>
+<div id="section4" class="section"><h2><a name="section4">Changes</a></h2>
+<div id="subsection1" class="subsection"><h3><a name="subsection1">Changes for version 2</a></h3>
+<p>Version 2 introduces incompatible changes to the API of stack objects,
+therefore the change to the major version number.</p>
+<p>The changes in detail are:</p>
+<ol class="enumerated">
+<li><p>Version 2 requires Tcl 8.5 or higher. Tcl 8.4 or less is not
+	supported anymore.</p></li>
+<li><p>Instance creation syntax has changed.
+	For comparison, the old syntax is</p>
+<pre class="example">
+	struct::stack FOO       ; # or
+	set foo [struct::stack]
+</pre>
+<p>whereas the new is</p>
+<pre class="example">
+	struct stack create FOO ; # or
+	set foo [struct stack new]
+</pre>
+</li>
+<li><p>Method <b class="method">getr</b> has been dropped. Use</p>
+<pre class="example">
+	lreverse [FOO get]	
+</pre>
+<p>instead, assuming that <b class="cmd">FOO</b> is a stack instance.</p></li>
+<li><p>The methods <b class="method">peek</b> and <b class="method">peekr</b> have been renamed
+	to <b class="method">top</b> and <b class="method">bottom</b>, respectively.</p></li>
+<li><p>The method <b class="method">at</b> is new.</p></li>
+</ol>
+</div>
+</div>
+<div id="section5" class="section"><h2><a name="section5">License</a></h2>
+<p>This package, written by Andreas Kupries, is BSD licensed.</p>
+</div>
+<div id="section6" class="section"><h2><a name="section6">Bugs, Ideas, Feedback</a></h2>
+<p>This document, and the package it describes, will undoubtedly contain
+bugs and other problems.
+Please report such at the
+<a href="https://chiselapp.com/user/andreas_kupries/repository/Struct/index">Struct Tracker</a>.
+Please also report any ideas for enhancements you may have for either
+package and/or documentation.</p>
+</div>
+<div id="keywords" class="section"><h2><a name="keywords">Keywords</a></h2>
+<p><a href="../../../index.html#key0">data structures</a>, <a href="../../../index.html#key1">lifo</a>, <a href="../../../index.html#key2">stack</a></p>
+</div>
+<div id="category" class="section"><h2><a name="category">Category</a></h2>
+<p>Data structures</p>
+</div>
+</div></body></html>

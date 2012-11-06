@@ -1,0 +1,23 @@
+# -*- tcl -*- tcl.tk//DSL tclbench//EN//2.0
+# # ## ### ##### ######## ############# #####################
+## stack.bench:  benchmarks for the stack package.
+## (c) 2012 Andreas Kupries
+
+kb check Tcl 8.5
+
+kb local support   c::index
+kb local support   c::slice
+kb local support   c::stack
+
+kb local benchmark struct::stack
+
+# # ## ### ##### ######## ############# #####################
+
+proc id {} { return "c" }
+
+# # ## ### ##### ######## ############# #####################
+
+kb source ../include/stack.bench
+
+# # ## ### ##### ######## ############# #####################
+

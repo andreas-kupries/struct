@@ -1,0 +1,24 @@
+# -*- tcl -*- tcl.tk//DSL tclbench//EN//2.0
+# # ## ### ##### ######## ############# #####################
+## queue.bench:  benchmarks for the queue package.
+## (c) 2012 Andreas Kupries
+
+kb check Tcl 8.5
+
+kb local support   c::index
+kb local support   c::slice
+kb local support   c::stack
+kb local support   c::queue
+
+kb local benchmark struct::queue
+
+# # ## ### ##### ######## ############# #####################
+
+proc id {} { return "c" }
+
+# # ## ### ##### ######## ############# #####################
+
+kb source ../include/queue.bench
+
+# # ## ### ##### ######## ############# #####################
+

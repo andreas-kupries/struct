@@ -18,47 +18,27 @@ typedef struct CQUEUE_ {
     void*            clientData;
 
     /*
-     * The queue is managed via several stacks holding the elements added at
-     * the two sides and the middle.
+     * The queue is managed via two stacks holding the elements added at each
+     * of the two sides. When removal of elements clears out one of the stacks
+     * data from the other is moved over, in anticipation of more removals.
      *
      * The logical organization and ordering of the stacks making up the queue
      * is shown below. The arrows point in the logical direction of growth,
      * i.e. from bottom to top.
      *
-     * |HEAD..| |MIDDLE| |TAIL..|
-     * |<-----| |----->| |----->|
-     * |T    B| |B  ^ T| |B    T|
-     *              AT - index into the middle.
+     * |HEAD..| |TAIL..|
+     * |<-----| |----->|
+     * |T    B| |B    T|
      *
      * The HEAD contains all elements "prepend"ed to the front and not yet
      * removed from the front ("(remove|drop)_head").
      *
      * The TAIL contains all elements "append"ed to the end and not yet
      * removed from the end ("(remove|drop)_tail").
-     *
-     * The MIDDLE is filled from the TAIL when either HEAD or MIDDLE run out
-     * of data taken from the front. To make removal fast (1) the index AT is
-     * used to access it. It holds the location of the _next_ element to
-     * return. Index 0 is bottom.
-     *
-     * (Ad 1): In the naive implementation we would shift the array of
-     * elements down after removing from the bottom, making this an O(n)
-     * operation, and repeated use O(n**2). With the index we avoid that, and
-     * defer the actual release of cells to when the MIDDLE has been processed
-     * completely.
      */
 
-    CSTACK   head;
-    CSTACK   middle;
-    CSTACK   tail;
-    long int at;
-
-    /*
-     * This field holds a stack slated for destruction, defering actual action
-     * in the hope of reusing it again for one of the other stacks above.
-     */
-
-    CSTACK   hold;
+    CSTACK head;
+    CSTACK tail;
 
 } CQUEUE_;
 
@@ -69,6 +49,9 @@ typedef struct CQUEUE_ {
 #ifndef MIN
 #define MIN(a,b) ((a) < (b) ? (a) : (b))
 #endif
+
+#define SWAP(a,b) { void* tmp = a ; a = b ; b = tmp; }
+
 
 /*
  * Allocation macros for common situations.
