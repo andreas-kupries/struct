@@ -2,12 +2,106 @@
 
 /*
  * = = == === ===== ======== ============= =====================
- * == Declaraction of helper internal function.
- * == Management of the hold field.
+ * Declarations of helper functions
  */
 
-static CSTACK NewStack  (CQUEUE q);
-static void   HoldStack (CQUEUE q, CSTACK* s);
+static void
+Rebalance (CSTACK* empty, CSTACK* notempty);
+
+/*
+ * = = == === ===== ======== ============= =====================
+ * Internal debug helper. Activate manually. Assumes! that the queue contains
+ * Tcl_Obj* (i.e. like struct::queue/C).
+ */
+
+#if 0
+#define DUMP(s,q) ___dump (s,q)
+#define DUMPS(t,s) ___dumps (t,s)
+
+static void
+___dumps (const char* t, CSTACK s)
+{
+    long int i, n;
+
+    n = cstack_size (s);
+    fprintf (stdout, "S %s %p = %d: {", t, s, n);
+
+    if (n) {
+	CSLICE tmp = cstack_get (s, n-1, n);
+	for (i=0;i<n;i++) {
+	    fprintf (stdout, " (%s)", Tcl_GetString (cslice_at (tmp, i)));
+	    fflush (stdout);
+	}
+	fflush (stdout);
+	cslice_destroy (tmp);
+    }
+    fprintf (stdout, " }\n", n);
+}
+
+static void
+___dump (const char* s, CQUEUE q)
+{
+    /* Assume elements are Tcl_Obj* */
+    fprintf (stdout, "%s %p = {\n", s, q);
+    {
+	long int i, n = cstack_size (q->head);
+	if (n) {
+	    CSLICE tmp = cstack_get (q->head, n-1, n);
+	    fprintf (stdout, "    H %d <(", n);
+	    fflush (stdout);
+	    for (i=0;i<n;i++) {
+		fprintf (stdout, " (%s)", Tcl_GetString (cslice_at (tmp, i)));
+		fflush (stdout);
+	    }
+	    fprintf (stdout, " )\n", n);
+	    fflush (stdout);
+	    cslice_destroy (tmp);
+	} else {
+	    fprintf (stdout, "    H %d <()\n", n);
+	}
+    }
+    {
+	long int i, n = cstack_size (q->tail);
+	if (n) {
+	    CSLICE tmp = cstack_getr (q->tail, 0, n);
+	    fprintf (stdout, "    T %d (", n);
+	    fflush (stdout);
+	    for (i=0;i<n;i++) {
+		fprintf (stdout, " (%s)", Tcl_GetString (cslice_at (tmp, i)));
+		fflush (stdout);
+	    }
+	    fprintf (stdout, " )>\n", n);
+	    fflush (stdout);
+	    cslice_destroy (tmp);
+	} else {
+	    fprintf (stdout, "    T %d ()>\n", n);
+	}
+    }
+    fprintf (stdout, "}\n");
+    fflush (stdout);
+}
+#else
+#define DUMP(s,q)
+#define DUMPS(s,q)
+#endif
+
+
+/*
+ * = = == === ===== ======== ============= =====================
+ * Client data management.
+ */
+
+void
+cqueue_clientdata_set (CQUEUE q, void* clientdata)
+{
+    q->clientData = clientdata;
+}
+
+void*
+cqueue_clientdata_get (CQUEUE q)
+{
+    return q->clientData;
+}
 
 /*
  * = = == === ===== ======== ============= =====================
@@ -21,11 +115,8 @@ cqueue_create (CQUEUE_CELL_FREE freeCell, void* clientdata)
 
     q->freeCell   = freeCell;
     q->clientData = clientdata;
-    q->head       = 0;
-    q->middle     = 0;
-    q->tail       = 0;
-    q->at         = 0;
-    q->hold       = 0;
+    q->head       = cstack_create (q->freeCell, 0);
+    q->tail       = cstack_create (q->freeCell, 0);
 
     return q;
 }
@@ -33,10 +124,8 @@ cqueue_create (CQUEUE_CELL_FREE freeCell, void* clientdata)
 void
 cqueue_destroy (CQUEUE q)
 {
-    if (q->head)   cstack_destroy (q->head);
-    if (q->middle) cstack_destroy (q->middle);
-    if (q->tail)   cstack_destroy (q->tail);
-    if (q->hold)   cstack_destroy (q->hold);
+    cstack_destroy (q->head);
+    cstack_destroy (q->tail);
 
     ckfree ((char*) q);
 }
@@ -50,24 +139,17 @@ long int
 cqueue_size (CQUEUE q)
 {
     return
-	(q->head   ? cstack_size (q->head)   : 0) +
-	(q->middle ? cstack_size (q->middle) : 0) +
-	(q->tail   ? cstack_size (q->tail)   : 0) -
-	q->at;
+	cstack_size (q->head) +
+        cstack_size (q->tail) ;
 }
 
 void*
 cqueue_first (CQUEUE q)
 {
-    if (q->head) {
-	ASSERT (cstack_size (q->head) > 0, "non-null head is empty");
+    if (cstack_size (q->head)) {
 	return cstack_top (q->head);
     }
-    if (q->middle && (q->at < cstack_size (q->middle))) {
-	return cstack_atr (q->middle, q->at);
-    }
-    if (q->tail) {
-	ASSERT (cstack_size (q->tail) > 0, "non-null tail is empty");
+    if (cstack_size (q->tail)) {
 	return cstack_bottom (q->tail);
     }
 
@@ -78,15 +160,10 @@ cqueue_first (CQUEUE q)
 void*
 cqueue_last (CQUEUE q)
 {
-    if (q->tail) {
-	ASSERT (cstack_size (q->tail) > 0, "non-null tail is empty");
+    if (cstack_size (q->tail)) {
 	return cstack_top (q->tail);
     }
-    if (q->middle && (q->at < cstack_size (q->middle))) {
-	return cstack_top (q->middle);
-    }
-    if (q->head) {
-	ASSERT (cstack_size (q->head) > 0, "non-null head is empty");
+    if (cstack_size (q->head)) {
 	return cstack_bottom (q->head);
     }
 
@@ -105,44 +182,30 @@ cqueue_head (CQUEUE q, long int take)
      * various stacks until the request is fulfilled.
      */
 
-    if (q->head) {
+    {
 	long int pull, size = cstack_size (q->head);
 
-	ASSERT (size > 0, "non-null head is empty");
 	pull = MIN (take, size);
+	if (pull) {
+	    take -= pull;
+	    result = cslice_reverse (cstack_get (q->head, pull-1, pull));
 
-	take -= pull;
-	result = cslice_reverse (cstack_get (q->head, pull-1, pull));
-
-	if (!take) return result;
+	    if (!take) return result;
+	}
     }
 
-    if (q->middle && (q->at < cstack_size (q->middle))) {
-	CSLICE tmp;
-	long int size = cstack_size (q->middle) - q->at;
-	long int pull = MIN (take, size);
-
-	take -= pull;
-	tmp = cstack_getr (q->middle, q->at, pull);
-	result = (!result)
-	    ? tmp
-	    : cslice_concat (result, tmp);
-
-	if (!take) return result;
-    }
-
-    if (q->tail) {
+    {
 	long int pull, size = cstack_size (q->tail);
 	CSLICE tmp;
 
-	ASSERT (size > 0, "non-null tail is empty");
 	pull = MIN (take, size);
-
-	take -= pull;
-	tmp = cstack_getr (q->tail, 0, pull);
-        result = (!result)
-	    ? tmp
-	    : cslice_concat (result, tmp);
+	if (pull) {
+	    take -= pull;
+	    tmp = cstack_getr (q->tail, 0, pull);
+	    result = (!result)
+		? tmp
+		: cslice_concat (result, tmp);
+	}
     }
 
     ASSERT (take == 0, "Bad retrieval");
@@ -160,45 +223,32 @@ cqueue_tail (CQUEUE q, long int take)
      * various stacks until the request is fulfilled.
      */
 
-    if (q->tail) {
+    {
 	long int pull, size = cstack_size (q->tail);
 	CSLICE tmp;
 
-	ASSERT (size > 0, "non-null tail is empty");
 	pull = MIN (take, size);
+	if (pull) {
+	    take -= pull;
+	    result = cstack_get (q->tail, pull-1, pull);
 
-	take -= pull;
-	result = cstack_get (q->tail, pull-1, pull);
-
-	if (!take) return result;
+	    if (!take) return result;
+	}
     }
 
-    if (q->middle && (q->at < cstack_size (q->middle))) {
-	CSLICE tmp;
-	long int size = cstack_size (q->middle) - q->at;
-	long int pull = MIN (take, size);
-
-	take -= pull;
-	tmp = cstack_get (q->middle, pull-1, pull);
-	result = (!result)
-	    ? tmp
-	    : cslice_concat (tmp, result);
-
-	if (!take) return result;
-    }
-
-    if (q->head) {
+    {
 	long int pull, size = cstack_size (q->head);
 	CSLICE tmp;
 
-	ASSERT (size > 0, "non-null head is empty");
 	pull = MIN (take, size);
 
-	take -= pull;
-	tmp = cslice_reverse (cstack_getr (q->head, 0, pull));
-        result = (!result)
-	    ? tmp
-	    : cslice_concat (tmp, result);
+	if (pull) {
+	    take -= pull;
+	    tmp = cslice_reverse (cstack_getr (q->head, 0, pull));
+	    result = (!result)
+		? tmp
+		: cslice_concat (tmp, result);
+	}
     }
 
     ASSERT (take == 0, "Bad retrieval");
@@ -220,10 +270,8 @@ cqueue_get (CQUEUE q, long int at, long int take)
      * various stacks until the request is fulfilled.
      */
 
-    if (q->head) {
+    {
 	long int have = cstack_size (q->head);
-
-	ASSERT (have > 0, "non-null head is empty");
 
 	if (at >= have) {
 	    /* The slice starts behind this buffer.
@@ -253,39 +301,7 @@ cqueue_get (CQUEUE q, long int at, long int take)
 	}
     }
 
-    if (q->middle) {
-	long int have = cstack_size (q->middle) - q->at;
-
-	if (at >= have) {
-	    /* The slice starts behind this buffer.
-	     * Skip.
-	     */
-	    at -= have;
-	} else if ((at+take) <= have) {
-	    /* The slice is fully contained in this buffer.
-	     * Take it and stop.
-	     * Integrate a prefix saved before, if there is any.
-	     */
-	    CSLICE tmp = cstack_getr (q->middle, q->at + at, take);
-	    return (!result)
-		? tmp
-		: cslice_concat (result, tmp);
-
-	} else /* (at+take > have) */ {
-	    /* The slice starts in this buffer and extends into the next.
-	     * Take prefix and continue.
-	     * Integrate a prefix saved before, if there is any.
-	     */
-	    CSLICE tmp = cstack_getr (q->middle, q->at + at, have-at);
-	    take -= have-at;
-	    at = 0;
-	    result = (!result)
-		? tmp
-		: cslice_concat (result, tmp);
-	}
-    }
-
-    if (q->tail) {
+    {
 	long int have = cstack_size (q->tail);
 
 	if (at >= have) {
@@ -322,36 +338,28 @@ cqueue_get (CQUEUE q, long int at, long int take)
 void
 cqueue_append (CQUEUE q, void* item)
 {
-    if (!q->tail) {
-	q->tail = NewStack (q);
-    }
     cstack_push (q->tail, item);
+
+    DUMP ("append/1",q);
 }
 
 void
 cqueue_prepend (CQUEUE q, void* item)
 {
-    if (!q->head) {
-	q->head = NewStack (q);
-    }
     cstack_push (q->head, item);
 }
 
 void
 cqueue_append_slice (CQUEUE q, CSLICE s)
 {
-    if (!q->tail) {
-	q->tail = NewStack (q);
-    }
     cstack_push_slice (q->tail, s);
+
+    DUMP ("append/s",q);
 }
 
 void
 cqueue_prepend_slice (CQUEUE q, CSLICE s)
 {
-    if (!q->head) {
-	q->head = NewStack (q);
-    }
     cstack_push_slice (q->head, s);
 }
 
@@ -363,67 +371,69 @@ cqueue_remove_head (CQUEUE q, long int take)
     ASSERT (take <= total, "Not enough elements in the cqueue");
     ASSERT (take >= 0, "Bad removal count");
 
+    DUMP ("rh/in",q);
+
     if (take == 0) return;
     if (take == total) {
+	/* (**) Drop everything. */
 	cqueue_clear (q);
+	DUMP ("rh/all",q);
 	return;
     }
 
-    if (q->head) {
+    {
 	long int size = cstack_size (q->head);
 	long int drop = MIN (take, size);
 
 	if (drop == size) {
 	    /* drop == size <= take --> take-drop >= 0, continue */
-	    HoldStack (q, &q->head);
+	    cstack_clear (q->head);
 	    take -= drop;
-	    if (!take) return;
+	    if (!take) {
+		DUMP ("rh/1",q);
+		return;
+	    }
 	} else {
 	    /* drop == take < size ---> take-drop == 0, stop. */
 	    cstack_pop (q->head, drop);
+	    DUMP ("rh/2",q);
 	    return;
 	}
     }
 
- again:
-    if (q->middle && (q->at < cstack_size (q->middle))) {
-	long int size = cstack_size (q->middle) - q->at;
+    {
+	/* Head is empty here. Move the data to keep into it. Then clear the
+	 * remainder in the tail. At last move half of the data back to
+	 * balance the sides. Special case: Drop everything. Cannot happen.
+	 * Already caught at (**) above.
+	 */
+
+	long int size = cstack_size (q->tail);
 	long int drop = MIN (take, size);
 
-	if (drop == size) {
-	    /* drop == size <= take --> take-drop >= 0, continue */
-	    HoldStack (q, &q->middle);
-	    q->at = 0;
-
-	    /* Shift expected tail into middle. The middle is already cleared,
-	     * and held for future use.
-	     */
-	    ASSERT (q->tail,"Tail expected, missing");
-	    q->middle = q->tail;
-	    q->tail   = 0; /* This ensures that again is run only once! */
-	    take     -= drop; /* Before looping via again */
-	    if (!take) return;
-	    goto again;
-	}
+	ASSERT (drop < size, "Remove everything should have been caught at (**).");
 
 	/* drop == take < size ---> take-drop == 0, stop. */
-	q->at += drop;
-	return;
-    }
 
-    if (q->tail) {
-	if (q->middle) {
-	    HoldStack (q, &q->middle);
-	}
-	q->middle = q->tail;
-	q->tail   = 0;
-	q->at     = 0;
-	goto again;
-    }
+	/* Save the data to keep in the head, which we know to be empty */
+	cstack_move (q->head, q->tail, size-drop);
+	take -= drop;
 
-    /* We are not accessing tail, because this has been done already,
-     * implicitly, due to the shift tail -> middle above, see 'again'.
-     */
+	/* Kill the requested data */
+	cstack_clear (q->tail);
+
+	/* Make the saved data the tail again, and head empty. Oh, and revert
+	 * the order in the tail, because the move did a reversal too.
+	 */
+	SWAP (q->head,q->tail);
+	cstack_reverse_all (q->tail);
+
+	DUMP ("rh/3",q);
+
+	Rebalance (&q->head, &q->tail);
+
+	DUMP ("rh/4",q);
+    }
 
     ASSERT (take == 0, "Bad removal");
 }
@@ -438,17 +448,18 @@ cqueue_remove_tail (CQUEUE q, long int take)
 
     if (take == 0) return;
     if (take == total) {
+	/* (**) Drop everything. */
 	cqueue_clear (q);
 	return;
     }
 
-    if (q->tail) {
+    {
 	long int size = cstack_size (q->tail);
 	long int drop = MIN (take, size);
 
 	if (drop == size) {
 	    /* drop == size <= take --> take-drop >= 0, continue */
-	    HoldStack (q, &q->tail);
+	    cstack_clear (q->tail);
 	    take -= drop;
 	    if (!take) return;
 	} else {
@@ -458,36 +469,34 @@ cqueue_remove_tail (CQUEUE q, long int take)
 	}
     }
 
- again:
-    if (q->middle && (q->at < cstack_size (q->middle))) {
-	long int size = cstack_size (q->middle) - q->at;
+    {
+	/* Tail is empty here. Move the data to keep into it. Then clear the
+	 * remainder in the head. At last move half of the data back to
+	 * balance the sides. Special case: Drop everything. Cannot happen.
+	 * Already caught at (**) above.
+	 */
+
+	long int size = cstack_size (q->head);
 	long int drop = MIN (take, size);
 
-	if (drop == size) {
-	    /* drop == size <= take --> take-drop >= 0, continue */
-	    HoldStack (q, &q->middle);
-	    q->at = 0;
-	    take -= drop;
-	    if (!take) return;
-	} else {
-	    /* drop == take < size ---> take-drop == 0, stop. */
-	    cstack_pop (q->middle, drop);
-	    return;
-	}
-    }
+	ASSERT (drop < size, "Remove everything should have been caught at (**).");
 
-    /* Handling head is a bit more complex now, because it is oriented in the
-     * reverse direction, compared to the others. We now move it into the
-     * middle. We can assume that the middle is gone. Simply creating it and
-     * moving things over does the necessary reversal, and then we drop
-     * elements as needed, reusing the previous section.
-     */
+	/* drop == take < size ---> take-drop == 0, stop. */
 
-    if (q->head) {
-	q->middle = NewStack (q);
-	cstack_move_all (q->middle, q->head);
-	HoldStack (q, &q->head);
-	goto again;
+	/* Save the data to keep in the head, which we know to be empty */
+	cstack_move (q->tail, q->head, size-drop);
+	take -= drop;
+
+	/* Kill the requested data */
+	cstack_clear (q->head);
+
+	/* Make the saved data the head again, and tail empty. Oh, and revert
+	 * the order in the head, because the move did a reversal too.
+	 */
+	SWAP (q->head,q->tail);
+	cstack_reverse_all (q->head);
+
+	Rebalance (&q->tail, &q->head);
     }
 
     ASSERT (take == 0, "Bad removal");
@@ -496,16 +505,8 @@ cqueue_remove_tail (CQUEUE q, long int take)
 void
 cqueue_clear (CQUEUE q)
 {
-    if (q->head)   cstack_destroy (q->head);
-    if (q->middle) cstack_destroy (q->middle);
-    if (q->tail)   cstack_destroy (q->tail);
-    if (q->hold)   cstack_destroy (q->hold);
-
-    q->head       = 0;
-    q->middle     = 0;
-    q->tail       = 0;
-    q->at         = 0;
-    q->hold       = 0;
+    cstack_clear (q->head);
+    cstack_clear (q->tail);
 }
 
 void
@@ -523,17 +524,16 @@ cqueue_drop_head (CQUEUE q, long int take)
 	return;
     }
 
-    if (q->head) {
+    {
 	long int size = cstack_size (q->head);
 	long int drop = MIN (take, size);
 
 	cstack_drop (q->head, drop);
 	if (drop == size) {
 	    /* drop == size <= take --> take-drop >= 0, continue */
-	    /* Because everything was dropped already from head the destroy
-	     * will not release anything (== no remove).
+	    /* Because everything was dropped already from head we do not
+	     * release anything (== no remove).
 	     */
-	    HoldStack (q, &q->head);
 	    take -= drop;
 	    if (!take) return;
 	} else {
@@ -542,77 +542,25 @@ cqueue_drop_head (CQUEUE q, long int take)
 	}
     }
 
-    if (q->middle) {
-	long int size = cstack_size (q->middle) - q->at;
-	long int drop = MIN (take, size);
-
-	if (drop == size) {
-	    /* drop == size <= take --> take-drop >= 0, continue */
-
-	    /* The first part of middle has to be removed, with release, as it
-	     * has been returned in the past. And everything else must be
-	     * dropped. Then we can clean out.
-	     */
-	    cstack_drop (q->middle, drop);
-	    HoldStack (q, &q->middle);
-	    q->at = 0;
-	    take -= drop;
-	    if (!take) return;
-	} else {
-	    /* drop == take < size ---> take-drop == 0, stop. */
-	    /* Indexing from bottom:
-	     * (a) 0..at-1        -- #at          remove (or keep)
-	     * (b) at..at+drop-1  -- #drop        drop
-	     * (c) at+drop..top-1 -- #(size-drop) keep
-	     * Working from the top down
-	     * (Ad c) move #(size-drop) to tmp stack
-	     * (Ad b) drop #drop
-	     * (Ad a) pop  #at        => now empty => at==0
-	     * (----) move #(size-drop) from tmp stack, kill tmp stack.
-	     */
-
-	    CSTACK tmp = NewStack (q);
-	    cstack_move (tmp, q->middle, size-drop);
-	    cstack_drop (q->middle, drop);
-	    cstack_pop  (q->middle, q->at);
-	    q->at = 0;
-	    cstack_move_all (q->middle, tmp);
-	    HoldStack (q, &tmp);
-	    return;
-	}
-    }
-
-    /* !middle, at == 0 */
-
-    if (q->tail) {
+    {
 	long int size = cstack_size (q->tail);
 	long int drop = MIN (take, size);
 
-	if (drop == size) {
-	    /* drop == size <= take --> take-drop >= 0, continue */
-	    cstack_drop_all (q->tail);
-	    HoldStack (q, &q->tail);
-	    take -= drop;
-	    if (!take) return;
-	} else {
-	    /* drop == take < size ---> take-drop == 0, stop. */
-	    /* Drop removes from the bottom of the stack.  To do this we save
-	     * the top to a tmp stack, then drop the remainder, then move the
-	     * saved data back.  Essentially the same we did for middle,
-	     * above.  A difference: We know here that middle is empty, so the
-	     * result after all the ping/pong can become middle.
-	     */
+	ASSERT (drop < size, "Drop everything should have been caught at (**).");
 
-	    CSTACK tmp = NewStack (q);
-	    cstack_move (tmp, q->tail, size-drop);
-	    cstack_drop (q->tail, drop);
-	    cstack_move_all (q->tail, tmp);
-	    HoldStack (q, &tmp);
-	    q->middle = q->tail;
-	    q->tail = 0;
-	    return;
-	}
+	/* drop == take < size ---> take-drop == 0, stop. */
 
+	/* Save the data to keep in the head, which we know to be empty */
+	cstack_move (q->head, q->tail, size-drop);
+	take -= drop;
+
+	/* Kill the requested data */
+	cstack_drop_all (q->tail);
+
+	/* Make the saved data the tail again, and head empty. */
+	SWAP (q->head,q->tail);
+
+	Rebalance (&q->head, &q->tail);
     }
 
     ASSERT (take == 0, "Bad drop");
@@ -633,18 +581,16 @@ cqueue_drop_tail (CQUEUE q, long int take)
 	return;
     }
 
-
-    if (q->tail) {
+    {
 	long int size = cstack_size (q->tail);
 	long int drop = MIN (take, size);
 
 	cstack_drop (q->tail, drop);
 	if (drop == size) {
 	    /* drop == size <= take --> take-drop >= 0, continue */
-	    /* Because everything was dropped already from head the destroy
-	     * will not release anything (== no remove).
+	    /* Because everything was dropped already from tail we do not
+	     * release anything (== no remove).
 	     */
-	    HoldStack (q, &q->head);
 	    take -= drop;
 	    if (!take) return;
 	} else {
@@ -653,59 +599,31 @@ cqueue_drop_tail (CQUEUE q, long int take)
 	}
     }
 
-    if (q->middle) {
-	long int size = cstack_size (q->middle) - q->at;
-	long int drop = MIN (take, size);
+    {
+	/* Tail is empty here. Move the data to keep into it. Then clear the
+	 * remainder in the head. At last move half of the data back to
+	 * balance the sides. Special case: Drop everything. Cannot happen.
+	 * Already caught at (**) above.
+	 */
 
-	cstack_drop (q->middle, drop);
-	if (drop == size) {
-	    /* drop == size <= take --> take-drop >= 0, continue */
-
-	    /* The first part of middle has to be removed, with release, as it
-	     * has been returned in the past. And everything else must be
-	     * dropped. Then we can clean out.
-	     */
-	    HoldStack (q, &q->middle);
-	    q->at = 0;
-	    take -= drop;
-	    if (!take) return;
-	} else {
-	    /* drop == take < size ---> take-drop == 0, stop. */
-	    return;
-	}
-    }
-
-    if (q->head) {
 	long int size = cstack_size (q->head);
 	long int drop = MIN (take, size);
 
-	cstack_drop (q->head, drop);
-	if (drop == size) {
-	    /* drop == size <= take --> take-drop >= 0, continue */
-	    /* Because everything was dropped already from head the destroy
-	     * will not release anything (== no remove).
-	     */
-	    HoldStack (q, &q->head);
-	    take -= drop;
-	    if (!take) return;
-	} else {
-	    /* drop == take < size ---> take-drop == 0, stop. */
-	    /* Drop removes from the bottom of the stack.  To do this we save
-	     * the top to a tmp stack, then drop the remainder, then move the
-	     * saved data back.  Essentially the same we did for middle,
-	     * above.  A difference: We know here that middle is empty, so the
-	     * result after all the ping/pong can become middle.
-	     */
+	ASSERT (drop < size, "Remove everything should have been caught at (**).");
 
-	    CSTACK tmp = NewStack (q);
-	    cstack_move (tmp, q->head, size-drop);
-	    cstack_drop (q->head, drop);
-	    cstack_move_all (q->head, tmp);
-	    HoldStack (q, &tmp);
-	    q->middle = q->head;
-	    q->head = 0;
-	    return;
-	}
+	/* drop == take < size ---> take-drop == 0, stop. */
+
+	/* Save the data to keep in the head, which we know to be empty */
+	cstack_move (q->tail, q->head, size-drop);
+	take -= drop;
+
+	/* Kill the requested data */
+	cstack_drop_all (q->head);
+
+	/* Make the saved data the head again, and tail empty. */
+	SWAP (q->head,q->tail);
+
+	Rebalance (&q->tail, &q->head);
     }
 
     ASSERT (take == 0, "Bad drop");
@@ -714,25 +632,8 @@ cqueue_drop_tail (CQUEUE q, long int take)
 void
 cqueue_drop_all (CQUEUE q)
 {
-    if (q->head) {
-	cstack_drop_all (q->head);
-	cstack_destroy  (q->head);
-    }
-    if (q->middle) {
-	cstack_drop    (q->middle, cstack_size (q->middle) - q->at);
-	cstack_destroy (q->middle);
-    }
-    if (q->tail) {
-	cstack_drop_all (q->tail);
-	cstack_destroy  (q->tail);
-    }
-    if (q->hold) cstack_destroy (q->hold);
-
-    q->head       = 0;
-    q->middle     = 0;
-    q->tail       = 0;
-    q->at         = 0;
-    q->hold       = 0;
+    cstack_drop_all (q->head);
+    cstack_drop_all (q->tail);
 }
 
 void
@@ -765,55 +666,58 @@ cqueue_move_all (CQUEUE dst, CQUEUE src)
      * a slice. See 'move' for the idea.
      */
 }
+
 
 /*
  * = = == === ===== ======== ============= =====================
- * Client data management.
+ * Implement the helper.
  */
-
-void
-cqueue_clientdata_set (CQUEUE q, void* clientdata)
-{
-    q->clientData = clientdata;
-}
-
-void*
-cqueue_clientdata_get (CQUEUE q)
-{
-    return q->clientData;
-}
-
-/*
- * = = == === ===== ======== ============= =====================
- * == Helpers. Implementation.
- */
-
-static CSTACK
-NewStack (CQUEUE q) {
-    CSTACK result;
-    if (q->hold) {
-	/* Reuse the help stack */
-	result = q->hold;
-	q->hold = 0;
-    } else {
-	/* Nothing to reuse, actually create */
-	result = cstack_create (q->freeCell, 0);
-    }
-    return result;
-}
 
 static void
-HoldStack (CQUEUE q, CSTACK* s) {
-    CSTACK result;
-    if (q->hold) {
-	/* The hold slot is full, actually destroy */
-	cstack_destroy (*s);
-    } else {
-	/* Hold the stack, only clear it. */
-	q->hold = *s;
-	cstack_clear (*s);
+Rebalance (CSTACK* empty, CSTACK* notempty)
+{
+    CSTACK e = *empty;
+    CSTACK n = *notempty;
+    long int se = cstack_size (e);
+    long int sn = cstack_size (n);
+    long int half;
+
+    ASSERT (!se && sn, "Bad call to rebalance");
+
+    DUMPS("re1/e",e);
+    DUMPS("re1/n",n);
+
+    /* We rebalance by splitting the data in notempty in halves and putting
+     * one into the empty stack. For an odd number of elements the smaller
+     * half ends up in empty. Except for a single element, which we can
+     * optimize by simply swapping the stacks.
+     */
+
+    if (sn == 1) {
+	*empty    = n;
+	*notempty = e;
+	return;
     }
-    *s = 0;
+
+    half = sn / 2;
+    cstack_move (e, n, half);
+
+
+    DUMPS("re2/e",e);
+    DUMPS("re2/n",n);
+
+    /* To keep the semantics of the queue we have to reverse the stack
+     * contents and swap them
+     */
+
+    cstack_reverse_all (e);
+    cstack_reverse_all (n);
+
+    DUMPS("re3/e",e);
+    DUMPS("re3/n",n);
+
+    *empty    = n;
+    *notempty = e;
 }
 
 /*
