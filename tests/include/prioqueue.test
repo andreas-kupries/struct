@@ -1,158 +1,219 @@
-# -*- tcl -*-
-# prioqueue.test:  tests for the prioqueue package.
+## -*- tcl -*-
+# # ## ### ##### ######## ############# #####################
+## Test suite for struct::prioqueue, common parts across implementations.
 #
-# This file contains a collection of tests for one or more of the Tcl
-# built-in commands.  Sourcing this file into Tcl runs the tests and
-# generates output for errors.  No output means no errors were found.
+## Two complementary constraints (prioqueue_c, prioqueue_tcl) tell us
+## which implementation is under test.
 #
-# Copyright (c) 1998-2000 by Ajuba Solutions.
-# Copyright (c) 2002 Michael Schlenker
-# All rights reserved.
+## The external procedures 'already' and 'badmethod' are used to
+## generate implementation specific error messages. Implementations
+## have to be provided by the invoking implementation-specific
+## testsuite.
 #
-# RCS: @(#) $Id: prioqueue.test,v 1.10 2008/09/04 04:35:02 andreas_kupries Exp $
+## Copyright (c) 2002 Michael Schlenker
+## Copyright (c) 2012 Andreas Kupries
 
-# -------------------------------------------------------------------------
+# # ## ### ##### ######## ############# #####################
+## Basic construction
 
-source [file join \
-	[file dirname [file dirname [file join [pwd] [info script]]]] \
-	devtools testutilities.tcl]
+test prioqueue-1.0.1 {new, wrong#args, too many} -constraints prioqueue_c -body {
+    struct prioqueue new X
+} -returnCodes error -result {wrong # args: should be "struct prioqueue new"}
 
-testsNeedTcl     8.2
-testsNeedTcltest 1.0
+test prioqueue-1.1.0 {create, wrong#args, too many} -constraints prioqueue_c -body {
+    struct prioqueue create foo X
+} -returnCodes error -result {wrong # args: should be "::struct::prioqueue create foo"}
 
-testing {
-    useLocal prioqueue.tcl struct::prioqueue
+## !! Note how we are not using the ensemble.
+## Tcl generates a broken error message if we do.
+test prioqueue-1.0.1 {new, wrong#args, too many} -constraints prioqueue_tcl -body {
+    struct::prioqueue new X
+} -returnCodes error -result {wrong # args: should be "struct::prioqueue new"}
+
+test prioqueue-1.1.1 {create, wrong#args, too many} -constraints prioqueue_tcl -body {
+    struct::prioqueue create foo X
+} -returnCodes error -result {wrong # args: should be "struct::prioqueue create foo"}
+
+test prioqueue-1.2 {constructor, create, existing command} -setup {
+    struct prioqueue create myprioqueue
+} -body {
+    struct prioqueue create myprioqueue
+} -cleanup {
+    myprioqueue destroy
+} -returnCodes error -result [already myprioqueue]
+
+test prioqueue-1.3 {constructor, create, existing command} -body {
+    struct prioqueue create set
+} -returnCodes error -result [already set]
+
+test prioqueue-1.4 {constructor, create} -setup {
+    set result {}
+} -body {
+    lappend result [struct prioqueue create myprioqueue]
+    lappend result [info commands ::myprioqueue]
+    lappend result [myprioqueue size]
+    lappend result [myprioqueue type]
+    lappend result [myprioqueue order]
+} -cleanup {
+    myprioqueue destroy
+    unset result
+} -result {::myprioqueue ::myprioqueue 0 -integer -decreasing}
+
+test prioqueue-1.5.0 {constructor, new} -constraints prioqueue_c -setup {
+    set result {}
+} -body {
+    lappend result [set foo [struct prioqueue new]]
+    lappend result [info commands ::$foo]
+    lappend result [$foo size]
+    lappend result [$foo type]
+    lappend result [$foo order]
+} -cleanup {
+    $foo destroy
+    unset result foo
+} -match glob -result {::struct::prioqueue* ::struct::prioqueue* 0 -integer -decreasing}
+
+test prioqueue-1.5.1 {constructor, new} -constraints prioqueue_tcl -setup {
+    set result {}
+} -body {
+    lappend result [set foo [struct prioqueue new]]
+    lappend result [info commands ::$foo]
+    lappend result [$foo size]
+    lappend result [$foo type]
+    lappend result [$foo order]
+} -cleanup {
+    $foo destroy
+    unset result foo
+} -match glob -result {::oo::Obj* ::oo::Obj* 0 -integer -decreasing}
+
+# # ## ### ##### ######## ############# #####################
+## Construction with options specifying key type and order.
+
+test prioqueue-2.0 {constructor, create, bad option} -body {
+    struct prioqueue create myprioqueue -foo
+} -returnCodes error -result {Unknown option "-foo", expected one of ...}
+# TODO fix error message.
+
+test prioqueue-3.0 {constructor, new, bad option} -body {
+    struct prioqueue new -foo
+} -returnCodes error -result {Unknown option "-foo", expected one of ...}
+# TODO fix error message.
+
+foreach {n options} {
+    1 {-integer -increasing}
+    2 {-integer -decreasing}
+    3 {-real -increasing}
+    4 {-real -decreasing}
+    5 {-ascii -increasing}
+    6 {-ascii -decreasing}
+    7 {-dict -increasing}
+    8 {-dict -decreasing}
+} {
+    test prioqueue-2.$n {constructor, create, option and query} -body {
+	struct prioqueue create myprioqueue {*}$options
+	list [myprioqueue type] [myprioqueue order]
+    } -cleanup {
+	myprioqueue destroy
+    } -result $options
+
+    test prioqueue-3.$n {constructor, new, option and query} -body {
+	set foo [struct prioqueue new {*}$options]
+	list [$foo type] [$foo order]
+    } -cleanup {
+	$foo destroy
+	unset foo
+    } -result $options
 }
 
-# -------------------------------------------------------------------------
+# # ## ### ##### ######## ############# #####################
 
-namespace import -force struct::prioqueue
-
-#----------------------------------------------------------------------
-
-test prioqueue-0.1 {prioqueue errors} {
-    prioqueue -integer myprioqueue
-    catch {prioqueue myprioqueue} msg
+test prioqueue-4.0.0 {instance, no method} -constraints prioqueue_c -setup {
+    struct prioqueue create myprioqueue
+} -body {
+    myprioqueue
+} -cleanup {
     myprioqueue destroy
-    set msg
-} "command \"myprioqueue\" already exists, unable to create prioqueue"
-test prioqueue-0.2 {prioqueue errors} {
-    prioqueue myprioqueue
-    catch {myprioqueue} msg
+} -returnCodes error \
+    -result {wrong # args: should be "myprioqueue option ?arg arg ...?"}
+
+test prioqueue-4.0.1 {instance, no method} -constraints prioqueue_tcl -setup {
+    struct prioqueue create myprioqueue
+} -body {
+    myprioqueue
+} -cleanup {
     myprioqueue destroy
-    set msg
-} "wrong # args: should be \"myprioqueue option ?arg arg ...?\""
-test prioqueue-0.3 {prioqueue errors} {
-    prioqueue myprioqueue
-    catch {myprioqueue foo} msg
+} -returnCodes error \
+    -result {wrong # args: should be "myprioqueue method ?arg ...?"}
+
+test prioqueue-4.1 {instance, bad method name} -setup {
+    struct prioqueue create myprioqueue
+} -body {
+    myprioqueue foo
+} -cleanup {
     myprioqueue destroy
-    set msg
-} "bad option \"foo\": must be clear, destroy, get, peek, put, remove, size, or peekpriority"
-test prioqueue-0.4 {prioqueue errors} {
-    catch {prioqueue set} msg
-    set msg
-} "command \"set\" already exists, unable to create prioqueue"
+} -returnCodes error \
+    -result [badmethod foo {clear destroy order peek peekpriority pop put size type}]
 
-test prioqueue-0.5 {prioqueue errors} {
-    catch {prioqueue -foo myprioqueue} msg
-    set msg
-} "unknown sort option \"-foo\""
+# # ## ### ##### ######## ############# #####################
 
-test prioqueue-0.6 {prioqueue errors} {
-    catch {prioqueue -foo} msg
-    set msg
-} "unknown sort option \"-foo\""
-
-test prioqueue-0.7 {prioqueue errors} {
-    catch {prioqueue -integer myprioqueue foo} msg
-    set msg
-} "wrong # args: should be \"prioqueue ?-ascii|-dictionary|-integer|-real? ?name?\""
-
-test prioqueue-0.8 {prioqueue errors} {
-    catch {prioqueue myprioqueue -integer} msg
-    set msg
-} "wrong argument position: should be \"prioqueue ?-ascii|-dictionary|-integer|-real? ?name?\""
-
-test prioqueue-1.1 {prioqueue creation} {
-    set foo [prioqueue myprioqueue]
-    set cmd [info commands ::myprioqueue]
-    set size [myprioqueue size]
+test prioqueue-5.0 {destroy, wrong#args, too many} -setup {
+    struct prioqueue create myprioqueue
+} -body {
+    myprioqueue destroy X
+} -cleanup {
     myprioqueue destroy
-    list $foo $cmd $size
-} {myprioqueue ::myprioqueue 0}
+} -returnCodes error -result {wrong # args: should be "myprioqueue destroy"}
 
-test prioqueue-1.2 {prioqueue creation} {
-    set foo [prioqueue]
-    set cmd [info commands ::$foo]
-    set size [$foo size]
-    $foo destroy
-    list $foo $cmd $size
-} {prioqueue1 ::prioqueue1 0}
-
-test prioqueue-1.3 {prioqueue creation} {
-    set foo [prioqueue -ascii]
-    set cmd [info commands ::$foo]
-    set size [$foo size]
-    $foo destroy
-    list $foo $cmd $size
-} {prioqueue2 ::prioqueue2 0}
-
-test prioqueue-1.5 {prioqueue creation} {
-    set foo [prioqueue -dictionary]
-    set cmd [info commands ::$foo]
-    set size [$foo size]
-    $foo destroy
-    list $foo $cmd $size
-} {prioqueue3 ::prioqueue3 0}
-
-test prioqueue-1.6 {prioqueue creation} {
-    set foo [prioqueue -integer]
-    set cmd [info commands ::$foo]
-    set size [$foo size]
-    $foo destroy
-    list $foo $cmd $size
-} {prioqueue4 ::prioqueue4 0}
-
-test prioqueue-1.7 {prioqueue creation} {
-    set foo [prioqueue -real]
-    set cmd [info commands ::$foo]
-    set size [$foo size]
-    $foo destroy
-    list $foo $cmd $size
-} {prioqueue5 ::prioqueue5 0}
-
-
-test prioqueue-2.1 {prioqueue destroy} {
-    prioqueue myprioqueue
+test prioqueue-5.1 {destroy} -setup {
+    struct prioqueue create myprioqueue
+} -body {
     myprioqueue destroy
     info commands ::myprioqueue
-} {}
+} -result {}
 
-test prioqueue-3.2 {size operation} {
+# # ## ### ##### ######## ############# #####################
+
+test prioqueue-6.0 {size, wrong#args, too many} -setup {
+    struct prioqueue create myprioqueue
+} -body {
+    myprioqueue size X
+} -cleanup {
+    myprioqueue destroy
+} -returnCodes error -result {wrong # args: should be "myprioqueue size"}
+
+test prioqueue-6.1 {size} -setup {
     prioqueue myprioqueue
     myprioqueue put a 1 b 1 c 1 d 1 e 1 f 1 g 1
-    set size [myprioqueue size]
+} -body {
+    myprioqueue size
+} -cleanup {
     myprioqueue destroy
-    set size
-} 7
-test prioqueue-3.3 {size operation} {
+} -result 7
+
+test prioqueue-6.2 {size} -setup {
     prioqueue myprioqueue
     myprioqueue put a 1 b 1 c 1 d 1 e 1 f 1 g 1
     myprioqueue get 3
-    set size [myprioqueue size]
+} -body {
+    myprioqueue size
+} -cleanup {
     myprioqueue destroy
-    set size
-} 4
-test prioqueue-3.4 {size operation} {
+} -result 4
+
+test prioqueue-6.3 {size} -setup {
     prioqueue myprioqueue
     myprioqueue put a 1 b 1 c 1 d 1 e 1 f 1 g 1 
-    myprioqueue get 3
+    myprioqueue pop  3
     myprioqueue peek 3
-    set size [myprioqueue size]
+} -body {
+    myprioqueue size
+} -cleanup {
     myprioqueue destroy
-    set size
-} 4
-    
+} -result 4
+   
+# # ## ### ##### ######## ############# #####################
+return
+
+ 
 test prioqueue-4.1 {put operation} {
     prioqueue myprioqueue
     catch {myprioqueue put} msg
@@ -304,6 +365,8 @@ test prioqueue-4.17 {put operation, checking priorities} {
 } {}
 
 
+# # ## ### ##### ######## ############# #####################
+
 test prioqueue-5.1 {get operation} {
     prioqueue myprioqueue
     myprioqueue put a 1
@@ -323,6 +386,8 @@ test prioqueue-5.2 {get operation, multiple items} {
     myprioqueue destroy
     set result
 } [list a b c]
+
+# # ## ### ##### ######## ############# #####################
 
 test prioqueue-6.1 {peek operation} {
     prioqueue myprioqueue
@@ -363,6 +428,9 @@ test prioqueue-6.5 {peek operation} {
     set msg
 } {insufficient items in prioqueue to fill request}
 
+
+# # ## ### ##### ######## ############# #####################
+
 test prioqueue-6.6 {get operation, multiple items} {
     prioqueue myprioqueue
     myprioqueue put a 1
@@ -402,6 +470,8 @@ test prioqueue-6.10 {get operation} {
     set msg
 } {insufficient items in prioqueue to fill request}
 
+# # ## ### ##### ######## ############# #####################
+
 test prioqueue-7.1 {clear operation} {
     prioqueue myprioqueue
     myprioqueue put a 1
@@ -413,6 +483,8 @@ test prioqueue-7.1 {clear operation} {
     myprioqueue destroy
     set result
 } [list [list a b c] 0]
+
+# # ## ### ##### ######## ############# #####################
 
 test prioqueue-8.1 {peekpriority operation} {
     prioqueue myprioqueue
@@ -434,6 +506,8 @@ test prioqueue-8.2 {peekpriority operation, multiple items} {
     set result
 } [list 3 2 1]
 
+
+# # ## ### ##### ######## ############# #####################
 
 test prioqueue-9.1 {stable ordering if inserting} {
     prioqueue myprioqueue
@@ -475,6 +549,8 @@ test prioqueue-9.4 {stable ordering if inserting} {
     set result
 } [list a c b]
 
+# # ## ### ##### ######## ############# #####################
+
 test prioqueue-10.1 {test inserting} {
     prioqueue -integer myprioqueue
     myprioqueue put 1 1
@@ -508,4 +584,4 @@ test prioqueue-10.2 {test deleting} {
     set result "$result1 $result2"
 } {1 0}
 
-testsuiteCleanup
+# # ## ### ##### ######## ############# #####################
