@@ -234,6 +234,12 @@ critcl::class::define ::struct::stack {
 	    return TCL_ERROR;
 	}
 
+	/* Regarding refcount management. Saving the result directly
+	 * to the interp automatically adds the necessary ref-count
+	 * which protects the Tcl_Obj* from getting released by the
+	 * 'cqueue_remove_xxx' functions.
+	 */
+
 	Tcl_SetObjResult (interp, StructStackC_Top (instance, n));
 	cstack_pop (instance, n);
 	return TCL_OK;

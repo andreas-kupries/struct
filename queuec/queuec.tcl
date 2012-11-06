@@ -218,7 +218,7 @@ critcl::class::define ::struct::queue {
 	    Tcl_AppendResult (interp, "not enough elements", NULL);
 	    return 0;
 	} else {
-	    CSLICE s        = cqueue_get (instance, at, n);
+	    CSLICE s = cqueue_get (instance, at, n);
 	    Tcl_Obj* result;
 	    if (n == 1) {
 		result = (Tcl_Obj*) cslice_at (s, 0);
@@ -299,39 +299,30 @@ critcl::class::define ::struct::queue {
 	return TCL_OK;
     }
 
-    method pop proc {where where queuecount {n 1}} Tcl_Obj* {
+    method pop proc {where where queuecount {n 1}} ok {
 	Tcl_Obj* result;
 	int istail = where; /* 'where' is better name for error messages,
 	                     * 'istail' is better for internal semantics */
 
 	if (n > cqueue_size (instance)) {
 	    Tcl_AppendResult (interp, "not enough elements", NULL);
-	    return 0;
+	    return TCL_ERROR;
 	}
 
-	/* Note on refcounts: Asking for more than one element the
-	 * result is a list of refcount 0, something we can return
-	 * as-is, if the shim doesn't adjust things down. _However_,
-	 * asking for a single element we get a pointer directly to
-	 * the Tcl_Obj*, which may be unshared in the underlying stack
-	 * handle. At which point the 'remove_xxx' will release it,
-	 * causing us to return a freed pointer as our result. Boom.
-	 *
-	 * So, we increment the ref-count, return it as Tcl_Obj*, and
-	 * the shim will release our hold after it has been saved as
-	 * the interp result.
+	/* Regarding refcount management. Saving the result directly
+	 * to the interp automatically adds the necessary ref-count
+	 * which protects the Tcl_Obj* from getting released by the
+	 * 'cqueue_remove_xxx' functions.
 	 */
 
 	if (istail) {
-	    result = StructQueueC_Tail (instance, n);
-	    Tcl_IncrRefCount (result);
+	    Tcl_SetObjResult (interp, StructQueueC_Tail (instance, n));
 	    cqueue_remove_tail (instance, n);
 	} else {
-	    result = StructQueueC_Head (instance, n);
-	    Tcl_IncrRefCount (result);
+	    Tcl_SetObjResult (interp, StructQueueC_Head (instance, n));
 	    cqueue_remove_head (instance, n);
 	}
-	return result;
+	return TCL_OK;
     }
 
     # # ## ### ##### ######## ############# #####################
