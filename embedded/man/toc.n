@@ -251,6 +251,9 @@ doc
 \fBc::stack\fR
 \fIfiles/cstack/cstack.n\fR: Create and manipulate C-level stack objects
 .TP
+\fBstruct::prioqueue\fR
+\fIfiles/prioqueuetcl/struct_prioqueue.n\fR: Create and manipulate Tcl priority queue objects, Tcl implementation
+.TP
 \fBstruct::queue\fR
 \fIfiles/queuec/struct_queue_c.n\fR: Create and manipulate Tcl queue objects, C implementation
 .TP

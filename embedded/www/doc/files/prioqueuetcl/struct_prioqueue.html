@@ -1,0 +1,291 @@
+<html><head>
+<title>struct::prioqueue - Tcl Data Structures</title>
+<style type="text/css"><!--
+    HTML {
+	background: 	#FFFFFF;
+	color: 		black;
+    }
+    BODY {
+	background: 	#FFFFFF;
+	color:	 	black;
+    }
+    DIV.doctools {
+	margin-left:	10%;
+	margin-right:	10%;
+    }
+    DIV.doctools H1,DIV.doctools H2 {
+	margin-left:	-5%;
+    }
+    H1, H2, H3, H4 {
+	margin-top: 	1em;
+	font-family:	sans-serif;
+	font-size:	large;
+	color:		#005A9C;
+	background: 	transparent;
+	text-align:		left;
+    }
+    H1.title {
+	text-align: center;
+    }
+    UL,OL {
+	margin-right: 0em;
+	margin-top: 3pt;
+	margin-bottom: 3pt;
+    }
+    UL LI {
+	list-style: disc;
+    }
+    OL LI {
+	list-style: decimal;
+    }
+    DT {
+	padding-top: 	1ex;
+    }
+    UL.toc,UL.toc UL, UL.toc UL UL {
+	font:		normal 12pt/14pt sans-serif;
+	list-style:	none;
+    }
+    LI.section, LI.subsection {
+	list-style: 	none;
+	margin-left: 	0em;
+	text-indent:	0em;
+	padding: 	0em;
+    }
+    PRE {
+	display: 	block;
+	font-family:	monospace;
+	white-space:	pre;
+	margin:		0%;
+	padding-top:	0.5ex;
+	padding-bottom:	0.5ex;
+	padding-left:	1ex;
+	padding-right:	1ex;
+	width:		100%;
+    }
+    PRE.example {
+	color: 		black;
+	background: 	#f5dcb3;
+	border:		1px solid black;
+    }
+    UL.requirements LI, UL.syntax LI {
+	list-style: 	none;
+	margin-left: 	0em;
+	text-indent:	0em;
+	padding:	0em;
+    }
+    DIV.synopsis {
+	color: 		black;
+	background: 	#80ffff;
+	border:		1px solid black;
+	font-family:	serif;
+	margin-top: 	1em;
+	margin-bottom: 	1em;
+    }
+    UL.syntax {
+	margin-top: 	1em;
+	border-top:	1px solid black;
+    }
+    UL.requirements {
+	margin-bottom: 	1em;
+	border-bottom:	1px solid black;
+    }
+--></style>
+</head>
+<! -- Generated from file '/net/nas/data/andreask/Dev/Struct/struct/embedded/www/doc/files/prioqueuetcl/struct_prioqueue.html' by tcllib/doctools with format 'html'
+   -->
+<! -- Copyright &copy; 2003 Michael Schlenker &lt;mic42@users.sourceforge.net&gt;   -- Copyright &copy; 2012 Andreas Kupries &lt;andreas_kupries@users.sourceforge.net&gt;
+   -->
+<! -- CVS: $Id$ struct::prioqueue.n
+   -->
+<body><div class="doctools">
+<hr> [
+  <a href="../../../toc.html">Main Table Of Contents</a>
+| <a href="../../toc.html">Table Of Contents</a>
+| <a href="../../../index.html">Keyword Index</a>
+] <hr>
+<h1 class="title">struct::prioqueue(n) 2 doc &quot;Tcl Data Structures&quot;</h1>
+<div id="name" class="section"><h2><a name="name">Name</a></h2>
+<p>struct::prioqueue - Create and manipulate Tcl priority queue objects, Tcl implementation</p>
+</div>
+<div id="toc" class="section"><h2><a name="toc">Table Of Contents</a></h2>
+<ul class="toc">
+<li class="section"><a href="#toc">Table Of Contents</a></li>
+<li class="section"><a href="#synopsis">Synopsis</a></li>
+<li class="section"><a href="#section1">Description</a></li>
+<li class="section"><a href="#section2">Class API</a></li>
+<li class="section"><a href="#section3">Instance API</a></li>
+<li class="section"><a href="#section4">Changes</a>
+<ul>
+<li class="subsection"><a href="#subsection1">Changes for version 2</a></li>
+</ul>
+</li>
+<li class="section"><a href="#section5">License</a></li>
+<li class="section"><a href="#section6">Bugs, Ideas, Feedback</a></li>
+<li class="section"><a href="#keywords">Keywords</a></li>
+<li class="section"><a href="#category">Category</a></li>
+<li class="section"><a href="#copyright">Copyright</a></li>
+</ul>
+</div>
+<div id="synopsis" class="section"><h2><a name="synopsis">Synopsis</a></h2>
+<div class="synopsis">
+<ul class="requirements">
+<li>package require <b class="pkgname">Tcl 8.5</b></li>
+<li>package require <b class="pkgname">TclOO</b></li>
+<li>package require <b class="pkgname">struct::prioqueue <span class="opt">?2?</span></b></li>
+</ul>
+<ul class="syntax">
+<li><a href="#1"><b class="cmd">::struct prioqueue</b> <b class="method">new</b> <span class="opt">?<i class="arg">options</i>...?</span></a></li>
+<li><a href="#2"><b class="cmd">::struct prioqueue</b> <b class="method">create</b> <i class="arg">name</i> <span class="opt">?<i class="arg">options</i>...?</span></a></li>
+<li><a href="#3"><i class="arg">prioqueueObj</i> <b class="method">clear</b></a></li>
+<li><a href="#4"><i class="arg">prioqueueObj</i> <b class="method">destroy</b></a></li>
+<li><a href="#5"><i class="arg">prioqueueObj</i> <b class="method">peek</b> <span class="opt">?<i class="arg">count</i>?</span></a></li>
+<li><a href="#6"><i class="arg">prioqueueObj</i> <b class="method">peekpriority</b> <span class="opt">?<i class="arg">count</i>?</span></a></li>
+<li><a href="#7"><i class="arg">prioqueueObj</i> <b class="method">pop</b> <span class="opt">?<i class="arg">count</i>?</span></a></li>
+<li><a href="#8"><i class="arg">prioqueueObj</i> <b class="method">put</b> <i class="arg">item prio</i> <span class="opt">?<i class="arg">item prio ...</i>?</span></a></li>
+<li><a href="#9"><i class="arg">prioqueueObj</i> <b class="method">remove</b> <i class="arg">element</i></a></li>
+<li><a href="#10"><i class="arg">prioqueueObj</i> <b class="method">size</b></a></li>
+</ul>
+</div>
+</div>
+<div id="section1" class="section"><h2><a name="section1">Description</a></h2>
+<p>Welcome to Struct, a set of packages providing various data structures
+to Tcl, and additional operations for existing Tcl structures.</p>
+<p>This manpage documents the C implementation of the
+<b class="package">struct::prioqueue</b> package. It provides the same API as the Tcl
+implementation, although details like the exact wording of error
+messages may differ.</p>
+</div>
+<div id="section2" class="section"><h2><a name="section2">Class API</a></h2>
+<p>The <b class="namespace">::struct</b> namespace contains a single command with
+multiple methods for the creation of priority queue objects. These are:</p>
+<dl class="definitions">
+<dt><a name="1"><b class="cmd">::struct prioqueue</b> <b class="method">new</b> <span class="opt">?<i class="arg">options</i>...?</span></a></dt>
+<dd><p>This class method creates a new priority queue instance with an
+associated global Tcl command and returns the fully qualified name of
+this command. The name is auto-generated.</p></dd>
+<dt><a name="2"><b class="cmd">::struct prioqueue</b> <b class="method">create</b> <i class="arg">name</i> <span class="opt">?<i class="arg">options</i>...?</span></a></dt>
+<dd><p>This class method creates a new priority queue instance with an
+associated global Tcl command and returns the fully qualified name of
+this command. The <i class="arg">name</i> is chosen by the user and provided as the
+argument of the method.</p></dd>
+</dl>
+<p>In both cases options can be used to specify the key type and ordering
+of the instance. The key type options are:</p>
+<dl class="options">
+<dt><b class="option">-integer</b></dt>
+<dd><p>The key is an integer number. This is the default type if it was not
+specified at instance creation. The default ordering for this type is
+<b class="option">-decreasing</b>.</p></dd>
+<dt><b class="option">-real</b></dt>
+<dd><p>The key is a floating point number. The default ordering for this type
+is <b class="option">-decreasing</b>.</p></dd>
+<dt><b class="option">-ascii</b></dt>
+<dd><p>The key is a plain string. The default ordering for this type is
+<b class="option">-increasing</b>.</p></dd>
+<dt><b class="option">-dict</b></dt>
+<dd></dd>
+<dt><b class="option">-dictionary</b></dt>
+<dd><p>The key is a Tcl dictionary. The default ordering for this type is
+<b class="option">-increasing</b>.</p></dd>
+</dl>
+<p>The key ordering options are:</p>
+<dl class="options">
+<dt><b class="option">-increasing</b></dt>
+<dd><p>The data in the queue is sorted in ascending order.</p></dd>
+<dt><b class="option">-decreasing</b></dt>
+<dd><p>The data in the queue is sorted in descending order.</p></dd>
+</dl>
+<p>The default ordering is type specific, see above.</p>
+</div>
+<div id="section3" class="section"><h2><a name="section3">Instance API</a></h2>
+<p>All instances of queues created through the <span class="sectref"><a href="#section2">Class API</a></span>
+support the following API:</p>
+<dl class="definitions">
+<dt><a name="3"><i class="arg">prioqueueObj</i> <b class="method">clear</b></a></dt>
+<dd><p>This method removes all elements from the priority queue.</p>
+<p>The method returns the empty string as its result.</p></dd>
+<dt><a name="4"><i class="arg">prioqueueObj</i> <b class="method">destroy</b></a></dt>
+<dd><p>This method destroys the priority queue instance and the associated
+Tcl command, releasing any associated resurces.</p>
+<p>The method returns the empty string as its result.</p></dd>
+<dt><a name="5"><i class="arg">prioqueueObj</i> <b class="method">peek</b> <span class="opt">?<i class="arg">count</i>?</span></a></dt>
+<dd><p>This method returns the first <i class="arg">count</i> items found in the priority
+queue, without removing them from the queue. The associated priorites
+are <em>not</em> returned. The count defaults to <b class="const">1</b>.</p>
+<p>If more than one element is requested the result will be a list
+of elements, with the front element of the queue as the first element
+of the result. If only one element is requested the result is that
+element.</p>
+<p>An error will be thrown if the queue does not hold enough
+elements to satisfy the request, i.e. less than <i class="arg">count</i> elements.</p></dd>
+<dt><a name="6"><i class="arg">prioqueueObj</i> <b class="method">peekpriority</b> <span class="opt">?<i class="arg">count</i>?</span></a></dt>
+<dd><p>This method behaves like method <b class="method">peek</b>, except that it returns
+the priorities instead of the elements themselves.</p></dd>
+<dt><a name="7"><i class="arg">prioqueueObj</i> <b class="method">pop</b> <span class="opt">?<i class="arg">count</i>?</span></a></dt>
+<dd><p>This method behaves like method <b class="method">peek</b>, except that it removes
+the returned element(s) as well.</p></dd>
+<dt><a name="8"><i class="arg">prioqueueObj</i> <b class="method">put</b> <i class="arg">item prio</i> <span class="opt">?<i class="arg">item prio ...</i>?</span></a></dt>
+<dd><p>This method adds the <i class="arg">item</i> or items specified to the priority
+queue.
+The <i class="arg">prio</i> value associated with each item must be a valid
+priority key for this type of queue
+(See the <span class="sectref"><a href="#section2">Class API</a></span>).
+An error will be thrown if this is not the case, and nothing will be
+added, even if other key/item combinations are valid.</p>
+<p>Items are inserted at their priority ranking. Items with equal
+priority are added in the order they were added.</p></dd>
+<dt><a name="9"><i class="arg">prioqueueObj</i> <b class="method">remove</b> <i class="arg">element</i></a></dt>
+<dd><p>This method removes the selected <i class="arg">element</i> from the priority queue.</p>
+<p>The method returns the empty string as its result.</p></dd>
+<dt><a name="10"><i class="arg">prioqueueObj</i> <b class="method">size</b></a></dt>
+<dd><p>This method returns the number of elements stored in the priority
+queue.</p></dd>
+</dl>
+</div>
+<div id="section4" class="section"><h2><a name="section4">Changes</a></h2>
+<div id="subsection1" class="subsection"><h3><a name="subsection1">Changes for version 2</a></h3>
+<p>Version 2 introduces incompatible changes to the API of priority queue objects,
+therefore the change to the major version number.</p>
+<p>The changes in detail are:</p>
+<ol class="enumerated">
+<li><p>Version 2 requires Tcl 8.5 or higher. Tcl 8.4 or less is not
+	supported anymore.</p></li>
+<li><p>Instance creation syntax has changed.
+	For comparison, the old syntax is</p>
+<pre class="example">
+	struct::prioqueue FOO       ; # or
+	set foo [struct::prioqueue]
+</pre>
+<p>whereas the new is</p>
+<pre class="example">
+	struct prioqueue create FOO ; # or
+	set foo [struct prioqueue new]
+</pre>
+<p>Similarly, the options specifying key type and order are now found
+<em>after</em> the instance name, not before it.</p></li>
+<li><p>The method <b class="method">get</b> has been renamed to <b class="method">pop</b>.</p></li>
+</ol>
+</div>
+</div>
+<div id="section5" class="section"><h2><a name="section5">License</a></h2>
+<p>This package, written by Andreas Kupries, is BSD licensed.</p>
+</div>
+<div id="section6" class="section"><h2><a name="section6">Bugs, Ideas, Feedback</a></h2>
+<p>This document, and the package it describes, will undoubtedly contain
+bugs and other problems.
+Please report such at the
+<a href="https://chiselapp.com/user/andreas_kupries/repository/Struct/index">Struct Tracker</a>.
+Please also report any ideas for enhancements you may have for either
+package and/or documentation.</p>
+</div>
+<div id="keywords" class="section"><h2><a name="keywords">Keywords</a></h2>
+<p><a href="../../../index.html#key0">data structures</a>, <a href="../../../index.html#key8">ordered list</a>, <a href="../../../index.html#key10">priority queue</a>, <a href="../../../index.html#key9">queue, prioritized</a></p>
+</div>
+<div id="category" class="section"><h2><a name="category">Category</a></h2>
+<p>Data structures</p>
+</div>
+<div id="copyright" class="section"><h2><a name="copyright">Copyright</a></h2>
+<p>Copyright &copy; 2003 Michael Schlenker &lt;mic42@users.sourceforge.net&gt;<br>
+Copyright &copy; 2012 Andreas Kupries &lt;andreas_kupries@users.sourceforge.net&gt;</p>
+</div>
+</div></body></html>

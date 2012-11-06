@@ -262,6 +262,9 @@ c::slice
 \fBfiles/cstack/cstack.n\fR
 c::stack
 .TP
+\fBfiles/prioqueuetcl/struct_prioqueue.n\fR
+struct::prioqueue
+.TP
 \fBfiles/queuec/struct_queue_c.n\fR
 struct::queue
 .TP
@@ -313,6 +316,18 @@ struct::stack
 \fBfiles/stacktcl/struct_stack_tcl.n\fR
 struct::stack
 .RE
+ordered list
+.RS
+.TP
+\fBfiles/prioqueuetcl/struct_prioqueue.n\fR
+struct::prioqueue
+.RE
+priority queue
+.RS
+.TP
+\fBfiles/prioqueuetcl/struct_prioqueue.n\fR
+struct::prioqueue
+.RE
 queue
 .RS
 .TP
@@ -324,6 +339,12 @@ struct::queue
 .TP
 \fBfiles/queuetcl/struct_queue_tcl.n\fR
 struct::queue
+.RE
+queue, prioritized
+.RS
+.TP
+\fBfiles/prioqueuetcl/struct_prioqueue.n\fR
+struct::prioqueue
 .RE
 slice
 .RS
