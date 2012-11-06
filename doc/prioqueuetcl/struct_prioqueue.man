@@ -1,0 +1,18 @@
+[manpage_begin struct::prioqueue n 2]
+[include ../include/general.inc]
+[copyright {2003 Michael Schlenker <mic42@users.sourceforge.net>}]
+[copyright {2012 Andreas Kupries <andreas_kupries@users.sourceforge.net>}]
+[titledesc {Create and manipulate Tcl priority queue objects, Tcl implementation}]
+[require TclOO]
+[require struct::prioqueue [opt 2]]
+[description]
+[include ../include/welcome.inc]
+[comment {= = == === ===== ======== ============= =====================}]
+
+[para] This manpage documents the C implementation of the
+[package struct::prioqueue] package. It provides the same API as the Tcl
+implementation, although details like the exact wording of error
+messages may differ.
+
+[include ../include/prioqueue.inc]
+[manpage_end]

@@ -1,0 +1,31 @@
+# -*- tcl -*- tcl.tk//DSL tcltest//EN//2.0 tcl.tk//DSL tcltest//EN//2.0
+# # ## ### ##### ######## ############# #####################
+## prioqueue.test:  tests for the priority queue package.
+
+kt check Tcl     8.5
+kt check tcltest 2
+
+kt require support TclOO
+
+kt local   testing struct::prioqueue
+
+# # ## ### ##### ######## ############# #####################
+
+proc already {cmd} {
+    return "can't create object \"$cmd\": command already exists with that name"
+}
+
+proc badmethod {m real} {
+    set real [string map {{, or} { or}} [linsert [join $real {, }] end-1 or]]
+    return "unknown method \"$m\": must be $real"
+}
+
+::tcltest::testConstraint prioqueue_c   0
+::tcltest::testConstraint prioqueue_tcl 1
+
+# # ## ### ##### ######## ############# #####################
+
+kt source ../include/prioqueue.tests
+
+# # ## ### ##### ######## ############# #####################
+cleanupTests
