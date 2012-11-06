@@ -141,13 +141,6 @@ that element.
 [para] An error will be thrown if the queue does not hold enough
 elements to satisfy the request, i.e. less than [arg count] elements.
 
-
-
-
-
-
-
-
 [list_end]
 
 [comment {= = == === ===== ======== ============= =====================}]
