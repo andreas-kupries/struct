@@ -9,6 +9,9 @@
 
 #puts [join [info loaded] \n]
 
+# XXX TODO : Create utility command to report disabled
+# XXX TODO : benchmarks as skipped, or broken?
+
 # # ## ### ##### ######## ############# #####################
 ## Helper commands.
 
@@ -221,12 +224,6 @@ foreach n $series {
     foreach m $series {
 	if {$m == 0} continue
 	if {$m > $n} continue
-
-	# Disabled. C-coded pop head|tail in various forms crash in
-	# the iterations below. Investigate.
-	if {[id] eq "c"} continue
-	# XXX TODO : Create utility command to report the disabled
-	# XXX TODO : benchmarks as skipped, or broken?
 
 	bench -desc "queue pop head all $n/$m" -ipre {
 	    make $n

@@ -138,26 +138,28 @@ critcl::class::define ::struct::queue {
 
 	static Tcl_Obj*
 	StructQueueC_Head (CQUEUE instance, int n) {
+	    Tcl_Obj* result;
 	    if (n == 1) {
-		return cqueue_first (instance);
+		result = cqueue_first (instance);
 	    } else {
-		CSLICE   s      = cqueue_head (instance, n);
-		Tcl_Obj* result = cslice_to_list (s);
+		CSLICE s = cqueue_head (instance, n);
+	        result = cslice_to_list (s);
 		cslice_destroy (s);
-		return result;
 	    }
+	    return result;
 	}
 
 	static Tcl_Obj*
 	StructQueueC_Tail (CQUEUE instance, int n) {
+	    Tcl_Obj* result;
 	    if (n == 1) {
-		return cqueue_last (instance);
+		result = cqueue_last (instance);
 	    } else {
-		CSLICE   s      = cqueue_tail (instance, n);
-		Tcl_Obj* result = cslice_to_list (s);
+		CSLICE s = cqueue_tail (instance, n);
+		result = cslice_to_list (s);
 		cslice_destroy (s);
-		return result;
 	    }
+	    return result;
 	}
     }
 
@@ -297,7 +299,7 @@ critcl::class::define ::struct::queue {
 	return TCL_OK;
     }
 
-    method pop proc {where where queuecount {n 1}} sTcl_Obj* {
+    method pop proc {where where queuecount {n 1}} Tcl_Obj* {
 	Tcl_Obj* result;
 	int istail = where; /* 'where' is better name for error messages,
 	                     * 'istail' is better for internal semantics */
@@ -307,11 +309,26 @@ critcl::class::define ::struct::queue {
 	    return 0;
 	}
 
+	/* Note on refcounts: Asking for more than one element the
+	 * result is a list of refcount 0, something we can return
+	 * as-is, if the shim doesn't adjust things down. _However_,
+	 * asking for a single element we get a pointer directly to
+	 * the Tcl_Obj*, which may be unshared in the underlying stack
+	 * handle. At which point the 'remove_xxx' will release it,
+	 * causing us to return a freed pointer as our result. Boom.
+	 *
+	 * So, we increment the ref-count, return it as Tcl_Obj*, and
+	 * the shim will release our hold after it has been saved as
+	 * the interp result.
+	 */
+
 	if (istail) {
 	    result = StructQueueC_Tail (instance, n);
+	    Tcl_IncrRefCount (result);
 	    cqueue_remove_tail (instance, n);
 	} else {
 	    result = StructQueueC_Head (instance, n);
+	    Tcl_IncrRefCount (result);
 	    cqueue_remove_head (instance, n);
 	}
 	return result;
