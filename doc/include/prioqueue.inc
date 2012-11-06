@@ -84,6 +84,11 @@ Tcl command, releasing any associated resurces.
 [para] The method returns the empty string as its result.
 
 [comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call [arg prioqueueObj] [method order]]
+
+This method returns the key order used by the priority queue.
+
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
 [call [arg prioqueueObj] [method peek] [opt [arg count]]]
 
 This method returns the first [arg count] items found in the priority
@@ -138,6 +143,11 @@ This method removes the selected [arg element] from the priority queue.
 
 This method returns the number of elements stored in the priority
 queue.
+
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call [arg prioqueueObj] [method type]]
+
+This method returns the key type used by the priority queue.
 
 [list_end]
 

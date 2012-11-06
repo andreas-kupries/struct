@@ -31,4 +31,8 @@ Similarly, the options specifying key type and order are now found
 [comment {- - -- --- ----- -------- ------------- ---------------------}]
 [enum] 	The method [method get] has been renamed to [method pop].
 
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[enum]  The (introspection) methods [method order], and [method type]
+	are new.
+
 [list_end]
