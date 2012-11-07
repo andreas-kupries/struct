@@ -42,15 +42,22 @@ critcl::cheaders   csliceInt.h
 # # ## ### ##### ######## ############# #####################
 ## Exported API
 #
-# - Create and initialize a slice. May copy the data.
+# - Create and initialize a slice.
 # - Dispose of a slice.
 # - Access the data in the slice.
+# - Reverse the elements in a slice.
+# - Concatenate 2 slices.
+# - Convenience functions: To and from Tcl "list" Tcl_Obj.
 
-critcl::api function CSLICE cslice_create  {{long int} cc void** cv}
-critcl::api function void   cslice_destroy {CSLICE s}
-critcl::api function void   cslice_get     {CSLICE s {long int *} cc void*** cv}
-critcl::api function CSLICE cslice_reverse {CSLICE s}
-critcl::api function CSLICE cslice_concat  {CSLICE a CSLICE b}
+critcl::api function CSLICE     cslice_create    {{long int} cc void** cv}
+critcl::api function void       cslice_destroy   {CSLICE s}
+critcl::api function void       cslice_get       {CSLICE s {long int *} cc void*** cv}
+critcl::api function CSLICE     cslice_reverse   {CSLICE s}
+critcl::api function CSLICE     cslice_concat    {CSLICE a CSLICE b}
+critcl::api function CSLICE     cslice_from_list {Tcl_Interp* interp Tcl_Obj* l}
+critcl::api function Tcl_Obj*   cslice_to_list   {CSLICE s}
+critcl::api function {long int} cslice_size      {CSLICE s}
+critcl::api function void*      cslice_at        {CSLICE s {long int} at}
 
 # # ## ### ##### ######## ############# #####################
 ## Implementation. Inlined.
@@ -149,6 +156,38 @@ critcl::ccode {
 
 	cslice_destroy (b);
 	return a;
+    }
+
+    CSLICE
+    cslice_from_list (Tcl_Interp* interp, Tcl_Obj* l)
+    {
+	int lc;
+	Tcl_Obj** lv;
+
+	if (Tcl_ListObjGetElements (interp, l, &lc, &lv) != TCL_OK) {
+	    return 0;
+	} else {
+	    return cslice_create (lc, (void**) lv);
+	}
+    }
+
+    Tcl_Obj*
+    cslice_to_list (CSLICE s)
+    {
+	return Tcl_NewListObj (s->n, (Tcl_Obj**) s->cell);
+    }
+
+    long int
+    cslice_size (CSLICE s)
+    {
+	return s->n;
+    }
+
+    void*
+    cslice_at (CSLICE s, long int at)
+    {
+	ASSERT_BOUNDS (at, s->n);
+	return s->cell [at];
     }
 }
 

@@ -3,7 +3,7 @@
 [comment {- - -- --- ----- -------- ------------- ---------------------}]
 [manpage_begin c::queue n 1]
 [include ../include/general.inc]
-[titledesc {Create and manipulate queues}]
+[titledesc {Create and manipulate C-level queue objects}]
 [require c::slice [opt 1]]
 [require c::queue [opt 1]]
 [keywords  queue lifo]

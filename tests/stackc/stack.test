@@ -1,19 +1,15 @@
-# -*- tcl -*-
+# -*- tcl -*- tcl.tk//DSL tcltest//EN//2.0
 # # ## ### ##### ######## ############# #####################
 ## stack.test:  tests for the stack package.
 
-source [file dirname [file dirname [file normalize [info script]]]]/include/utilities.tcl
+kt check Tcl     8.5
+kt check tcltest 2
 
-testsNeedTcl     8.5
-testsNeedTcltest 2 ; # 8.5 does not have tcltest 1.x
+kt local support c::index
+kt local support c::slice
+kt local support c::stack
 
-support {
-    useC _local/lib/cslice* c::slice
-    useC _local/lib/cstack* c::stack
-}
-testing {
-    useC _local/lib/stackc* struct::stack
-}
+kt local testing struct::stack
 
 # # ## ### ##### ######## ############# #####################
 
@@ -31,7 +27,7 @@ proc badmethod {m real} {
 
 # # ## ### ##### ######## ############# #####################
 
-source [localPath ../include/stack.tests]
+kt source ../include/stack.tests
 
 # # ## ### ##### ######## ############# #####################
-testsuiteCleanup
+cleanupTests

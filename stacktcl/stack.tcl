@@ -37,30 +37,8 @@ oo::class create ::struct::stack {
 	return [llength $mystack]
     }
 
-    method top {} {
-	if {![llength $mystack]} {
-	    return -code error "insufficient items on stack to fulfill request"
-	}
-	return [lindex $mystack end]
-    }
-
     method at {at} {
-	if {![string is int -strict $at]} {
-	    return -code error "expected integer but got \"$at\""
-	}
-	if {($at < 0) || ([llength $mystack] <= $at)} {
-	    return -code error "invalid index $at"
-	}
-	return [lindex $mystack end-$at]
-    }
-
-    method atr {at} {
-	if {![string is int -strict $at]} {
-	    return -code error "expected integer but got \"$at\""
-	}
-	if {($at < 0) || ([llength $mystack] <= $at)} {
-	    return -code error "invalid index $at"
-	}
+	my CheckIndex at
 	return [lindex $mystack $at]
     }
 
@@ -68,18 +46,8 @@ oo::class create ::struct::stack {
 	return [lreverse $mystack]
     }
 
-    method getr {} {
-	return $mystack
-    }
-
-    method peek {{n 1}} {
-	if {$n < 1} {
-	    return -code error "invalid item count $n"
-	}
-
-	if {$n > [llength $mystack]} {
-	    return -code error "insufficient items on stack to fulfill request"
-	}
+    method top {{n 1}} {
+	my CheckCount $n
 
 	if {$n == 1} {
 	    # Handle this as a special case
@@ -92,44 +60,31 @@ oo::class create ::struct::stack {
 	return [lreverse [lrange $mystack end-$n end]]
     }
 
-    method peekr {{n 1}} {
-	if {$n < 1} {
-	    return -code error "invalid item count $n"
-	}
-
-	if {$n > [llength $mystack]} {
-	    return -code error "insufficient items on stack to fulfill request"
-	}
+    method bottom {{n 1}} {
+	my CheckCount $n
 
 	if {$n == 1} {
 	    # Handle this as a special case.
 	    # Single item peeks are not listified
-	    return [lindex $mystack end]
+	    return [lindex $mystack 0]
 	}
 
-	# Otherwise, return a list of items, in reversed order.
+	# Otherwise, return a list of items
 	incr n -1
-	return [lrange $mystack end-$n end]
+	return [lreverse [lrange $mystack 0 $n]]
     }
 
     # # ## ### ##### ######## ############# #####################
     ## Manipulators
 
     method pop {{n 1}} {
-	if { $n < 1 } {
-	    return -code error "invalid item count $n"
-	}
-
-	set size [llength $mystack]
-
-	if {$n > $size} {
-	    return -code error "insufficient items on stack to fulfill request"
-	}
+	my CheckCount $n
 
 	if {$n == 1} {
 	    # Handle this as a special case.
 	    # Single item pops are not listified
 	    set item [lindex $mystack end]
+	    set size [llength $mystack]
 	    if {$n == $size} {
 		set mystack {}
 	    } else {
@@ -137,6 +92,8 @@ oo::class create ::struct::stack {
 	    }
 	    return $item
 	}
+
+	set size [llength $mystack]
 
 	# Otherwise, return a list of items, and remove the items from the
 	# stack.
@@ -162,10 +119,17 @@ oo::class create ::struct::stack {
     }
 
     method rotate {n steps} {
-	set len [llength $mystack]
-	if {$n > $len} {
-	    return -code error "insufficient items on stack to perform request"
+	my CheckCount $n
+	if {![string is int -strict $steps]} {
+	    return -code error "expected integer but got \"$steps\""
 	}
+
+	# Optimization:
+	# Detect 0-rotations, which do nothing, and bail out quickly.
+
+	if {$n == 1} return
+	set steps [expr {$steps % $n}]
+	if {$steps == 0} return
 
 	# Rotation algorithm:
 	# do
@@ -173,27 +137,41 @@ oo::class create ::struct::stack {
 	#   Move the end item to the insertion point
 	# repeat $steps times
 
+	set len   [llength $mystack]
 	set start [expr {$len - $n}]
-	set steps [expr {$steps % $n}]
 
-	if {$steps == 0} return
+	if {$start == 0} {
+	    # Rotate the whole stack.
+	    set mystack [my ROT $steps \
+			     [my K $mystack [unset mystack]]]
+	} else {
+	    # Rotate the head of the stack, and rejoin with the
+	    # unchanging remainder.
+	    set bottom [lrange $mystack 0 ${start}-1]
+	    set head   [my ROT $steps \
+			    [lrange [my K $mystack [unset mystack]] \
+				 $start end]]
 
-	for {set i 0} {$i < $steps} {incr i} {
-	    set item [lindex $mystack end]
-	    set mystack [linsert \
-			     [lreplace \
-				  [my K $mystack [unset mystack]] \
-				  end end] $start $item]
+	    set     mystack $bottom
+	    lappend mystack {*}$head
 	}
 	return
     }
 
+    method ROT {n list} {
+	if {$n == 0} { return $list }
+	# Rotate list right by n steps, in one step. Done by taking
+	# the n last elements and putting them before the size-n first
+	# elements.
+	incr n -1 ; set     new    [lrange $list end-$n end]
+	incr n    ; lappend new {*}[lrange $list 0 end-$n]
+	return $new
+    }
+
     method trim {n} {
-	if { ![string is integer -strict $n]} {
-	    return -code error "expected integer but got \"$n\""
-	} elseif { $n < 0 } {
-	    return -code error "invalid size $n"
-	} elseif { $n >= [llength $mystack] } {
+	my CheckSize $n
+
+	if { $n >= [llength $mystack] } {
 	    # Stack is smaller than requested, do nothing.
 	    return {}
 	}
@@ -213,11 +191,7 @@ oo::class create ::struct::stack {
     }
 
     method trim* {n} {
-	if { ![string is integer -strict $n]} {
-	    return -code error "expected integer but got \"$n\""
-	} elseif { $n < 0 } {
-	    return -code error "invalid size $n"
-	}
+	my CheckSize $n
 
 	if { $n >= [llength $mystack] } {
 	    # Stack is smaller than requested, do nothing.
@@ -239,9 +213,92 @@ oo::class create ::struct::stack {
     }
 
     # # ## ### ##### ######## ############# #####################
-    ## Internal helper to manage refcounts.
+    ## Internals - Helper to manage refcounts.
 
     method K {x y} { set x }
+
+    # size:  integer,    >= 0
+    # count: integer,    >= 0, < cstack_size(s)
+    # index: list index, >= 0, < cstack_size(s)
+
+    method CheckSize {n} {
+	if {![string is int -strict $n] || ($n < 0)} {
+	    return -code error "expected non-negative integer but got \"$n\""
+	}
+    }
+
+    method CheckCount {n} {
+	upvar 1 mystack mystack
+	if {![string is int -strict $n] || ($n < 1)} {
+	    return -code error "expected positive integer but got \"$n\""
+	}
+	if {[llength $mystack] < $n} {
+	    return -code error "not enough elements"
+	}
+    }
+
+    method CheckIndex {iv} {
+	upvar 1 mystack mystack $iv index
+
+	if {$index eq "end"} {
+	    set index 0
+	    return
+	}
+
+	if {[string is int -strict $index]} {
+	    my CheckIndexRange index
+	    return
+	}
+
+	if {[regexp {^end-(.+)$} $index -> a]} {
+	    # end-x        ==> x
+	    # end-0 == end ==> 0 == bottom
+	    if {![string is int -strict $a]} { my ReportBadIndex $index }
+	    set index $a
+	    # Use 'a' below, not 'index', as 'index' is already
+	    # inverted and should not be overwritten.
+	    my CheckIndexRange a
+	    return
+	}
+
+	if {[regexp {^([^-]+)-([^-]+)$} $index -> a b]} {
+	    # N-M
+	    if {![string is int -strict $a]} { my ReportBadIndex $index }
+	    if {![string is int -strict $b]} { my ReportBadIndex $index }
+
+	    set index [expr {$a - $b}]
+	    my CheckIndexRange index
+	    return
+	}
+
+	if {[regexp {^([^-]+)[+]([^-]+)$} $index -> a b]} {
+	    # N+M
+	    if {![string is int -strict $a]} { my ReportBadIndex $index }
+	    if {![string is int -strict $b]} { my ReportBadIndex $index }
+
+	    set index [expr {$a + $b}]
+	    my CheckIndexRange index
+	    return
+	}
+
+	my ReportBadIndex $index
+    }
+
+    method CheckIndexRange {iv} {
+	upvar 1 mystack stack $iv index
+	set sz [llength $mystack]
+	if {($index < 0) || ($sz <= $index)} {
+	    return -code error "invalid index \"$index\""
+	}
+	set index [expr {$sz - 1 - $index}]
+	return
+    }
+
+    method ReportBadIndex {index} {
+	return -code error "bad index \"$index\": must be integer?\[+-]integer? or end?\[+-]integer?"
+    }
+
+    # # ## ### ##### ######## ############# #####################
 }
 
 # # ## ### ##### ######## ############# #####################

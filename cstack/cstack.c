@@ -243,7 +243,7 @@ void
 cstack_move (CSTACK dst, CSTACK src, long int n)
 {
     ASSERT (dst->freeCell == src->freeCell, "Ownership mismatch");
-    ASSERT ((0 < n) && (n <= cstack_size (src)), "Bad move count")
+    ASSERT ((0 < n) && (n <= cstack_size (src)), "Bad move count");
 
     /*
      * Note: The destination takes ownership of the moved cell, thus there is
@@ -262,6 +262,38 @@ void
 cstack_move_all (CSTACK dst, CSTACK src)
 {
     cstack_move (dst, src, cstack_size (src));
+}
+
+void
+cstack_reverse (CSTACK src, long int n)
+{
+    long int i, j;
+    void* tmp;
+
+    ASSERT ((0 < n) && (n <= cstack_size (src)), "Bad reverse count");
+
+    /*
+     * Note: The destination takes ownership of the moved cell, thus there is
+     * no need to run free on them.
+     */
+
+    for (i = src->top - n, j = src->top - 1;
+	 i < j;
+	 i++, j--) {
+	ASSERT_BOUNDS(i,src->top);
+	ASSERT_BOUNDS(j,src->top);
+	ASSERT_BOUNDS(i,j);
+
+	tmp = src->cell [i];
+	src->cell [i] = src->cell [j];
+	src->cell [j] = tmp;
+    }
+}
+
+void
+cstack_reverse_all (CSTACK src)
+{
+    cstack_reverse (src, cstack_size (src));
 }
 
 /*

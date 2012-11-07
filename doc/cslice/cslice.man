@@ -3,7 +3,7 @@
 [comment {- - -- --- ----- -------- ------------- ---------------------}]
 [manpage_begin c::slice n 1]
 [include ../include/general.inc]
-[titledesc {Create and manipulate slices}]
+[titledesc {Create and manipulate C-level array slices}]
 [require c::slice [opt 1]]
 [keywords  slice {array slice}]
 [description]
@@ -58,6 +58,40 @@ The input slice is destroyed.
 
 This function creates a new slice which is the concatenation of the
 two inputs. The input slices are destroyed.
+
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call [type CSLICE] [fun cslice_from_list] ( \
+      [type Tcl_Interp*] [arg interp] \
+      [type Tcl_Obj*] [arg l] )]
+
+This function creates a new slice containing the elements of the Tcl
+list object [arg l].
+
+[para] If [arg l] was not a list object [const 0] is returned, and an
+error message left in the interpreter [arg interp]. Note that
+[arg interp] can be [const 0], in that case no error message is left.
+
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call [type Tcl_Obj*] [fun cslice_to_list] ( \
+      [type CSLICE] [arg s] )]
+
+This function creates a new Tcl list object containing the elements
+of the slice. This makes sense if and only if the elements of the slice
+are of type [type Tcl_Obj*]. Any other type and the resulting Tcl object
+is broken, causing a crash at some point in the future.
+
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call [type {long int}] [fun cslice_size] ( \
+      [type CSLICE] [arg s] )]
+
+This function returns the size of the slice [arg s].
+
+[comment {- - -- --- ----- -------- ------------- ---------------------}]
+[call [type void*] [fun cslice_at] ( \
+      [type CSLICE] [arg s] \
+      [type {long int}] [arg at] )]
+
+This function returns the element at index [arg at] in slice [arg s].
 
 [list_end]
 

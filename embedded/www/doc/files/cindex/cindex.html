@@ -1,0 +1,177 @@
+
+<html><head>
+<title>c::index - Tcl Data Structures</title>
+<style type="text/css"><!--
+    HTML {
+	background: 	#FFFFFF;
+	color: 		black;
+    }
+    BODY {
+	background: 	#FFFFFF;
+	color:	 	black;
+    }
+    DIV.doctools {
+	margin-left:	10%;
+	margin-right:	10%;
+    }
+    DIV.doctools H1,DIV.doctools H2 {
+	margin-left:	-5%;
+    }
+    H1, H2, H3, H4 {
+	margin-top: 	1em;
+	font-family:	sans-serif;
+	font-size:	large;
+	color:		#005A9C;
+	background: 	transparent;
+	text-align:		left;
+    }
+    H1.title {
+	text-align: center;
+    }
+    UL,OL {
+	margin-right: 0em;
+	margin-top: 3pt;
+	margin-bottom: 3pt;
+    }
+    UL LI {
+	list-style: disc;
+    }
+    OL LI {
+	list-style: decimal;
+    }
+    DT {
+	padding-top: 	1ex;
+    }
+    UL.toc,UL.toc UL, UL.toc UL UL {
+	font:		normal 12pt/14pt sans-serif;
+	list-style:	none;
+    }
+    LI.section, LI.subsection {
+	list-style: 	none;
+	margin-left: 	0em;
+	text-indent:	0em;
+	padding: 	0em;
+    }
+    PRE {
+	display: 	block;
+	font-family:	monospace;
+	white-space:	pre;
+	margin:		0%;
+	padding-top:	0.5ex;
+	padding-bottom:	0.5ex;
+	padding-left:	1ex;
+	padding-right:	1ex;
+	width:		100%;
+    }
+    PRE.example {
+	color: 		black;
+	background: 	#f5dcb3;
+	border:		1px solid black;
+    }
+    UL.requirements LI, UL.syntax LI {
+	list-style: 	none;
+	margin-left: 	0em;
+	text-indent:	0em;
+	padding:	0em;
+    }
+    DIV.synopsis {
+	color: 		black;
+	background: 	#80ffff;
+	border:		1px solid black;
+	font-family:	serif;
+	margin-top: 	1em;
+	margin-bottom: 	1em;
+    }
+    UL.syntax {
+	margin-top: 	1em;
+	border-top:	1px solid black;
+    }
+    UL.requirements {
+	margin-bottom: 	1em;
+	border-bottom:	1px solid black;
+    }
+--></style>
+</head>
+<! -- Generated from file '/net/nas/data/andreask/Dev/Struct/struct/embedded/www/doc/files/cindex/cindex.html' by tcllib/doctools with format 'html'
+   -->
+<! -- CVS: $Id$ c::index.n
+   -->
+<body><div class="doctools">
+<hr> [
+  <a href="../../../toc.html">Main Table Of Contents</a>
+| <a href="../../toc.html">Table Of Contents</a>
+| <a href="../../../index.html">Keyword Index</a>
+] <hr>
+<h1 class="title">c::index(n) 1 doc &quot;Tcl Data Structures&quot;</h1>
+<div id="name" class="section"><h2><a name="name">Name</a></h2>
+<p>c::index - TclGetForIndex emulation</p>
+</div>
+<div id="toc" class="section"><h2><a name="toc">Table Of Contents</a></h2>
+<ul class="toc">
+<li class="section"><a href="#toc">Table Of Contents</a></li>
+<li class="section"><a href="#synopsis">Synopsis</a></li>
+<li class="section"><a href="#section1">Description</a></li>
+<li class="section"><a href="#section2">API</a></li>
+<li class="section"><a href="#section3">License</a></li>
+<li class="section"><a href="#section4">Bugs, Ideas, Feedback</a></li>
+<li class="section"><a href="#keywords">Keywords</a></li>
+<li class="section"><a href="#category">Category</a></li>
+</ul>
+</div>
+<div id="synopsis" class="section"><h2><a name="synopsis">Synopsis</a></h2>
+<div class="synopsis">
+<ul class="requirements">
+<li>package require <b class="pkgname">Tcl 8.5</b></li>
+<li>package require <b class="pkgname">c::index <span class="opt">?1?</span></b></li>
+</ul>
+<ul class="syntax">
+<li><a href="#1"><b class="type">int</b> <b class="function">cindex_get</b> ( <b class="type">Tcl_Interp*</b> <i class="arg">interp</i>, <b class="type">Tcl_Obj*</b> <i class="arg">objPtr</i>, <b class="type">int</b> <i class="arg">endValue</i>, <b class="type">int*</b> <i class="arg">indexPtr</i> )</a></li>
+</ul>
+</div>
+</div>
+<div id="section1" class="section"><h2><a name="section1">Description</a></h2>
+<p>Welcome to Struct, a set of packages providing various data structures
+to Tcl, and additional operations for existing Tcl structures.</p>
+<p>This package provides a replication of Tcl 8.5's internal
+function <b class="function">TclGetForIndex</b> handling all forms of list indices,
+i.e. all of</p>
+<ol class="enumerated">
+<li><p>INT</p></li>
+<li><p><b class="const">end</b></p></li>
+<li><p><b class="const">end</b>-INT</p></li>
+<li><p>INT+INT</p></li>
+<li><p>INT-INT</p></li>
+</ol>
+</div>
+<div id="section2" class="section"><h2><a name="section2">API</a></h2>
+<dl class="definitions">
+<dt><a name="1"><b class="type">int</b> <b class="function">cindex_get</b> ( <b class="type">Tcl_Interp*</b> <i class="arg">interp</i>, <b class="type">Tcl_Obj*</b> <i class="arg">objPtr</i>, <b class="type">int</b> <i class="arg">endValue</i>, <b class="type">int*</b> <i class="arg">indexPtr</i> )</a></dt>
+<dd><p>This function replicates function <b class="function">TclGetForIndex</b>.</p>
+<p>The result is a Tcl status value (<b class="const">TCL_OK</b>, <b class="const">TCL_ERROR</b>).</p>
+<p>It parses the data in <i class="arg">objPtr</i>, stores the resulting integer
+list index into the <i class="arg">indexPtr</i> and returns <b class="const">TCL_OK</b>. It may change
+the Tcl_ObjType of <i class="arg">objPtr</i>.</p>
+<p>In case of an error it returns <b class="const">TCL_ERROR</b>, leaves an error
+message in the <i class="arg">interp</i>, and does not change <i class="arg">indexPtr</i>.</p>
+<p>The <i class="arg">endValue</i> tells the function what value to use for <b class="const">end</b>
+and related indices.</p></dd>
+</dl>
+</div>
+<div id="section3" class="section"><h2><a name="section3">License</a></h2>
+<p>This package, written by Andreas Kupries, is BSD licensed.</p>
+</div>
+<div id="section4" class="section"><h2><a name="section4">Bugs, Ideas, Feedback</a></h2>
+<p>This document, and the package it describes, will undoubtedly contain
+bugs and other problems.
+Please report such at the
+<a href="https://chiselapp.com/user/andreas_kupries/repository/Struct/index">Struct Tracker</a>.
+Please also report any ideas for enhancements you may have for either
+package and/or documentation.</p>
+</div>
+<div id="keywords" class="section"><h2><a name="keywords">Keywords</a></h2>
+<p><a href="../../../index.html#key5">TclGetForIndex emulation</a>, <a href="../../../index.html#key0">data structures</a></p>
+</div>
+<div id="category" class="section"><h2><a name="category">Category</a></h2>
+<p>Data structures</p>
+</div>
+</div></body></html>

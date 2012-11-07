@@ -1,6 +1,6 @@
 [manpage_begin struct::queue n 2]
 [include ../include/general.inc]
-[titledesc {Create and manipulate queues, C}]
+[titledesc {Create and manipulate Tcl queue objects, Tcl implementation}]
 [require TclOO]
 [require struct::queue [opt 2]]
 [description]

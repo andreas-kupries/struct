@@ -1,6 +1,7 @@
 [manpage_begin struct::stack n 2]
 [include ../include/general.inc]
-[titledesc {Create and manipulate stacks, C}]
+[titledesc {Create and manipulate Tcl stack objects, C implementation}]
+[require c::index [opt 1]]
 [require c::slice [opt 1]]
 [require c::stack [opt 1]]
 [require struct::stack [opt 2]]
