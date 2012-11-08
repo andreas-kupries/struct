@@ -1,529 +1,687 @@
-# Tests for the 'set' module in the 'struct' library. -*- tcl -*-
+## -*- tcl -*-
+# # ## ### ##### ######## ############# #####################
+## Test suite for struct::set, common parts across implementations.
 #
-# This file contains a collection of tests for one or more of the Tcllib
-# procedures.  Sourcing this file into Tcl runs the tests and
-# generates output for errors.  No output means no errors were found.
+## Two complementary constraints (sets_c, sets_tcl) tell us
+## which implementation is under test.
 #
-# Copyright (c) 2004-2008 by Andreas Kupries
-#
-# RCS: @(#) $Id: sets.testsuite,v 1.6 2008/03/09 04:38:47 andreas_kupries Exp $
+## The external procedures 'Nothing', 'Wrong', and 'TooMany' are used
+## to generate implementation specific error messages. Implementations
+## have to be provided by the invoking implementation-specific
+## testsuite.
 
-#----------------------------------------------------------------------
+# # ## ### ##### ######## ############# #####################
+## Various standard set values, plus a helper command.
 
-test set-${impl}-1.0 {nothing} {
-    catch {setop} msg
-    set msg
-} [Nothing]
+set sempty {}
+set smultiples {a::foo b::foo c::foo a::foo d::foo f::foo a::foo f::foo c::foo h::foo j::foo}
+set sa {a::foo b::foo c::foo d::foo}
+set sb {e::foo f::foo g::foo h::foo}
+set sc {c::foo d::foo e::foo f::foo}
+set sd {a::foo b::foo c::foo d::foo e::foo f::foo}               ; # a + c
+set se {c::foo d::foo e::foo f::foo g::foo h::foo}               ; # b + c
+set sf {a::foo b::foo c::foo d::foo e::foo f::foo g::foo h::foo} ; # a + b
+set sg {a::foo b::foo c::foo d::foo f::foo h::foo j::foo}
+set sh {c::foo d::foo}
+set si {a::foo b::foo}
+set sj {e::foo f::foo}
+set sk {a::foo b::foo e::foo f::foo}
+set sl {b::foo c::foo d::foo}
 
-test set-${impl}-1.1 {bogus} {
-    catch {setop foo} msg
-    set msg
-} {bad option "foo": must be add, contains, difference, empty, equal, exclude, include, intersect, intersect3, size, subsetof, subtract, symdiff, or union}
+proc luniq {list} { lsort -unique $list }
 
+# # ## ### ##### ######## ############# #####################
 
-test set-${impl}-2.0 {emptiness} {
-    catch {setop empty} msg
-    set msg
-} [tmWrong empty {set} 0]
+test set-1.0 {wrong#args, no method} -body {
+    struct set
+} -returnCodes error -result [Nothing]
 
-test set-${impl}-2.1 {emptiness} {
-    catch {setop empty a b} msg
-    set msg
-} [tmTooMany empty {set}]
+test set-1.1 {bad method} -body {
+    struct set bogus
+} -returnCodes error -result {unknown or ambiguous subcommand "bogus": must be add, contains, create, difference, empty, equal, exclude, include, intersect, intersect3, set, size, subset, subtract, superset, symdifference, union, or unset}
 
-test set-${impl}-2.2 {emptiness} {
-    setop empty $sempty
-} 1
+# # ## ### ##### ######## ############# #####################
 
-test set-${impl}-2.3 {emptiness} {
-    setop empty $smultiples
-} 0
+test set-2.0 {contains, wrong#args, not enough} -body {
+    struct set contains
+} -returnCodes error -result [Wrong contains {S element} 0]
 
-test set-${impl}-2.4 {emptiness} {
-    setop empty $sa
-} 0
+test set-2.1 {contains, wrong#args, not enough} -body {
+    struct set contains S
+} -returnCodes error -result [Wrong contains {S element} 1]
 
+test set-2.2 {contains, wrong#args, too many} -body {
+    struct set contains S E bogus
+} -returnCodes error -result [TooMany contains {S element}]
 
-test set-${impl}-3.0 {size} {
-    catch {setop size} msg
-    set msg
-} [tmWrong size {set} 0]
+test set-2.3 {contains, yes} -body {
+    struct set contains {x y A z x} A
+} -result 1
 
-test set-${impl}-3.1 {size} {
-    catch {setop size a b} msg
-    set msg
-} [tmTooMany size {set}]
+test set-2.3 {contains, no} -body {
+    struct set contains {x y z x} A
+} -result 0
 
-test set-${impl}-3.2 {size} {
-    setop size $sempty
-} 0
+# # ## ### ##### ######## ############# #####################
 
-test set-${impl}-3.3 {size} {
-    setop size $smultiples
-} 7
+test set-3.0 {create, empty} -body {
+    struct set create
+} -result {}
 
-test set-${impl}-3.4 {size} {
-    setop size $sa
-} 4
+test set-3.1 {create, input duplicates} -body {
+    struct set create x y z x z
+} -result {x y z}
 
+test set-3.2 {create, input duplicate-free} -body {
+    struct set create x y z
+} -result {x y z}
 
-test set-${impl}-4.0 {union} {
-    setop union
-} {}
+# # ## ### ##### ######## ############# #####################
 
-test set-${impl}-4.1 {union} {
-    setop union $sempty
-} $sempty
+test set-4.0 {difference, wrong#args, not enough} -body {
+    struct set difference
+} -returnCodes error -result [Wrong difference {S ...} 0]
 
-test set-${impl}-4.2 {union} {
-    luniq [setop union $smultiples]
-} [luniq $smultiples]
+test set-4.1 {difference, single set unchanged} -body {
+    struct set difference {a b c}
+} -result {a b c}
 
-test set-${impl}-4.3 {union} {
-    luniq [setop union $sa]
-} $sa
+test set-4.2 {difference, multiple} -body {
+    struct set difference {a b c d e} {c d} {b e}
+} -result a
 
-test set-${impl}-4.4 {union} {
-    lsort [setop union $sa $sb]
-} $sf
+test set-4.3 {difference} -body {
+    luniq [struct set difference $sa $sempty]
+} -result $sa
 
-test set-${impl}-4.5 {union} {
-    lsort [setop union $sa $sc]
-} $sd
+test set-4.4 {difference} -body {
+    struct set difference $sempty $sa
+} -result $sempty
 
-test set-${impl}-4.6 {union} {
-    lsort [setop union $sa $sd]
-} $sd
+test set-4.5 {difference} -body {
+    lsort [struct set difference $sa $sb]
+} -result $sa
 
-test set-${impl}-4.7 {union} {
-    lsort [setop union $sa $sempty]
-} $sa
+test set-4.6 {difference} -body {
+    lsort [struct set difference $sa $sc]
+} -result $si
 
-test set-${impl}-4.8 {union} {
-    lsort [setop union $sempty $sa]
-} $sa
+test set-4.7 {difference} -body {
+    lsort [struct set difference $sa $sd]
+} -result $sempty
 
-test set-${impl}-4.9 {union} {
-    lsort [setop union $sempty $sempty]
-} $sempty
+test set-4.8 {difference} -body {
+    lsort [struct set difference $sd $sa]
+} -result $sj
 
-test set-${impl}-4.10 {union} {
-    lsort [setop union $sa $sempty $smultiples]
-} $sg
+test set-4.9 {difference} -setup {
+    set A [list "Washington, DC (District of Columbia)" Maryland Virginia]
+    set B [list "Washington, DC (District of Columbia)" Virginia]
+} -body {
+    lsort [struct set difference $A $B]
+} -cleanup {
+    unset A B
+} -result Maryland
 
-
-test set-${impl}-5.0 {intersect} {
-    setop intersect
-} {}
-
-test set-${impl}-5.1 {intersect} {
-    setop intersect $sempty
-} $sempty
-
-test set-${impl}-5.2 {intersect} {
-    luniq [setop intersect $smultiples]
-} [luniq $smultiples]
-
-test set-${impl}-5.3 {intersect} {
-    luniq [setop intersect $sa]
-} $sa
-
-test set-${impl}-5.4 {intersect} {
-    lsort [setop intersect $sa $sb]
-} $sempty
-
-test set-${impl}-5.5 {intersect} {
-    lsort [setop intersect $sa $sc]
-} $sh
-
-test set-${impl}-5.6 {intersect} {
-    lsort [setop intersect $sa $sd]
-} $sa
-
-test set-${impl}-5.7 {intersect} {
-    lsort [setop intersect $sa $sempty]
-} $sempty
-
-test set-${impl}-5.8 {intersect} {
-    lsort [setop intersect $sempty $sa]
-} $sempty
-
-test set-${impl}-5.9 {intersect} {
-    lsort [setop intersect $sempty $sempty]
-} $sempty
-
-test set-${impl}-5.10 {intersect} {
-    lsort [setop intersect $sa $sempty $smultiples]
-} $sempty
-
-test set-${impl}-5.11 {intersect} {
-    lsort [setop intersect $sa $sa]
-} $sa
-
-test set-${impl}-5.12 {intersect} {
-    lsort [setop intersect $sa $sc $sd]
-} $sh
-
-test set-${impl}-5.13 {intersect} {
-    lsort [setop intersect $sa $sc {x y}]
-} $sempty
-
-
-test set-${impl}-6.0 {difference} {
-    catch {setop difference} msg
-    set msg
-} [tmWrong difference {A B} 0]
-
-test set-${impl}-6.1 {difference} {
-    catch {setop difference a} msg
-    set msg
-} [tmWrong difference {A B} 1]
-
-test set-${impl}-6.2 {difference} {
-    catch {setop difference a b c} msg
-    set msg
-} [tmTooMany difference {A B}]
-
-test set-${impl}-6.3 {difference} {
-    luniq [setop difference $sa $sempty]
-} $sa
-
-test set-${impl}-6.4 {difference} {
-    setop difference $sempty $sa
-} $sempty
-
-test set-${impl}-6.5 {difference} {
-    lsort [setop difference $sa $sb]
-} $sa
-
-test set-${impl}-6.6 {difference} {
-    lsort [setop difference $sa $sc]
-} $si
-
-test set-${impl}-6.7 {difference} {
-    lsort [setop difference $sa $sd]
-} $sempty
-
-test set-${impl}-6.8 {difference} {
-    lsort [setop difference $sd $sa]
-} $sj
-
-test set-${impl}-6.9 {difference} {
-    lsort [setop difference \
-	    [list "Washington, DC (District of Columbia)" Maryland Virginia] \
-	    [list "Washington, DC (District of Columbia)" Virginia]]
-} Maryland
-
-test set-${impl}-6.10 {difference} {
-    lsort [setop difference \
+test set-4.10 {difference} -body {
+    lsort [struct set difference \
 	    [list DC Maryland Virginia] \
 	    [list DC Virginia]]
-} Maryland
+} -result Maryland
 
+# # ## ### ##### ######## ############# #####################
 
-test set-${impl}-7.0 {symdiff} {
-    catch {setop symdiff} msg
-    set msg
-} [tmWrong symdiff {A B} 0]
+test set-5.0 {empty, wrong#args, not enough} -body {
+    struct set empty
+} -returnCodes error -result [Wrong empty {S} 0]
 
-test set-${impl}-7.1 {symdiff} {
-    catch {setop symdiff a} msg
-    set msg
-} [tmWrong symdiff {A B} 1]
+test set-5.1 {empty, wrong#args, too many} -body {
+    struct set empty a b
+} -returnCodes error -result [TooMany empty {S}]
 
-test set-${impl}-7.2 {symdiff} {
-    catch {setop symdiff a b c} msg
-    set msg
-} [tmTooMany symdiff {A B}]
+test set-5.2 {empty} -body {
+    struct set empty $sempty
+} -result 1
 
-test set-${impl}-7.3 {symdiff} {
-    lsort [setop symdiff $sa $sempty]
-} $sa
+test set-5.3 {empty} -body {
+    struct set empty $smultiples
+} -result 0
 
-test set-${impl}-7.4 {symdiff} {
-    lsort [setop symdiff $sempty $sa]
-} $sa
+test set-5.4 {empty} -body {
+    struct set empty $sa
+} -result 0
 
-test set-${impl}-7.5 {symdiff} {
-    lsort [setop symdiff $sa $sb]
-} $sf
+# # ## ### ##### ######## ############# #####################
 
-test set-${impl}-7.6 {symdiff} {
-    lsort [setop symdiff $sa $sc]
-} $sk
+test set-6.0 {equal, wrong#args, not enough} -body {
+    struct set equal
+} -returnCodes error -result [Wrong equal {A B} 0]
 
-test set-${impl}-7.7 {symdiff} {
-    lsort [setop symdiff $sa $sd]
-} $sj
+test set-6.1 {equal, wrong#args, not enough} -body {
+    struct set equal A
+} -returnCodes error -result [Wrong equal {A B} 1]
 
-test set-${impl}-7.8 {symdiff} {
-    lsort [setop symdiff $sd $sa]
-} $sj
+test set-6.2 {equal, wrong#args, too many} -body {
+   struct set equal a b c
+} -returnCodes error -result [TooMany equal {A B}]
 
+test set-6.3 {equal} -body {
+    struct set equal $sempty $sempty
+} -result 1
 
-test set-${impl}-8.0 {intersect3} {
-    catch {setop intersect3} msg
-    set msg
-} [tmWrong intersect3 {A B} 0]
+test set-6.4 {equal} -body {
+    struct set equal $sempty $sa
+} -result 0
 
-test set-${impl}-8.1 {intersect3} {
-    catch {setop intersect3 a} msg
-    set msg
-} [tmWrong intersect3 {A B} 1]
+test set-6.5 {equal} -body {
+    struct set equal $sa $sempty
+} -result 0
 
-test set-${impl}-8.2 {intersect3} {
-    catch {setop intersect3 a b c} msg
-    set msg
-} [tmTooMany intersect3 {A B}]
+test set-6.6 {equal} -body {
+    struct set equal $sa $sb
+} -result 0
 
-test set-${impl}-8.3 {intersect3} {
-    foreach {i da db} [setop intersect3 $sa $sempty] break
+test set-6.7 {equal} -body {
+    struct set equal $sa $sa
+} -result 1
+
+test set-6.8 {equal} -body {
+    struct set equal $sa $sd
+} -result 0
+
+test set-6.9 {equal} -body {
+    struct set equal $smultiples $sg
+} -result 1
+
+# # ## ### ##### ######## ############# #####################
+
+test set-7.0 {exclude, wrong#args, not enough} -body {
+    struct set exclude
+} -returnCodes error -result [Wrong exclude {S ...} 0]
+
+test set-7.1 {exclude, just set} -body {
+    lsort [struct set exclude {c a b c}]
+} -result {a b c}
+
+test set-7.2 {exclude} -body {
+    lsort [struct set exclude {a b c d e} c d b e]
+} -result a
+
+# # ## ### ##### ######## ############# #####################
+
+test set-8.0 {include, wrong#args, not enough} -body {
+    struct set include
+} -returnCodes error -result [Wrong include {S ...} 0]
+
+test set-8.1 {include, just set} -body {
+    lsort [struct set include {c a b c}]
+} -result {a b c}
+
+test set-8.2 {include} -body {
+    lsort [struct set include {a b c d e} c d b x]
+} -result {a b c d e x}
+
+# # ## ### ##### ######## ############# #####################
+
+test set-9.0 {intersect} -body {
+    struct set intersect
+} -result {}
+
+test set-9.1 {intersect} -body {
+    struct set intersect $sempty
+} -result $sempty
+
+test set-9.2 {intersect} -body {
+    luniq [struct set intersect $smultiples]
+} -result [luniq $smultiples]
+
+test set-9.3 {intersect} -body {
+    luniq [struct set intersect $sa]
+} -result $sa
+
+test set-9.4 {intersect} -body {
+    lsort [struct set intersect $sa $sb]
+} -result $sempty
+
+test set-9.5 {intersect} -body {
+    lsort [struct set intersect $sa $sc]
+} -result $sh
+
+test set-9.6 {intersect} -body {
+    lsort [struct set intersect $sa $sd]
+} -result $sa
+
+test set-9.7 {intersect} -body {
+    lsort [struct set intersect $sa $sempty]
+} -result $sempty
+
+test set-9.8 {intersect} -body {
+    lsort [struct set intersect $sempty $sa]
+} -result $sempty
+
+test set-9.9 {intersect} -body {
+    lsort [struct set intersect $sempty $sempty]
+} -result $sempty
+
+test set-9.10 {intersect} -body {
+    lsort [struct set intersect $sa $sempty $smultiples]
+} -result $sempty
+
+test set-9.11 {intersect} -body {
+    lsort [struct set intersect $sa $sa]
+} -result $sa
+
+test set-9.12 {intersect} -body {
+    lsort [struct set intersect $sa $sc $sd]
+} -result $sh
+
+test set-9.13 {intersect} -body {
+    lsort [struct set intersect $sa $sc {x y}]
+} -result $sempty
+
+# # ## ### ##### ######## ############# #####################
+
+test set-10.0 {intersect3, wrong#args, not enough} -body {
+    struct set intersect3
+} -returnCodes error -result [Wrong intersect3 {A B} 0]
+
+test set-10.1 {intersect3, wrong#args, not enough} -body {
+    struct set intersect3 a
+} -returnCodes error -result [Wrong intersect3 {A B} 1]
+
+test set-10.2 {intersect3, wrong#args, too many} -body {
+    struct set intersect3 a b c
+} -returnCodes error -result [TooMany intersect3 {A B}]
+
+test set-10.3 {intersect3} -body {
+    foreach {i da db} [struct set intersect3 $sa $sempty] break
     list [lsort $i] [lsort $da] [lsort $db]
-} [list $sempty $sa $sempty]
+} -result [list $sempty $sa $sempty]
 
-test set-${impl}-8.4 {intersect3} {
-    foreach {i da db} [setop intersect3 $sempty $sa] break
+test set-10.4 {intersect3} -body {
+    foreach {i da db} [struct set intersect3 $sempty $sa] break
     list [lsort $i] [lsort $da] [lsort $db]
-} [list $sempty $sempty $sa]
+} -result [list $sempty $sempty $sa]
 
-test set-${impl}-8.5 {intersect3} {
-    foreach {i da db} [setop intersect3 $sa $sb] break
+test set-10.5 {intersect3} -body {
+    foreach {i da db} [struct set intersect3 $sa $sb] break
     list [lsort $i] [lsort $da] [lsort $db]
-} [list $sempty $sa $sb]
+} -result [list $sempty $sa $sb]
 
-test set-${impl}-8.6 {intersect3} {
-    foreach {i da db} [setop intersect3 $sa $sc] break
+test set-10.6 {intersect3} -body {
+    foreach {i da db} [struct set intersect3 $sa $sc] break
     list [lsort $i] [lsort $da] [lsort $db]
-} [list $sh $si $sj]
+} -result [list $sh $si $sj]
 
-test set-${impl}-8.7 {intersect3} {
-    foreach {i da db} [setop intersect3 $sa $sd] break
+test set-10.7 {intersect3} -body {
+    foreach {i da db} [struct set intersect3 $sa $sd] break
     list [lsort $i] [lsort $da] [lsort $db]
-} [list $sa $sempty $sj]
+} -result [list $sa $sempty $sj]
 
-test set-${impl}-8.8 {intersect3} {
-    foreach {i da db} [setop intersect3 $sempty $sempty] break
+test set-10.8 {intersect3} -body {
+    foreach {i da db} [struct set intersect3 $sempty $sempty] break
     list [lsort $i] [lsort $da] [lsort $db]
-} [list $sempty $sempty $sempty]
+} -result [list $sempty $sempty $sempty]
 
-test set-${impl}-8.9 {intersect3} {
-    foreach {i da db} [setop intersect3 $sa $sa] break
+test set-10.9 {intersect3} -body {
+    foreach {i da db} [struct set intersect3 $sa $sa] break
     list [lsort $i] [lsort $da] [lsort $db]
-} [list $sa $sempty $sempty]
+} -result [list $sa $sempty $sempty]
 
+# # ## ### ##### ######## ############# #####################
 
-test set-${impl}-9.0 {equal} {
-    catch {setop equal} msg
-    set msg
-} [tmWrong equal {A B} 0]
+test set-11.0 {size, wrong#args, not enough} -body {
+    struct set size
+} -returnCodes error -result [Wrong size {S} 0]
 
-test set-${impl}-9.1 {equal} {
-    catch {setop equal a} msg
-    set msg
-} [tmWrong equal {A B} 1]
+test set-11.1 {size, wrong#args, too many} -body {
+    struct set size a b
+} -returnCodes error -result [TooMany size {S}]
 
-test set-${impl}-9.2 {equal} {
-    catch {setop equal a b c} msg
-    set msg
-} [tmTooMany equal {A B}]
+test set-11.2 {size} -body {
+    struct set size $sempty
+} -result 0
 
-test set-${impl}-9.3 {equal} {
-    setop equal $sempty $sempty
-} 1
+test set-11.3 {size} -body {
+    struct set size $smultiples
+} -result 7
 
-test set-${impl}-9.4 {equal} {
-    setop equal $sempty $sa
-} 0
+test set-11.4 {size} -body {
+    struct set size $sa
+} -result 4
 
-test set-${impl}-9.5 {equal} {
-    setop equal $sa $sempty
-} 0
+# # ## ### ##### ######## ############# #####################
 
-test set-${impl}-9.6 {equal} {
-    setop equal $sa $sb
-} 0
+test set-12.0 {subset, wrong#args, not enough} -body {
+    struct set subset
+} -returnCodes error -result [Wrong subset {A B} 0]
 
-test set-${impl}-9.7 {equal} {
-    setop equal $sa $sa
-} 1
+test set-12.1 {subset, wrong#args, not enough} -body {
+    struct set subset A
+} -returnCodes error -result [Wrong subset {A B} 1]
 
-test set-${impl}-9.8 {equal} {
-    setop equal $sa $sd
-} 0
+test set-12.2 {subset, wrong#args, too many} -body {
+    struct set subset A B C
+} -returnCodes error -result [Wrong subset {A B} 1]
 
-test set-${impl}-9.9 {equal} {
-    setop equal $smultiples $sg
-} 1
+test set-12.3 {subset} -body {
+    struct set subset $sa $sb
+} -result 0
 
+test set-12.4 {subset} -body {
+    struct set subset $sa $sc
+} -result 0
 
-test set-${impl}-10.0 {include} {
-    catch {setop include} msg
-    set msg
-} [tmWrong include {Avar element} 0]
+test set-12.5 {subset} -body {
+    struct set subset $sa $sa
+} -result 1
 
-test set-${impl}-10.1 {include} {
-    catch {setop include A} msg
-    set msg
-} [tmWrong include {Avar element} 1]
+test set-12.6 {subset} -body {
+    struct set subset $sa $sf
+} -result 1
 
-test set-${impl}-10.2 {include, non-existing variable} {
+# # ## ### ##### ######## ############# #####################
+
+test set-13.0 {superset, wrong#args, not enough} -body {
+    struct set superset
+} -returnCodes error -result [Wrong superset {A B} 0]
+
+test set-13.1 {superset, wrong#args, not enough} -body {
+    struct set superset A
+} -returnCodes error -result [Wrong superset {A B} 1]
+
+test set-13.2 {superset, wrong#args, too many} -body {
+    struct set superset A B C
+} -returnCodes error -result [Wrong superset {A B} 1]
+
+test set-13.3 {superset} -body {
+    struct set superset $sa $sb
+} -result 0
+
+test set-13.4 {superset} -body {
+    struct set superset $sa $sc
+} -result 0
+
+test set-13.5 {superset} -body {
+    struct set superset $sa $sa
+} -result 1
+
+test set-13.6 {superset} -body {
+    struct set superset $sa $sf
+} -result 0
+
+# # ## ### ##### ######## ############# #####################
+
+test set-14.0 {symdifference, wrong#args, not enough} -body {
+    struct set symdifference
+} -returnCodes error -result [Wrong symdifference {A B} 0]
+
+test set-14.1 {symdifference, wrong#args, not enough} -body {
+    struct set symdifference a
+} -returnCodes error -result [Wrong symdifference {A B} 1]
+
+test set-14.2 {symdifference, wrong#args, too many} -body {
+    struct set symdifference a b c
+} -returnCodes error -result [TooMany symdifference {A B}]
+
+test set-14.3 {symdifference} -body {
+    lsort [struct set symdifference $sa $sempty]
+} -result $sa
+
+test set-14.4 {symdifference} -body {
+    lsort [struct set symdifference $sempty $sa]
+} -result $sa
+
+test set-14.5 {symdifference} -body {
+    lsort [struct set symdifference $sa $sb]
+} -result $sf
+
+test set-14.6 {symdifference} -body {
+    lsort [struct set symdifference $sa $sc]
+} -result $sk
+
+test set-14.7 {symdifference} -body {
+    lsort [struct set symdifference $sa $sd]
+} -result $sj
+
+test set-14.8 {symdifference} -body {
+    lsort [struct set symdifference $sd $sa]
+} -result $sj
+
+# # ## ### ##### ######## ############# #####################
+
+test set-15.0 {union} -body {
+    struct set union
+} -result {}
+
+test set-15.1 {union} -body {
+    struct set union $sempty
+} -result $sempty
+
+test set-15.2 {union} -body {
+    luniq [struct set union $smultiples]
+} -result [luniq $smultiples]
+
+test set-15.3 {union} -body {
+    luniq [struct set union $sa]
+} -result $sa
+
+test set-15.4 {union} -body {
+    lsort [struct set union $sa $sb]
+} -result $sf
+
+test set-15.5 {union} -body {
+    lsort [struct set union $sa $sc]
+} -result $sd
+
+test set-15.6 {union} -body {
+    lsort [struct set union $sa $sd]
+} -result $sd
+
+test set-15.7 {union} -body {
+    lsort [struct set union $sa $sempty]
+} -result $sa
+
+test set-15.8 {union} -body {
+    lsort [struct set union $sempty $sa]
+} -result $sa
+
+test set-15.9 {union} -body {
+    lsort [struct set union $sempty $sempty]
+} -result $sempty
+
+test set-15.10 {union} -body {
+    lsort [struct set union $sa $sempty $smultiples]
+} -result $sg
+
+# # ## ### ##### ######## ############# #####################
+
+test set-16.0 {set, wrong#args, not enough} -body {
+  struct set set
+} -returnCodes error -result [Wrong set {Svar element} 0]
+
+test set-16.1 {set, wrong#args, not enough} -body {
+    struct set set A
+} -returnCodes error -result [Wrong set {Svar element} 1]
+
+test set-16.2 {set, wrong#args, too many} -body {
+    struct set set A B C
+} -returnCodes error -result [TooMany set {Svar element}]
+
+test set-16.3 {set, undefined variable} -setup {
     catch {unset A}
-    setop include A B
-    set A
-} {B}
+} -body {
+    list [struct set set A B] [set A]
+} -cleanup {
+    unset A
+} -result {1 B}
 
-test set-${impl}-10.3 {include, missing} {
-    catch {unset A} ; set A $sa
-    setop include A B
-    lsort $A
-} {B a::foo b::foo c::foo d::foo}
+test set-16.4 {set, truly added} -setup {
+    catch {unset A}
+    set A $sa
+} -body {
+    list [struct set set A B] [lsort $A]
+} -cleanup {
+    unset A
+} -result {1 {B a::foo b::foo c::foo d::foo}}
 
-test set-${impl}-10.4 {include, known} {
-    catch {unset A} ; set A $sa
-    setop include A a::foo
-    lsort $A
-} $sa
+test set-16.5 {set, already known} -setup {
+    catch {unset A}
+    set A $sa
+} -body {
+    list [struct set set A a::foo] [lsort $A]
+} -cleanup {
+    unset A
+} -result [list 0 $sa]
 
-test set-${impl}-10.5-bug-1908098 {include, non-existent variable} {
+# # ## ### ##### ######## ############# #####################
+
+test set-17.0 {unset, wrong#args, not enough} -body {
+    struct set unset
+} -returnCodes error -result [Wrong unset {Svar element} 0]
+
+test set-17.1 {unset, wrong#args, not enough} -body {
+    struct set unset A
+} -returnCodes error -result [Wrong unset {Svar element} 1]
+
+test set-17.2 {unset, wrong#args, too many} -body {
+    struct set unset A B C
+} -returnCodes error -result [TooMany unset {Svar element}]
+
+test set-17.3 {unset, undefined variable} -setup {
+    catch {unset X}
+} -body {
+    struct set unset X B
+} -returnCodes error -result {can't read "X": no such variable}
+
+test set-17.4 {unset, not known} -setup {
+    catch {unset A}
+    set A $sa
+} -body {
+    list [struct set unset A B] [lsort $A]
+} -cleanup {
+    unset A
+} -result [list 0 $sa]
+
+test set-17.5 {unset, removed} -setup {
+    catch {unset A}
+    set A $sa
+} -body {
+    list [struct set unset A a::foo] [lsort $A]
+} -cleanup {
+    unset A
+} -result [list 1 $sl]
+
+# # ## ### ##### ######## ############# #####################
+
+test set-18.0 {add, wrong#args, not enough} -body {
+    struct set add
+} -returnCodes error -result [Wrong add {Svar ...} 0]
+
+test set-18.1 {add, nothing} -setup {
+    catch {unset A}
+} -body {
+    list [struct set add A] $A
+} -cleanup {
+    unset A
+} -result {{} {}}
+
+test set-18.2 {add, undefined variable} -setup {
     catch {unset A}
     catch {unset res}
-    lappend res [setop include A a::foo]
-    lappend res [lsort $A]
-} {{} a::foo}
+} -body {
+    list [struct set add A {a b c} {d e}] [lsort $A]
+} -cleanup {
+    unset A
+} -result {{} {a b c d e}}
 
-test set-${impl}-11.0 {exclude} {
-    catch {setop exclude} msg
-    set msg
-} [tmWrong exclude {Avar element} 0]
-
-test set-${impl}-11.1 {exclude} {
-    catch {setop exclude A} msg
-    set msg
-} [tmWrong exclude {Avar element} 1]
-
-test set-${impl}-11.2 {exclude, non-existent variable} {
-    catch {unset X}
-    catch {setop exclude X B} msg
-    set msg
-} {can't read "X": no such variable}
-
-test set-${impl}-11.3 {exclude} {
-    catch {unset A} ; set A $sa
-    setop exclude A B
-    lsort $A
-} $sa
-
-test set-${impl}-11.4 {exclude} {
-    catch {unset A} ; set A $sa
-    setop exclude A a::foo
-    lsort $A
-} $sl
-
-
-test set-${impl}-12.0 {add} {
-    catch {setop add} msg
-    set msg
-} [tmWrong add {Avar B} 0]
-
-test set-${impl}-12.1 {add} {
-    catch {setop add A} msg
-    set msg
-} [tmWrong add {Avar B} 1]
-
-test set-${impl}-12.2 {add, non-existent variable} {
+test set-18.3 {add, missing} -setup {
     catch {unset A}
-    catch {unset res}
-    lappend res [setop add A B]
-    lappend res $A
-} {{} B}
+    set A $sa
+} -body {
+    list [struct set add A $sb] [lsort $A]
+} -cleanup {
+    unset A
+} -result [list {} $sf]
 
-test set-${impl}-12.3 {add, missing} {
-    catch {unset A} ; set A $sa
-    setop add A $sb
-    lsort $A
-} $sf
+test set-18.4 {add, missing&known} -setup {
+    catch {unset A}
+    set A $sa
+} -body {
+    list [struct set add A $sc] [lsort $A]
+} -cleanup {
+    unset A
+} -result [list {} $sd]
 
-test set-${impl}-12.4 {add, missing&known} {
-    catch {unset A} ; set A $sa
-    setop add A $sc
-    lsort $A
-} $sd
+test set-18.5 {add, known} -setup {
+    catch {unset A}
+    set A $sa
+} -body {
+    list [struct set add A $sa] [lsort $A]
+} -cleanup {
+    unset A
+} -result [list {} $sa]
 
-test set-${impl}-12.5 {add, known} {
-    catch {unset A} ; set A $sa
-    setop add A $sa
-    lsort $A
-} $sa
+# # ## ### ##### ######## ############# #####################
 
+test set-19.0 {subtract, wrong#args, not enough} -body {
+    struct set subtract
+} -returnCodes error -result [Wrong subtract {Svar ...} 0]
 
-test set-${impl}-13.0 {subtract} {
-    catch {setop subtract} msg
-    set msg
-} [tmWrong subtract {Avar B} 0]
+test set-19.1 {subtract, nothing} -setup {
+    set A {a b}
+} -body {
+    list [struct set subtract A] [lsort $A]
+} -cleanup {
+    unset A
+} -result {{} {a b}}
 
-test set-${impl}-13.1 {subtract} {
-    catch {setop subtract A} msg
-    set msg
-} [tmWrong subtract {Avar B} 1]
-
-test set-${impl}-13.2 {subtract, non-existent variable} {
+test set-19.2 {subtract, undefined variable} -setup {
     catch {unset X}
-    catch {setop subtract X B} msg
-    set msg
-} {can't read "X": no such variable}
+} -body {
+    struct set subtract X B
+} -returnCodes error -result {can't read "X": no such variable}
 
-test set-${impl}-13.3 {subtract} {
-    catch {unset A} ; set A $sa
-    setop subtract A $sb
-    lsort $A
-} $sa
+test set-19.3 {subtract, missing} -setup {
+    catch {unset A}
+    set A $sa
+} -body {
+    list [struct set subtract A $sb] [lsort $A]
+} -cleanup {
+    unset A
+} -result [list {} $sa]
 
-test set-${impl}-13.4 {subtract} {
-    catch {unset A} ; set A $sa
-    setop subtract A $sc
-    lsort $A
-} $si
+test set-19.4 {subtract, missing&known} -setup {
+    catch {unset A}
+    set A $sa
+} -body {
+    list [struct set subtract A $sc] [lsort $A]
+} -cleanup {
+    unset A
+} -result [list {} $si]
 
-test set-${impl}-13.5 {subtract} {
-    catch {unset A} ; set A $sa
-    setop subtract A $sa
-    lsort $A
-} {}
+test set-19.5 {subtract, known} -setup {
+    catch {unset A}
+    set A $sa
+} -body {
+    list [struct set subtract A $sa] [lsort $A]
+} -cleanup {
+    unset A
+} -result {{} {}}
 
+# # ## ### ##### ######## ############# #####################
 
-test set-${impl}-14.0 {subsetof} {
-    catch {setop subsetof} msg
-    set msg
-} [tmWrong subsetof {A B} 0]
-
-test set-${impl}-14.1 {subsetof} {
-    catch {setop subsetof A} msg
-    set msg
-} [tmWrong subsetof {A B} 1]
-
-test set-${impl}-14.2 {subsetof} {
-    setop subsetof $sa $sb
-} 0
-
-test set-${impl}-14.3 {subsetof} {
-    setop subsetof $sa $sc
-} 0
-
-test set-${impl}-14.4 {subsetof} {
-    setop subsetof $sa $sa
-} 1
-
-test set-${impl}-14.5 {subsetof} {
-    setop subsetof $sa $sf
-} 1
-
-#----------------------------------------------------------------------
-
-test set-${impl}-15.0 {shimmering, keep order} {
+test set-20.0 {shimmering, keep order} {
     set pure [list a b c d e f]     ; # pure value
-    setop difference {} $pure       ; # shimmer to set
+    struct set difference {} $pure  ; # shimmer to set
     llength $pure                   ; # shimmer back to list    
     string range $pure 0 end        ; # generate and query the string rep
 } {a b c d e f}
 
-#----------------------------------------------------------------------
+# # ## ### ##### ######## ############# #####################
+## Remove the global helper various and commands.
+
+unset sempty smultiples sa sb sc sd se sf sg sh si sj sk sl
+rename luniq {}
+
+# # ## ### ##### ######## ############# #####################
