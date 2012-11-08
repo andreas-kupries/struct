@@ -1,0 +1,349 @@
+<html><head>
+<title>struct::set - Tcl Data Structures</title>
+<style type="text/css"><!--
+    HTML {
+	background: 	#FFFFFF;
+	color: 		black;
+    }
+    BODY {
+	background: 	#FFFFFF;
+	color:	 	black;
+    }
+    DIV.doctools {
+	margin-left:	10%;
+	margin-right:	10%;
+    }
+    DIV.doctools H1,DIV.doctools H2 {
+	margin-left:	-5%;
+    }
+    H1, H2, H3, H4 {
+	margin-top: 	1em;
+	font-family:	sans-serif;
+	font-size:	large;
+	color:		#005A9C;
+	background: 	transparent;
+	text-align:		left;
+    }
+    H1.title {
+	text-align: center;
+    }
+    UL,OL {
+	margin-right: 0em;
+	margin-top: 3pt;
+	margin-bottom: 3pt;
+    }
+    UL LI {
+	list-style: disc;
+    }
+    OL LI {
+	list-style: decimal;
+    }
+    DT {
+	padding-top: 	1ex;
+    }
+    UL.toc,UL.toc UL, UL.toc UL UL {
+	font:		normal 12pt/14pt sans-serif;
+	list-style:	none;
+    }
+    LI.section, LI.subsection {
+	list-style: 	none;
+	margin-left: 	0em;
+	text-indent:	0em;
+	padding: 	0em;
+    }
+    PRE {
+	display: 	block;
+	font-family:	monospace;
+	white-space:	pre;
+	margin:		0%;
+	padding-top:	0.5ex;
+	padding-bottom:	0.5ex;
+	padding-left:	1ex;
+	padding-right:	1ex;
+	width:		100%;
+    }
+    PRE.example {
+	color: 		black;
+	background: 	#f5dcb3;
+	border:		1px solid black;
+    }
+    UL.requirements LI, UL.syntax LI {
+	list-style: 	none;
+	margin-left: 	0em;
+	text-indent:	0em;
+	padding:	0em;
+    }
+    DIV.synopsis {
+	color: 		black;
+	background: 	#80ffff;
+	border:		1px solid black;
+	font-family:	serif;
+	margin-top: 	1em;
+	margin-bottom: 	1em;
+    }
+    UL.syntax {
+	margin-top: 	1em;
+	border-top:	1px solid black;
+    }
+    UL.requirements {
+	margin-bottom: 	1em;
+	border-bottom:	1px solid black;
+    }
+--></style>
+</head>
+<! -- Generated from file '/home/aku/Projects/Struct/struct/embedded/www/doc/files/settcl/struct_set_tcl.html' by tcllib/doctools with format 'html'
+   -->
+<! -- Copyright &copy; 2004-2012 Andreas Kupries &lt;andreas_kupries@users.sourceforge.net&gt;
+   -->
+<! -- CVS: $Id$ struct::set.n
+   -->
+<body><div class="doctools">
+<hr> [
+  <a href="../../../toc.html">Main Table Of Contents</a>
+| <a href="../../toc.html">Table Of Contents</a>
+| <a href="../../../index.html">Keyword Index</a>
+] <hr>
+<h1 class="title">struct::set(n) 3 doc &quot;Tcl Data Structures&quot;</h1>
+<div id="name" class="section"><h2><a name="name">Name</a></h2>
+<p>struct::set - Create and manipulate Tcl set values, Tcl implementation</p>
+</div>
+<div id="toc" class="section"><h2><a name="toc">Table Of Contents</a></h2>
+<ul class="toc">
+<li class="section"><a href="#toc">Table Of Contents</a></li>
+<li class="section"><a href="#synopsis">Synopsis</a></li>
+<li class="section"><a href="#section1">Description</a></li>
+<li class="section"><a href="#section2">Changes</a>
+<ul>
+<li class="subsection"><a href="#subsection1">Changes for version 2</a></li>
+</ul>
+</li>
+<li class="section"><a href="#section3">License</a></li>
+<li class="section"><a href="#section4">Bugs, Ideas, Feedback</a></li>
+<li class="section"><a href="#keywords">Keywords</a></li>
+<li class="section"><a href="#category">Category</a></li>
+<li class="section"><a href="#copyright">Copyright</a></li>
+</ul>
+</div>
+<div id="synopsis" class="section"><h2><a name="synopsis">Synopsis</a></h2>
+<div class="synopsis">
+<ul class="requirements">
+<li>package require <b class="pkgname">Tcl 8.5</b></li>
+<li>package require <b class="pkgname">struct::set <span class="opt">?3?</span></b></li>
+</ul>
+<ul class="syntax">
+<li><a href="#1"><b class="cmd">::struct set</b> <b class="method">add</b> <i class="arg">svar</i> <span class="opt">?<i class="arg">set</i>...?</span></a></li>
+<li><a href="#2"><b class="cmd">::struct set</b> <b class="method">contains</b> <i class="arg">set</i> <i class="arg">element</i></a></li>
+<li><a href="#3"><b class="cmd">::struct set</b> <b class="method">create</b> <span class="opt">?<i class="arg">element</i>...?</span></a></li>
+<li><a href="#4"><b class="cmd">::struct set</b> <b class="method">difference</b> <i class="arg">S</i> <span class="opt">?<i class="arg">Si</i>...?</span></a></li>
+<li><a href="#5"><b class="cmd">::struct set</b> <b class="method">empty</b> <i class="arg">set</i></a></li>
+<li><a href="#6"><b class="cmd">::struct set</b> <b class="method">equal</b> <i class="arg">set1</i> <i class="arg">set2</i></a></li>
+<li><a href="#7"><b class="cmd">::struct set</b> <b class="method">exclude</b> <i class="arg">set</i> <span class="opt">?<i class="arg">element</i>...?</span></a></li>
+<li><a href="#8"><b class="cmd">::struct set</b> <b class="method">include</b> <i class="arg">set</i> <span class="opt">?<i class="arg">element</i>...?</span></a></li>
+<li><a href="#9"><b class="cmd">::struct set</b> <b class="method">intersect</b> <span class="opt">?<i class="arg">set</i>...?</span></a></li>
+<li><a href="#10"><b class="cmd">::struct set</b> <b class="method">intersect3</b> <i class="arg">set1</i> <i class="arg">set2</i></a></li>
+<li><a href="#11"><b class="cmd">::struct set</b> <b class="method">set</b> <i class="arg">svar</i> <span class="opt">?<i class="arg">element</i>...?</span></a></li>
+<li><a href="#12"><b class="cmd">::struct set</b> <b class="method">size</b> <i class="arg">set</i></a></li>
+<li><a href="#13"><b class="cmd">::struct set</b> <b class="method">subset</b> <i class="arg">A</i> <i class="arg">B</i></a></li>
+<li><a href="#14"><b class="cmd">::struct set</b> <b class="method">subtract</b> <i class="arg">svar</i> <span class="opt">?<i class="arg">set</i>...?</span></a></li>
+<li><a href="#15"><b class="cmd">::struct set</b> <b class="method">superset</b> <i class="arg">A</i> <i class="arg">B</i></a></li>
+<li><a href="#16"><b class="cmd">::struct set</b> <b class="method">symdifference</b> <i class="arg">A</i> <i class="arg">B</i></a></li>
+<li><a href="#17"><b class="cmd">::struct set</b> <b class="method">union</b> <span class="opt">?<i class="arg">set</i>...?</span></a></li>
+<li><a href="#18"><b class="cmd">::struct set</b> <b class="method">unset</b> <i class="arg">svar</i> <span class="opt">?<i class="arg">element</i>...?</span></a></li>
+</ul>
+</div>
+</div>
+<div id="section1" class="section"><h2><a name="section1">Description</a></h2>
+<p>Welcome to Struct, a set of packages providing various data structures
+to Tcl, and additional operations for existing Tcl structures.</p>
+<p>This manpage documents the Tcl implementation of the
+<b class="package">struct::set</b> package. It provides the same API as the C
+implementation, although details like the exact wording of error
+messages may differ.
+The <b class="namespace">::struct</b> namespace contains a single ensemble command
+<b class="cmd"><a href="../../../index.html#key12">set</a></b> with multiple methods for the manipulation of set values.
+These methods are:</p>
+<dl class="definitions">
+<dt><a name="1"><b class="cmd">::struct set</b> <b class="method">add</b> <i class="arg">svar</i> <span class="opt">?<i class="arg">set</i>...?</span></a></dt>
+<dd><p>This method manipulates the variable <i class="arg">svar</i>, adding all elements
+of the <i class="arg">set</i>s to the set stored in this variable. If no sets are
+specified the variable is not changed. This has precendence over the
+next statement.</p>
+<p>If the variable named by <i class="arg">svar</i> does not exist it will be
+created.</p>
+<p>The result of the method is the empty string.</p>
+<p>See also the related methods <b class="method">include</b>, <b class="method">set</b>,
+and <b class="method">union</b>.</p></dd>
+<dt><a name="2"><b class="cmd">::struct set</b> <b class="method">contains</b> <i class="arg">set</i> <i class="arg">element</i></a></dt>
+<dd><p>This method returns a boolean value indicating if the <i class="arg">set</i> value
+contains the named <i class="arg">element</i> (<b class="const">true</b>), or not
+(<b class="const">false</b>).</p></dd>
+<dt><a name="3"><b class="cmd">::struct set</b> <b class="method">create</b> <span class="opt">?<i class="arg">element</i>...?</span></a></dt>
+<dd><p>This method returns a set containing the specified <i class="arg">element</i>s.
+Duplicates in the argumnts are removed.</p></dd>
+<dt><a name="4"><b class="cmd">::struct set</b> <b class="method">difference</b> <i class="arg">S</i> <span class="opt">?<i class="arg">Si</i>...?</span></a></dt>
+<dd><p>This method computes the set difference of set value <i class="arg">S</i> and the
+set values <i class="arg">S1</i>, <i class="arg">S2</i>, ..., i.e.
+&quot;(<i class="arg">S</i> - <i class="arg">S1</i>) - <i class="arg">S2</i> ...&quot; and returns it as the result of
+the method.</p>
+<p>If no sets <i class="arg">Si</i> are specified then <i class="arg">S</i> is returned.</p>
+<p>See also the related methods <b class="method">exclude</b>,
+<b class="method">subtract</b>, and <b class="method">unset</b>.</p></dd>
+<dt><a name="5"><b class="cmd">::struct set</b> <b class="method">empty</b> <i class="arg">set</i></a></dt>
+<dd><p>This method returns a boolean value indicating if the <i class="arg">set</i> value
+is an empty set (<b class="const">true</b>), or not (<b class="const">false</b>).</p></dd>
+<dt><a name="6"><b class="cmd">::struct set</b> <b class="method">equal</b> <i class="arg">set1</i> <i class="arg">set2</i></a></dt>
+<dd><p>This method returns a boolean value indicating if the two set values
+contain the same set (<b class="const">true</b>) or not (<b class="const">false</b>).</p></dd>
+<dt><a name="7"><b class="cmd">::struct set</b> <b class="method">exclude</b> <i class="arg">set</i> <span class="opt">?<i class="arg">element</i>...?</span></a></dt>
+<dd><p>This method removes the specified <i class="arg">elements</i> from the <i class="arg">set</i> value
+and returns the reduced set as the result of the method.</p>
+<p>If no elements are specified then <i class="arg">set</i> is returned.</p>
+<p>See also the related methods <b class="method">difference</b>,
+<b class="method">subtract</b>, and <b class="method">unset</b>.</p></dd>
+<dt><a name="8"><b class="cmd">::struct set</b> <b class="method">include</b> <i class="arg">set</i> <span class="opt">?<i class="arg">element</i>...?</span></a></dt>
+<dd><p>This method adds the specified <i class="arg">elements</i> to the <i class="arg">set</i> value
+and returns the extended set as the result of the method.</p>
+<p>If no elements are specified then <i class="arg">set</i> is returned.</p>
+<p>See also the related methods <b class="method">add</b>, <b class="method">union</b>, and
+<b class="method">set</b>.</p></dd>
+<dt><a name="9"><b class="cmd">::struct set</b> <b class="method">intersect</b> <span class="opt">?<i class="arg">set</i>...?</span></a></dt>
+<dd><p>This method computes the intersection of all the specified <i class="arg">set</i>
+values and returns it as the result of the method.
+An empty set is returned if no <i class="arg">set</i>s are specified.</p></dd>
+<dt><a name="10"><b class="cmd">::struct set</b> <b class="method">intersect3</b> <i class="arg">set1</i> <i class="arg">set2</i></a></dt>
+<dd><p>This method is a combination of the methods <b class="method">intersect</b> and
+<b class="method">difference</b>.
+Its result is a three-element list containing &quot;<i class="arg">set1</i>*<i class="arg">set2</i>&quot;,
+&quot;<i class="arg">set1</i>-<i class="arg">set2</i>&quot;, and &quot;<i class="arg">set2</i>-<i class="arg">set1</i>&quot;, in this
+order. In other words, the intersection of the two arguments, and
+their differences.</p></dd>
+<dt><a name="11"><b class="cmd">::struct set</b> <b class="method">set</b> <i class="arg">svar</i> <span class="opt">?<i class="arg">element</i>...?</span></a></dt>
+<dd><p>This method manipulates the variable <i class="arg">svar</i>, adding the specified
+<i class="arg">element</i>s to the set stored in this variable. If no elements are
+specified the variable is not changed. This has precendence over the
+next statement.</p>
+<p>If the variable named by <i class="arg">svar</i> does not exist it will be
+created.</p>
+<p>The result of the method is the number of elements actually
+added to the set in <i class="arg">svar</i>.</p>
+<p>See also the related methods <b class="method">add</b>, <b class="method">include</b>,
+and <b class="method">union</b>.</p></dd>
+<dt><a name="12"><b class="cmd">::struct set</b> <b class="method">size</b> <i class="arg">set</i></a></dt>
+<dd><p>This method returns the cardinalty of the <i class="arg">set</i> value, i.e. the
+number of elements contained in the set. This is an integer number
+greater than or equal to zero.</p></dd>
+<dt><a name="13"><b class="cmd">::struct set</b> <b class="method">subset</b> <i class="arg">A</i> <i class="arg">B</i></a></dt>
+<dd><p>This method returns a boolean value indicating if the set value
+<i class="arg">A</i> is a subset of the set value <i class="arg">B</i> (<b class="const">true</b>), or not
+(<b class="const">false</b>).</p>
+<p><em>Note</em> that a set A equal to B is a subset too.</p></dd>
+<dt><a name="14"><b class="cmd">::struct set</b> <b class="method">subtract</b> <i class="arg">svar</i> <span class="opt">?<i class="arg">set</i>...?</span></a></dt>
+<dd><p>This method manipulates the variable <i class="arg">svar</i>, removing all elements
+of the <i class="arg">set</i>s from the set stored in this variable. If no sets are
+specified the variable is not changed. This has precendence over the
+next statement.</p>
+<p>If the variable named by <i class="arg">svar</i> does not exist and error
+will be thrown.</p>
+<p>The result of the method is the empty string.</p>
+<p>See also the related methods <b class="method">difference</b>,
+<b class="method">exclude</b>, and <b class="method">unset</b>.</p></dd>
+<dt><a name="15"><b class="cmd">::struct set</b> <b class="method">superset</b> <i class="arg">A</i> <i class="arg">B</i></a></dt>
+<dd><p>This method returns a boolean value indicating if the set value
+<i class="arg">A</i> is a superset of the set value <i class="arg">B</i> (<b class="const">true</b>), or not
+(<b class="const">false</b>).</p>
+<p><em>Note</em> that a set A equal to B is a superset too.</p></dd>
+<dt><a name="16"><b class="cmd">::struct set</b> <b class="method">symdifference</b> <i class="arg">A</i> <i class="arg">B</i></a></dt>
+<dd><p>This method computes the symmetric difference of the sets <i class="arg">A</i> and
+<i class="arg">B</i>, i.e. (&quot;(<i class="arg">A</i> - <i class="arg">B</i>) + (<i class="arg">B</i> - <i class="arg">A</i>)&quot;) and
+returns it as the result of the command.</p></dd>
+<dt><a name="17"><b class="cmd">::struct set</b> <b class="method">union</b> <span class="opt">?<i class="arg">set</i>...?</span></a></dt>
+<dd><p>This method computes the union of <i class="arg">set</i> values i.e.
+&quot;(<i class="arg">S1</i> + <i class="arg">S2</i>) + <i class="arg">S3</i> ...&quot; and returns it as the result of
+the method.</p>
+<p>An empty set is returned if no <i class="arg">set</i>s are specified.</p>
+<p>See also the related methods <b class="method">add</b>, <b class="method">include</b>,
+and <b class="method">set</b>.</p></dd>
+<dt><a name="18"><b class="cmd">::struct set</b> <b class="method">unset</b> <i class="arg">svar</i> <span class="opt">?<i class="arg">element</i>...?</span></a></dt>
+<dd><p>This method manipulates the variable <i class="arg">svar</i>, removing the specified
+<i class="arg">element</i>s from the set stored in this variable. If no elements are
+specified the variable is not changed. This has precendence over the
+next statement.</p>
+<p>If the variable named by <i class="arg">svar</i> does not exist an error
+will be thrown.</p>
+<p>The result of the method is the number of elements actually
+removed from to the set in <i class="arg">svar</i>.</p>
+<p>See also the related methods <b class="method">difference</b>,
+<b class="method">exclude</b>, and <b class="method">subtract</b>.</p></dd>
+</dl>
+<p>Two groups of 4 methods deserve some additional attention to explain
+the similarities and differences between them. These are:</p>
+<ol class="enumerated">
+<li><p><b class="method">add</b>, <b class="method">include</b>, <b class="method">set</b>, and <b class="method">union</b></p></li>
+<li><p><b class="method">difference</b>, <b class="method">exclude</b>, <b class="method">subtract</b>, and <b class="method">unset</b></p></li>
+</ol>
+<p>Each can be organized into a 2x2 table with one axis showing the type
+of the first argument (set value, or set variable), and the types of
+the other arguments (elements, or set values). See below.</p>
+<pre class="example">
+    Value      Variable
+    -----      --------
+    union      add      | Sets
+    include    set      | Elements
+    Value      Variable
+    -----      --------
+    difference subtract | Sets
+    exclude    unset    | Elements
+</pre>
+</div>
+<div id="section2" class="section"><h2><a name="section2">Changes</a></h2>
+<div id="subsection1" class="subsection"><h3><a name="subsection1">Changes for version 2</a></h3>
+<p>Version 2 introduces incompatible changes to the API of stack objects,
+therefore the change to the major version number.</p>
+<p>The changes in detail are:</p>
+<ol class="enumerated">
+<li><p>Version 2 requires Tcl 8.5 or higher. Tcl 8.4 or less is not
+	supported anymore.</p></li>
+<li><p>Instance creation syntax has changed.
+	For comparison, the old syntax is</p>
+<pre class="example">
+	struct::stack FOO       ; # or
+	set foo [struct::stack]
+</pre>
+<p>whereas the new is</p>
+<pre class="example">
+	struct stack create FOO ; # or
+	set foo [struct stack new]
+</pre>
+</li>
+<li><p>Method <b class="method">getr</b> has been dropped. Use</p>
+<pre class="example">
+	lreverse [FOO get]	
+</pre>
+<p>instead, assuming that <b class="cmd">FOO</b> is a stack instance.</p></li>
+<li><p>The methods <b class="method">peek</b> and <b class="method">peekr</b> have been renamed
+	to <b class="method">top</b> and <b class="method">bottom</b>, respectively.</p></li>
+<li><p>The method <b class="method">at</b> is new.</p></li>
+</ol>
+</div>
+</div>
+<div id="section3" class="section"><h2><a name="section3">License</a></h2>
+<p>This package, written by Andreas Kupries, is BSD licensed.</p>
+</div>
+<div id="section4" class="section"><h2><a name="section4">Bugs, Ideas, Feedback</a></h2>
+<p>This document, and the package it describes, will undoubtedly contain
+bugs and other problems.
+Please report such at the
+<a href="https://chiselapp.com/user/andreas_kupries/repository/Struct/index">Struct Tracker</a>.
+Please also report any ideas for enhancements you may have for either
+package and/or documentation.</p>
+</div>
+<div id="keywords" class="section"><h2><a name="keywords">Keywords</a></h2>
+<p><a href="../../../index.html#key8">cardinality</a>, <a href="../../../index.html#key0">data structures</a>, <a href="../../../index.html#key15">difference</a>, <a href="../../../index.html#key10">emptiness</a>, <a href="../../../index.html#key14">exclusion</a>, <a href="../../../index.html#key7">inclusion</a>, <a href="../../../index.html#key16">intersection</a>, <a href="../../../index.html#key9">membership</a>, <a href="../../../index.html#key12">set</a>, <a href="../../../index.html#key11">symmetric difference</a>, <a href="../../../index.html#key13">union</a></p>
+</div>
+<div id="category" class="section"><h2><a name="category">Category</a></h2>
+<p>Data structures</p>
+</div>
+<div id="copyright" class="section"><h2><a name="copyright">Copyright</a></h2>
+<p>Copyright &copy; 2004-2012 Andreas Kupries &lt;andreas_kupries@users.sourceforge.net&gt;</p>
+</div>
+</div></body></html>

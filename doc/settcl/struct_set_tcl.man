@@ -1,0 +1,16 @@
+[manpage_begin struct::set n 3]
+[include ../include/general.inc]
+[copyright {2004-2012 Andreas Kupries <andreas_kupries@users.sourceforge.net>}]
+[titledesc {Create and manipulate Tcl set values, Tcl implementation}]
+[require struct::set [opt 3]]
+[description]
+[include ../include/welcome.inc]
+[comment {= = == === ===== ======== ============= =====================}]
+
+[para] This manpage documents the Tcl implementation of the
+[package struct::set] package. It provides the same API as the C
+implementation, although details like the exact wording of error
+messages may differ.
+
+[include ../include/sets.inc]
+[manpage_end]

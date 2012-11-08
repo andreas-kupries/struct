@@ -257,6 +257,9 @@ doc
 \fBstruct::queue\fR
 \fIfiles/queuetcl/struct_queue_tcl.n\fR: Create and manipulate Tcl queue objects, Tcl implementation
 .TP
+\fBstruct::set\fR
+\fIfiles/settcl/struct_set_tcl.n\fR: Create and manipulate Tcl set values, Tcl implementation
+.TP
 \fBstruct::stack\fR
 \fIfiles/stackc/struct_stack_c.n\fR: Create and manipulate Tcl stack objects, C implementation
 .TP
