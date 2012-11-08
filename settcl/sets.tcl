@@ -127,26 +127,33 @@ proc ::struct::set::union {args} {
 
 proc ::struct::set::add {Svar args} {
     upvar 1 $Svar S
+    if {![llength $args]} return
     if {![info exists S]} { ::set S {} }
     ::set S [union [K $S [::unset S]] {*}$args]
     return
 }
 
-proc ::struct::set::set {Svar element} {
+proc ::struct::set::set {Svar args} {
     # Svar += element
     upvar 1 $Svar S
+    if {![llength $args]} { return 0 }
     if {![info exists S]} {
 	::set S {}
     } else {
 	::set S [lsort -unique $S]
     }
-    if {$element in $S} { return 0 }
-    lappend S $element
-    return 1
+    ::set added 0
+    foreach element $args {
+	if {$element in $S} continue
+	lappend S $element
+	incr added
+    }
+    return $added
 }
 
 proc ::struct::set::subtract {Svar args} {
     upvar 1 $Svar S
+    if {![llength $args]} return
     if {![info exists S]} {
 	return -code error -errorcode {STRUCT SET UNDEFINED VARIABLE} \
 	    "can't read \"$Svar\": no such variable"
@@ -155,18 +162,23 @@ proc ::struct::set::subtract {Svar args} {
     return
 }
 
-proc ::struct::set::unset {Svar element} {
+proc ::struct::set::unset {Svar args} {
     # Svar -= element
     upvar 1 $Svar S
+    if {![llength $args]} { return 0 }
     if {![info exists S]} {
 	return -code error -errorcode {STRUCT SET UNDEFINED VARIABLE} \
 	    "can't read \"$Svar\": no such variable"
     }
     ::set S [lsort -unique $S]
-    if {$element ni $S} { return 0 }
-    ::set pos [lsearch -exact $S $element]
-    ::set S [lreplace [K $S [::unset S]] $pos $pos]
-    return 1
+    ::set removed 0
+    foreach element $args {
+	if {$element ni $S} continue
+	::set pos [lsearch -exact $S $element]
+	::set S [lreplace [K $S [::unset S]] $pos $pos]
+	incr removed
+    }
+    return $removed
 }
 
 # # ## ### ##### ######## ############# #####################

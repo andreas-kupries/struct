@@ -498,17 +498,17 @@ test set-15.10 {union} -body {
 
 test set-16.0 {set, wrong#args, not enough} -body {
   struct set set
-} -returnCodes error -result [Wrong set {Svar element} 0]
+} -returnCodes error -result [Wrong set {Svar ...} 0]
 
-test set-16.1 {set, wrong#args, not enough} -body {
-    struct set set A
-} -returnCodes error -result [Wrong set {Svar element} 1]
+test set-16.1 {set, nothing} -setup {
+    catch {unset A}
+} -body {
+    list [struct set set A] [info exists A]
+} -cleanup {
+    catch {unset A}
+} -result {0 0}
 
-test set-16.2 {set, wrong#args, too many} -body {
-    struct set set A B C
-} -returnCodes error -result [TooMany set {Svar element}]
-
-test set-16.3 {set, undefined variable} -setup {
+test set-16.2 {set, undefined variable} -setup {
     catch {unset A}
 } -body {
     list [struct set set A B] [set A]
@@ -516,7 +516,7 @@ test set-16.3 {set, undefined variable} -setup {
     unset A
 } -result {1 B}
 
-test set-16.4 {set, truly added} -setup {
+test set-16.3 {set, truly added} -setup {
     catch {unset A}
     set A $sa
 } -body {
@@ -525,7 +525,7 @@ test set-16.4 {set, truly added} -setup {
     unset A
 } -result {1 {B a::foo b::foo c::foo d::foo}}
 
-test set-16.5 {set, already known} -setup {
+test set-16.4 {set, already known} -setup {
     catch {unset A}
     set A $sa
 } -body {
@@ -538,23 +538,19 @@ test set-16.5 {set, already known} -setup {
 
 test set-17.0 {unset, wrong#args, not enough} -body {
     struct set unset
-} -returnCodes error -result [Wrong unset {Svar element} 0]
+} -returnCodes error -result [Wrong unset {Svar ...} 0]
 
 test set-17.1 {unset, wrong#args, not enough} -body {
     struct set unset A
-} -returnCodes error -result [Wrong unset {Svar element} 1]
+} -result 0
 
-test set-17.2 {unset, wrong#args, too many} -body {
-    struct set unset A B C
-} -returnCodes error -result [TooMany unset {Svar element}]
-
-test set-17.3 {unset, undefined variable} -setup {
+test set-17.2 {unset, undefined variable} -setup {
     catch {unset X}
 } -body {
     struct set unset X B
 } -returnCodes error -result {can't read "X": no such variable}
 
-test set-17.4 {unset, not known} -setup {
+test set-17.3 {unset, not known} -setup {
     catch {unset A}
     set A $sa
 } -body {
@@ -563,7 +559,7 @@ test set-17.4 {unset, not known} -setup {
     unset A
 } -result [list 0 $sa]
 
-test set-17.5 {unset, removed} -setup {
+test set-17.4 {unset, removed} -setup {
     catch {unset A}
     set A $sa
 } -body {
@@ -581,10 +577,10 @@ test set-18.0 {add, wrong#args, not enough} -body {
 test set-18.1 {add, nothing} -setup {
     catch {unset A}
 } -body {
-    list [struct set add A] $A
+    list [struct set add A] [info exists A]
 } -cleanup {
-    unset A
-} -result {{} {}}
+    catch {unset A}
+} -result {{} 0}
 
 test set-18.2 {add, undefined variable} -setup {
     catch {unset A}
