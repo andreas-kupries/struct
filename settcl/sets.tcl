@@ -1,189 +1,386 @@
-#----------------------------------------------------------------------
+## sets.tcl --
+# # ## ### ##### ######## ############# #####################
 #
-# sets.tcl --
+#	Set implementation for Tcl 8.5+
+#	Contrary to stacks, queues, etc. sets are _values_.
 #
-#	Definitions for the processing of sets.
-#
-# Copyright (c) 2004-2008 by Andreas Kupries.
-#
-# See the file "license.terms" for information on usage and redistribution
-# of this file, and for a DISCLAIMER OF ALL WARRANTIES.
-#
-# RCS: @(#) $Id: sets.tcl,v 1.17 2008/03/09 04:24:37 andreas_kupries Exp $
-#
-#----------------------------------------------------------------------
+# Copyright (c) 2004-2012 Andreas Kupries
 
-# @mdgen EXCLUDE: sets_c.tcl
+# # ## ### ##### ######## ############# #####################
 
-package require Tcl 8.2
+package require Tcl 8.5
 
-namespace eval ::struct::set {}
-
-# ### ### ### ######### ######### #########
-## Management of set implementations.
-
-# ::struct::set::LoadAccelerator --
-#
-#	Loads a named implementation, if possible.
-#
-# Arguments:
-#	key	Name of the implementation to load.
-#
-# Results:
-#	A boolean flag. True if the implementation
-#	was successfully loaded; and False otherwise.
-
-proc ::struct::set::LoadAccelerator {key} {
-    variable accel
-    set r 0
-    switch -exact -- $key {
-	critcl {
-	    # Critcl implementation of set requires Tcl 8.4.
-	    if {![package vsatisfies [package provide Tcl] 8.4]} {return 0}
-	    if {[catch {package require tcllibc}]} {return 0}
-	    set r [llength [info commands ::struct::set_critcl]]
-	}
-	tcl {
-	    variable selfdir
-	    source [file join $selfdir sets_tcl.tcl]
-	    set r 1
-	}
-        default {
-            return -code error "invalid accelerator/impl. package $key:\
-                must be one of [join [KnownImplementations] {, }]"
-        }
-    }
-    set accel($key) $r
-    return $r
+namespace eval ::struct::set {
+    namespace export {[a-z]*}
+    namespace ensemble create
 }
 
-# ::struct::set::SwitchTo --
+# # ## ### ##### ######## ############# #####################
+## API
+
+# ::struct::set::empty --
 #
-#	Activates a loaded named implementation.
+#       Determines emptiness of the set
 #
-# Arguments:
-#	key	Name of the implementation to activate.
-#
-# Results:
-#	None.
-
-proc ::struct::set::SwitchTo {key} {
-    variable accel
-    variable loaded
-
-    if {[string equal $key $loaded]} {
-	# No change, nothing to do.
-	return
-    } elseif {![string equal $key ""]} {
-	# Validate the target implementation of the switch.
-
-	if {![info exists accel($key)]} {
-	    return -code error "Unable to activate unknown implementation \"$key\""
-	} elseif {![info exists accel($key)] || !$accel($key)} {
-	    return -code error "Unable to activate missing implementation \"$key\""
-	}
-    }
-
-    # Deactivate the previous implementation, if there was any.
-
-    if {![string equal $loaded ""]} {
-	rename ::struct::set ::struct::set_$loaded
-    }
-
-    # Activate the new implementation, if there is any.
-
-    if {![string equal $key ""]} {
-	rename ::struct::set_$key ::struct::set
-    }
-
-    # Remember the active implementation, for deactivation by future
-    # switches.
-
-    set loaded $key
-    return
-}
-
-proc ::struct::set::Loaded {} {
-    variable loaded
-    return  $loaded
-}
-
-# ::struct::set::Implementations --
-#
-#	Determines which implementations are
-#	present, i.e. loaded.
-#
-# Arguments:
-#	None.
+# Parameters:
+#       set	-- The set to check for emptiness.
 #
 # Results:
-#	A list of implementation keys.
+#       A boolean value. True indicates that the set is empty.
+#
+# Side effects:
+#       None.
+#
+# Notes:
 
-proc ::struct::set::Implementations {} {
-    variable accel
-    set res {}
-    foreach n [array names accel] {
-	if {!$accel($n)} continue
-	lappend res $n
+proc ::struct::set::empty {set} {
+    return [expr {![llength $set]}]
+}
+
+# ::struct::set::size --
+#
+#	Computes the cardinality of the set.
+#
+# Parameters:
+#	set	-- The set to inspect.
+#
+# Results:
+#       An integer greater than or equal to zero.
+#
+# Side effects:
+#       None.
+
+proc ::struct::set::size {set} {
+    return [llength [lsort -unique $set]]
+}
+
+# ::struct::set::contains --
+#
+#	Determines if the item is in the set.
+#
+# Parameters:
+#	set	-- The set to inspect.
+#	item	-- The element to look for.
+#
+# Results:
+#	A boolean value. True indicates that the element is present.
+#
+# Side effects:
+#       None.
+
+proc ::struct::set::contains {set item} {
+    return [expr {$item in $set}]
+}
+
+# ::struct::set::union --
+#
+#	Computes the union of the arguments.
+#
+# Parameters:
+#	args	-- List of sets to unify.
+#
+# Results:
+#	The union of the arguments.
+#
+# Side effects:
+#       None.
+
+proc ::struct::set::union {args} {
+    ::set result {}
+    foreach set $args {
+	lappend result {*}$args
+    }
+    return [lsort -unique $result]
+}
+
+# ::struct::set::intersect --
+#
+#	Computes the intersection of the arguments.
+#
+# Parameters:
+#	args	-- List of sets to intersect.
+#
+# Results:
+#	The intersection of the arguments
+#
+# Side effects:
+#       None.
+
+proc ::struct::set::intersect {args} {
+    switch -exact -- [llength $args] {
+	0 {return {}}
+	1 {return [lindex $args 0]}
+    }
+
+    foreach set [lassign $args res] {
+	::set res [Intersect $res $set]
+	# Quick bail out when we reach empty
+	if {![llength $res]} { return {} }
     }
     return $res
 }
 
-# ::struct::set::KnownImplementations --
+# ::struct::set::difference --
 #
-#	Determines which implementations are known
-#	as possible implementations.
+#	Compute difference of two sets.
 #
-# Arguments:
-#	None.
+# Parameters:
+#	A, B	-- Sets to compute the difference for.
 #
 # Results:
-#	A list of implementation keys. In the order
-#	of preference, most prefered first.
+#	A - B
+#
+# Side effects:
+#       None.
 
-proc ::struct::set::KnownImplementations {} {
-    return {critcl tcl}
-}
+proc ::struct::set::difference {A B} {
+    if {![llength $A]} {return {}}
+    if {![llength $B]} {return $A}
 
-proc ::struct::set::Names {} {
-    return {
-	critcl {tcllibc based}
-	tcl    {pure Tcl}
+    ::set A [lsort -unique $A]
+    ::set B [lsort -unique $B]
+
+    ::set res {}
+    foreach x $A {
+	if {$x in $B} continue
+	lappend res $x
     }
+    return $res
 }
 
-# ### ### ### ######### ######### #########
-## Initialization: Data structures.
+# ::struct::set::symdiff --
+#
+#	Compute symmetric difference of two sets.
+#
+# Parameters:
+#	A, B	-- The sets to compute the s.difference for.
+#
+# Results:
+#	The symmetric difference of the two input sets.
+#
+# Side effects:
+#       None.
 
-namespace eval ::struct::set {
-    variable  selfdir [file dirname [info script]]
-    variable  accel
-    array set accel   {tcl 0 critcl 0}
-    variable  loaded  {}
+proc ::struct::set::symdiff {A B} {
+    # symdiff == (A-B) + (B-A) == (A+B)-(A*B)
+    if {![llength $A]} {return $B}
+    if {![llength $B]} {return $A}
+    return [union \
+	    [difference $A $B] \
+	    [difference $B $A]]
 }
 
-# ### ### ### ######### ######### #########
-## Initialization: Choose an implementation,
-## most prefered first. Loads only one of the
-## possible implementations. And activates it.
+# ::struct::set::intersect3 --
+#
+#	Return intersection and differences for two sets.
+#
+# Parameters:
+#	A, B	-- The sets to inspect.
+#
+# Results:
+#	List containing A*B, A-B, and B-A
+#
+# Side effects:
+#       None.
 
-namespace eval ::struct::set {
-    variable e
-    foreach e [KnownImplementations] {
-	if {[LoadAccelerator $e]} {
-	    SwitchTo $e
-	    break
-	}
+proc ::struct::set::intersect3 {A B} {
+    return [list \
+	    [intersect  $A $B] \
+	    [difference $A $B] \
+	    [difference $B $A]]
+}
+
+# ::struct::set::equal --
+#
+#	Compares two sets for equality.
+#
+# Parameters:
+#	a	First set to compare.
+#	b	Second set to compare.
+#
+# Results:
+#	A boolean. True if the lists are equal.
+#
+# Side effects:
+#       None.
+
+proc ::struct::set::equal {A B} {
+    ::set A [lsort -unique $A]
+    ::set B [lsort -unique $B]
+
+    # Equal if of same cardinality and difference is empty.
+
+    if {[llength $A] != [llength $B]} {
+	return 0
     }
-    unset e
+    return [expr {![llength [difference $A $B]]}]
 }
 
-# ### ### ### ######### ######### #########
-## Ready
+
+# ::struct::set::include --
+#
+#	Add an element to a set.
+#
+# Parameters:
+#	Avar	-- Reference to the set variable to extend.
+#	element	-- The item to add to the set.
+#
+# Results:
+#	None.
+#
+# Side effects:
+#       The set in the variable referenced by Avar is extended
+#	by the element (if the element was not already present).
+
+proc ::struct::set::include {Avar element} {
+    # Avar = Avar + {element}
+    upvar 1 $Avar A
+    if {[info exists A] && ($element in $A)} return
+    lappend A $element
+    return
+}
+
+# ::struct::set::exclude --
+#
+#	Remove an element from a set.
+#
+# Parameters:
+#	Avar	-- Reference to the set variable to shrink.
+#	element	-- The item to remove from the set.
+#
+# Results:
+#	None.
+#
+# Side effects:
+#       The set in the variable referenced by Avar is shrunk,
+#	the element remove (if the element was actually present).
+
+proc ::struct::set::exclude {Avar element} {
+    # Avar = Avar - {element}
+    upvar 1 $Avar A
+    if {![info exists A]} {return -code error "can't read \"$Avar\": no such variable"}
+    while {[::set pos [lsearch -exact $A $element]] >= 0} {
+	::set A [lreplace [K $A [unset A]] $pos $pos]
+    }
+    return
+}
+
+# ::struct::set::add --
+#
+#	Add a set to a set. Similar to 'union', but the first argument
+#	is a variable.
+#
+# Parameters:
+#	Avar	-- Reference to the set variable to extend.
+#	B	-- The set to add to the set in Avar.
+#
+# Results:
+#	None.
+#
+# Side effects:
+#       The set in the variable referenced by Avar is extended
+#	by all the elements in B.
+
+proc ::struct::set::add {Avar B} {
+    # Avar = Avar + B
+    upvar 1 $Avar A
+    if {![info exists A]} {set A {}}
+    ::set A [union [K $A [unset A]] $B]
+    return
+}
+
+# ::struct::set::subtract --
+#
+#	Remove a set from a set. Similar to 'difference', but the first argument
+#	is a variable.
+#
+# Parameters:
+#	Avar	-- Reference to the set variable to shrink.
+#	B	-- The set to remove from the set in Avar.
+#
+# Results:
+#	None.
+#
+# Side effects:
+#       The set in the variable referenced by Avar is shrunk,
+#	all elements of B are removed.
+
+proc ::struct::set::subtract {Avar B} {
+    # Avar = Avar - B
+    upvar 1 $Avar A
+    if {![info exists A]} {return -code error "can't read \"$Avar\": no such variable"}
+    ::set A [difference [K $A [unset A]] $B]
+    return
+}
+
+# ::struct::set::subset --
+#
+#	A predicate checking if the first set is a subset
+#	or equal to the second set.
+#
+# Parameters:
+#	A	-- The possible subset.
+#	B	-- The set to compare to.
+#
+# Results:
+#	A boolean value, true if A is subset of or equal to B
+#
+# Side effects:
+#       None.
+
+proc ::struct::set::subset {A B} {
+    # A subset|== B <=> (A == A*B)
+    return [equal $A [intersect $A $B]]
+}
+
+proc ::struct::set::superset {A B} {
+    # A superset|== B <=> (B == A*B)
+    return [equal $B [intersect $A $B]]
+}
+
+# # ## ### ##### ######## ############# #####################
+## Helper commands.
+
+proc ::struct::set::K {x y} {::set x}
+
+proc ::struct::set::Intersect {A B} {
+    # Result is nothing if either input is nothing.
+    if {![llength $A]} {return {}}
+    if {![llength $B]} {return {}}
+
+    ::set A [lsort -unique $A]
+    ::set B [lsort -unique $B]
+
+    # Search the smaller set.
+    if {[llength $B] > [llength $A]} {
+	::set res $A
+	::set A $B
+	::set B $res
+    }
+
+    ::set res {}
+    foreach x $B {
+	if {$x ni $A} continue
+	lappend res $x
+    }
+    return $res
+}
+
+# # ## ### ##### ######## ############# #####################
+## Tcl level policy settings.
+#
+## Make the main command available as method under the larger
+## namespace.
 
 namespace eval ::struct {
-    # Export the constructor command.
     namespace export set
+    namespace ensemble create
 }
 
-package provide struct::set 2.2.3
+# # ## ### ##### ######## ############# #####################
+## Ready
+
+package provide struct::set 3
+return
+
+# # ## ### ##### ######## ############# #####################
