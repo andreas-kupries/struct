@@ -56,6 +56,74 @@ critcl::resulttype CSET {
 }
 
 # # ## ### ##### ######## ############# #####################
+## Helper functions for Tcl_Obj* as set elements.
+
+critcl::ccode {
+    static void*
+    SetDup (void const* e)
+    {
+	Tcl_Obj* o = e;
+	Tcl_IncrRefcount (o);
+	return e;
+    }
+
+    static void
+    SetFree (void const* e)
+    {
+	Tcl_Obj* o = e;
+	Tcl_DecrRefcount (o);
+    }
+
+    static int
+    SetCompare (void const* a, void const* b)
+    {
+	Tcl_Obj *objPtr1 = a;
+	Tcl_Obj *objPtr2 = b;
+	register const char *p1, *p2;
+	register int l1, l2;
+
+	/*
+	 * If the object pointers are the same then they match.
+	 */
+
+	if (objPtr1 == objPtr2) {
+	    return 0;
+	}
+
+	/*
+	 * Don't use Tcl_GetStringFromObj as it would prevent l1 and l2 being
+	 * in a register.
+	 */
+
+	p1 = TclGetString(objPtr1);
+	l1 = objPtr1->length;
+	p2 = TclGetString(objPtr2);
+	l2 = objPtr2->length;
+
+	/*
+	* Only compare if the string representations are of the same length.
+	*/
+
+	if (l1 < l2) {
+	    return -1;
+	} else if (l1 > l2) {
+	    return 1;
+	} else {
+	    for (;; p1++, p2++, l1--) {
+	       if (*p1 != *p2) {
+		   if (*p1 < *p2) {
+		       return -1;
+		   } else {
+		       return 1;
+		   }
+	       }
+	    }
+	    return 0;
+	}
+    }
+}
+
+# # ## ### ##### ######## ############# #####################
 ## API. Functional. Sideeffect-free.
 
 critcl::cproc ::struct::set::contains {CSET s Tcl_Obj* element} boolean {
