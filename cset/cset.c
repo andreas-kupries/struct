@@ -72,7 +72,7 @@ cset_size (const CSET s)
 }
 
 int
-cset_equal (const CSET a, const set B)
+cset_equal (const CSET a, const CSET b)
 {
     /* A == B <=> A subset B && |A| == |B| */
 
@@ -82,7 +82,7 @@ cset_equal (const CSET a, const set B)
 }
 
 int
-cset_subset (const CSET a, const set B)
+cset_subset (const CSET a, const CSET b)
 {
     /* A subset of B <=> empty (A - B)
      */
@@ -94,7 +94,7 @@ cset_subset (const CSET a, const set B)
 }
 
 int
-cset_superset (const CSET a, const set B)
+cset_superset (const CSET a, const CSET b)
 {
     /* A superset of B <=> empty (B - A)
      */
