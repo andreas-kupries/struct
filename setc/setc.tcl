@@ -39,25 +39,72 @@ critcl::api import c::set 1
 
 critcl::tsources policy.tcl
 
-## TODO: Tcl_ObjType for CSET, then result and argument types for cproc's
+# # ## ### ##### ######## ############# #####################
+## Tcl_ObjType for CSET.
+
+critcl::csources objtype.c
+critcl::cheaders objtype.h
+critcl::ccode {#include <objtype.h>}
+
+critcl::argtype CSET {
+    if (setc_get (interp, @@, &@A) != TCL_OK) { return TCL_ERROR; }
+}
+
+critcl::resulttype CSET {
+    Tcl_SetObjResult (interp, setc_new (rv));
+    return TCL_OK;
+}
 
 # # ## ### ##### ######## ############# #####################
 ## API. Functional. Sideeffect-free.
 
-critcl::cproc ::struct::set::contains {CSET S Tcl_Obj* element} boolean {
+critcl::cproc ::struct::set::contains {CSET s Tcl_Obj* element} boolean {
+    return cset_contains (s, element);
 }
 
 critcl::ccommand ::struct::set::create {} {
-    CSET s = cset_create (SetFree, SetEqual, 0);
+    /* Syntax: create item... */
+
+    CSET s = cset_create (SetDup, SetFree, SetCompare, 0);
     int i;
-    /* convenience function list -> set */
-    for (i=2;i<objc;i++) {
-      cset_vadd (s, objv[i]);
+
+    /* TODO: convenience function list -> set */
+    for (i=1;i<objc;i++) {
+	  cset_vadd (s, objv[i]);
     }
-    return s;
+
+    Tcl_SetObjResult (interp, setc_new (s));
+    return TCL_OK;
 }
 
 critcl::ccommand ::struct::set::difference {} {
+    /* Syntax: difference A B... */
+
+    int i;
+    CSET a, b;
+
+    if (objc < 2) {
+	Tcl_WrongNumArgs (interp, 1, objv, "S args");
+	return TCL_ERROR;
+    }
+
+    for (i = 1; i < objc; i++) {
+	if (setc_get (interp, objv[i], &a) != TCL_OK) {
+	    return TCL_ERROR;
+	}
+    }
+
+    setc_get (interp, objv [1], &a);
+    a = cset_dup (a);
+
+    for (i = 2; i < objc; i++) {
+	setc_get (interp, objv [i], &b);
+	cset_vdifference (a, b);
+	if (cset_empty (a)) break;
+    }
+
+    Tcl_SetObjResult (interp, setc_new (a));
+    return TCL_OK;
 }
 
 critcl::cproc ::struct::set::empty {CSET s} int {
@@ -69,21 +116,99 @@ critcl::cproc ::struct::set::equal {CSET a CSET b} boolean {
 }
 
 critcl::ccommand ::struct::set::exclude {} {
+    /* Syntax: exclude A item... */
+
+    int i;
+    CSET a;
+
+    if (objc < 2) {
+	Tcl_WrongNumArgs (interp, 1, objv, "S args");
+	return TCL_ERROR;
+    }
+
+    if (setc_get (interp, objv[1], &a) != TCL_OK) {
+	return TCL_ERROR;
+    }
+
+    a = cset_dup (a);
+    for (i = 2; i < objc; i++) {
+	cset_vsubtract (a, objv [i]);
+	if (cset_empty (a)) break;
+    }
+
+    Tcl_SetObjResult (interp, setc_new (a));
+    return TCL_OK;
 }
 
 critcl::ccommand ::struct::set::include {} {
+    /* Syntax: include A item... */
+
+    int i;
+    CSET a;
+
+    if (objc < 2) {
+	Tcl_WrongNumArgs (interp, 1, objv, "S args");
+	return TCL_ERROR;
+    }
+
+    if (setc_get (interp, objv[1], &a) != TCL_OK) {
+	return TCL_ERROR;
+    }
+
+    a = cset_dup (a);
+
+    for (i = 2; i < objc; i++) {
+	cset_vadd (a, objv [i]);
+    }
+
+    Tcl_SetObjResult (interp,setc_new (a));
+    return TCL_OK;
 }
 
 critcl::ccommand ::struct::set::intersect {} {
+    /* Syntax: intersect A?... */
+
+    int i;
+    CSET a, b;
+
+    if (objc == 0) {
+	return TCL_OK;
+    }
+    if (objc == 1) {
+	Tcl_SetObjResult (interp, objv [1] );
+	return TCL_OK;
+    }
+
+    for (i = 1; i < objc; i++) {
+	if (setc_get (interp, objv[i], &a) != TCL_OK) {
+	    return TCL_ERROR;
+	}
+    }
+
+    setc_get (interp, objv [1], &a);
+    a = cset_dup (a);
+
+    for (i = 2; i < objc; i++) {
+	setc_get (interp, objv [i], &b);
+	cset_vintersect (a, b);
+	if (cset_empty (a)) break;
+    }
+
+    Tcl_SetObjResult (interp, setc_new (a));
+    return TCL_OK;
 }
 
 critcl::cproc ::struct::set::intersect3 {CSET a CSET b} Tcl_Obj* {
     CSET da = cset_difference (a, b);
     CSET i  = cset_intersect  (a, b);
     CSET db = cset_difference (b, a);
+    Tcl_Obj* v [3];
 
-    // list, ... 3
-    return ... ;
+    v[0] =  setc_new (i);
+    v[1] =  setc_new (da);
+    v[2] =  setc_new (db);
+
+    return Tcl_NewListObj (3, v);
 }
 
 critcl::cproc ::struct::set::size {CSET s} int {
@@ -103,21 +228,53 @@ critcl::cproc ::struct::set::symdifference {CSET a CSET b} CSET {
 }
 
 critcl::ccommand ::struct::set::union {} {
+    /* Syntax: union A?... */
+
+    int i;
+    CSET r, b;
+
+    if (objc == 0) {
+	return TCL_OK;
+    }
+    if (objc == 1) {
+	Tcl_SetObjResult (interp, objv [1] );
+	return TCL_OK;
+    }
+
+    for (i = 1; i < objc; i++) {
+	if (setc_get (interp, objv[i], &b) != TCL_OK) {
+	    return TCL_ERROR;
+	}
+    }
+
+    r = cset_create (SetDup, SetFree, SetCompare, 0);
+    for (i = 1; i < objc; i++) {
+	setc_get (interp, objv [i], &b);
+	cset_vunion (r, b);
+    }
+
+    Tcl_SetObjResult (interp, setc_new (r));
+    return TCL_OK;
 }
 
 # # ## ### ##### ######## ############# #####################
 ## API. Imperative.
 
 critcl::ccommand ::struct::set::add {} {
+    /* Syntax: add Svar A?... */
+
 }
 
 critcl::ccommand ::struct::set::set {} {
+    /* Syntax: add Svar item?... */
 }
 
 critcl::ccommand ::struct::set::subtract {} {
+    /* Syntax: subtract Svar A?... */
 }
 
 critcl::ccommand ::struct::set::unset {} {
+    /* Syntax: subtract Svar item?... */
 }
 
 # # ## ### ##### ######## ############# #####################
