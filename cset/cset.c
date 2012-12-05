@@ -5,8 +5,6 @@
  * TODO: Add assertions in each operator that the sets match structurally
  * (identical dup, rel, cmp functions).
  *
- * TODO: Check for identital sets by pointer/handle and optimize on that.
- *
  * = = == === ===== ======== ============= =====================
  * Client data management.
  */
@@ -103,8 +101,9 @@ cset_equal (const CSET a, const CSET b)
     /* A == B <=> A subset B && |A| == |B| */
 
     return
-	(jsw_size (a->set) == jsw_size (b->set)) &&
-	cset_subset (a, b);
+	(a == b) ||
+	((jsw_size (a->set) == jsw_size (b->set)) &&
+	 cset_subset (a, b));
 }
 
 int
@@ -113,10 +112,13 @@ cset_subset (const CSET a, const CSET b)
     /* A subset of B <=> empty (A - B)
      */
 
-    CSET ab = cset_difference (a, b);
-    int empty = cset_empty (ab);
-    cset_destroy (ab);
-    return empty;
+    if (a != b) {
+	CSET ab = cset_difference (a, b);
+	int empty = cset_empty (ab);
+	cset_destroy (ab);
+	return empty;
+    }
+    return 1;
 }
 
 int
@@ -125,10 +127,13 @@ cset_superset (const CSET a, const CSET b)
     /* A superset of B <=> empty (B - A)
      */
 
-    CSET ba = cset_difference (b, a);
-    int empty = cset_empty (ba);
-    cset_destroy (ba);
-    return empty;
+    if (a != b) {
+	CSET ba = cset_difference (b, a);
+	int empty = cset_empty (ba);
+	cset_destroy (ba);
+	return empty;
+    }
+    return 1;
 }
 
 /*
@@ -164,8 +169,12 @@ cset_difference (const CSET a, const CSET b)
      *
      * Shortcuts: Nothing - B = Nothing.
      *            A - Nothing = A.
+     *            A == B => Nothing
      */
 
+    if (a == b) {
+	return cset_create (a->dup, a->release, a->compare, 0);
+    }
     if (jsw_size (a->set) == 0) return cset_dup (a);
     if (jsw_size (b->set) == 0) return cset_dup (a);
 
@@ -199,6 +208,9 @@ cset_intersect (const CSET a, const CSET b)
      *            A * Nothing = Nothing.
      */
 
+    if (a == b) {
+	return cset_dup (a);
+    }
     if (jsw_size (a->set) == 0) return cset_dup (a);
     if (jsw_size (b->set) == 0) return cset_dup (b);
 
@@ -239,16 +251,25 @@ cset_symdiff (const CSET a, const CSET b)
 {
     /* Z = (A - B) + (B - A)
      * 
+     * (A == B) => Z = nothing
+     *
      * For simplicity we call on the existing operations instead of trying to
      * program it directly.
      */
 
-    CSET ab = cset_difference (a, b);
-    CSET ba = cset_difference (b, a);
-    CSET r  = cset_union (ab, ba);
+    CSET r;
 
-    cset_destroy (ab);
-    cset_destroy (ba);
+    if (a == b) {
+	r = cset_create (a->dup, a->release, a->compare, 0);
+    } else {
+	CSET ab = cset_difference (a, b);
+	CSET ba = cset_difference (b, a);
+
+        r  = cset_union (ab, ba);
+
+	cset_destroy (ab);
+	cset_destroy (ba);
+    }
 
     return r;
 }
@@ -260,7 +281,12 @@ cset_union (const CSET a, const CSET b)
      *
      * Shortcuts: Nothing + B = B.
      *            A + Nothing = A.
+     * (A ==B) => Z = A;
      */
+
+    if (a == b) {
+	return cset_dup (a);
+    }
 
     if (jsw_size (a->set) == 0) return cset_dup (b);
     if (jsw_size (b->set) == 0) return cset_dup (a);
@@ -285,8 +311,8 @@ cset_union (const CSET a, const CSET b)
 	    if (jsw_find (r->set, item)) continue;
 	    jsw_insert (r->set, item);
 	}
-	jsw_tdelete (t);
 
+	jsw_tdelete (t);
 	return r;
     }
 }
@@ -304,6 +330,7 @@ cset_vdifference (CSET a, const CSET b)
      *
      * Shortcuts: Nothing - B = Nothing.
      *            A - Nothing = A.
+     *            A == B => Nothing
      */
 
     if (jsw_size (a->set) == 0) return;
@@ -312,7 +339,11 @@ cset_vdifference (CSET a, const CSET b)
     /* Full work required. Traverse B and remove its elements from A.
      */
 
-    {
+    if (a == b) {
+	jsw_tree_t* r = jsw_new (a->compare, a->dup, a->release);
+	jsw_delete (a->set);
+	a->set = r;
+    } else {
 	jsw_trav_t* t = jsw_tnew ();
 	void* item;
 
@@ -333,8 +364,10 @@ cset_vintersect (CSET a, const CSET b)
      *
      * Shortcuts: Nothing * B = Nothing.
      *            A * Nothing = Nothing
+     *            A == B => no change
      */
 
+    if (a == b) return;
     if (jsw_size (a->set) == 0) return;
 
     if (jsw_size (b->set) == 0) {
@@ -374,21 +407,29 @@ cset_vsymdiff (CSET a, const CSET b)
      *
      * For simplicity we call on the existing operations instead of trying to
      * program it directly. At the end we switch trees to modify A
+     *
+     * (A == B) => Nothing
      */
 
-    CSET ab = cset_difference (a, b);
-    CSET ba = cset_difference (b, a);
-    CSET r  = cset_union (ab, ba);
-    jsw_tree_t* tmp;
+    if (a == b) {
+	jsw_tree_t* r = jsw_new (a->compare, a->dup, a->release);
+	jsw_delete (a->set);
+	a->set = r;
+    } else {
+	CSET ab = cset_difference (a, b);
+	CSET ba = cset_difference (b, a);
+	CSET r  = cset_union (ab, ba);
+	jsw_tree_t* tmp;
 
-    cset_destroy (ab);
-    cset_destroy (ba);
+	cset_destroy (ab);
+	cset_destroy (ba);
 
-    tmp    = a->set;
-    a->set = r->set;
-    r->set = tmp;
+	tmp    = a->set;
+	a->set = r->set;
+	r->set = tmp;
 
-    cset_destroy (r); /* This now destroys the old A */
+	cset_destroy (r); /* This now destroys the old A */
+    }
 }
 
 void
@@ -397,9 +438,11 @@ cset_vunion (CSET a, const CSET b)
     /* A = A + B
      *
      * Shortcuts: A + Nothing = A.
+     *            (A == B) => no change
      */
 
-    if (jsw_size (b->set) == 0);
+    if (a == b) return;
+    if (jsw_size (b->set) == 0) return;
 
     /* Full work required. Traverse B and add its elements to A.
      */

@@ -7,17 +7,12 @@
 #include <c_set/c_setDecls.h>
 
 /* Unboxing and boxing of CSET values in Tcl_Obj*
+ * Creation of an empty set value.
  */
 
-int      setc_get (Tcl_Interp* interp, Tcl_Obj* o, CSET* s);
-Tcl_Obj* setc_new (CSET s);
-
-/* Helper functions for CSET's containing Tcl_Obj* keys.
- */
-
-void* setc_dup     (void const* a);
-void  setc_free    (void* a);
-int   setc_compare (void const* a, void const* b);
+int      setc_get   (Tcl_Interp* interp, Tcl_Obj* o, CSET* s);
+Tcl_Obj* setc_new   (CSET s);
+CSET     setc_empty (void);
 
 #endif /* _STRUCT_SET_OBJTYPE_H */
 

@@ -66,7 +66,7 @@ critcl::cproc ::struct::set::contains {CSET s Tcl_Obj* element} boolean {
 critcl::ccommand ::struct::set::create {} {
     /* Syntax: create item... */
 
-    CSET s = cset_create (setc_dup, setc_free, setc_compare, 0);
+    CSET s = setc_empty ();
     int i;
 
     /* TODO: convenience function list -> set */
@@ -82,7 +82,7 @@ critcl::ccommand ::struct::set::difference {} {
     /* Syntax: difference A B... */
 
     int i;
-    CSET a, b;
+    CSET z, a, b;
 
     if (objc < 2) {
 	Tcl_WrongNumArgs (interp, 1, objv, "s ...");
@@ -95,21 +95,24 @@ critcl::ccommand ::struct::set::difference {} {
 	}
     }
 
-    /* TODO: Possible optimization:
-    ** If there is a B == A (as handles),
-    ** then A - B = nothing and we can bail out early
-    */
-
     setc_get (interp, objv [1], &a);
-    a = cset_dup (a);
+    z = cset_dup (a);
 
     for (i = 2; i < objc; i++) {
 	setc_get (interp, objv [i], &b);
-	cset_vdifference (a, b);
-	if (cset_empty (a)) break;
+
+	if (b == a) {
+	    /* Result just became empty */
+	    cset_destroy (z);
+	    z = setc_empty ();
+	    break;
+	}
+
+	cset_vdifference (z, b);
+	if (cset_empty (z)) break;
     }
 
-    Tcl_SetObjResult (interp, setc_new (a));
+    Tcl_SetObjResult (interp, setc_new (z));
     return TCL_OK;
 }
 
@@ -178,7 +181,7 @@ critcl::ccommand ::struct::set::intersect {} {
     /* Syntax: intersect A?... */
 
     int i;
-    CSET a, b;
+    CSET z, a, b;
 
     if (objc == 1) {
 	return TCL_OK;
@@ -194,34 +197,40 @@ critcl::ccommand ::struct::set::intersect {} {
 	}
     }
 
-    /* TODO: Possible optimization:
-    ** If there is a B == A (as handles),
-    ** then A * B = A and we ignore this B.
-    */
-
     setc_get (interp, objv [1], &a);
-    a = cset_dup (a);
+    z = cset_dup (a);
 
     for (i = 2; i < objc; i++) {
 	setc_get (interp, objv [i], &b);
-	cset_vintersect (a, b);
-	if (cset_empty (a)) break;
+
+	/* Ignore an identical set, it has no effect */
+	if (b == a) continue;
+
+	cset_vintersect (z, b);
+	if (cset_empty (z)) break;
     }
 
-    Tcl_SetObjResult (interp, setc_new (a));
+    Tcl_SetObjResult (interp, setc_new (z));
     return TCL_OK;
 }
 
 critcl::cproc ::struct::set::intersect3 {CSET a CSET b} Tcl_Obj* {
-    CSET da = cset_difference (a, b);
-    CSET i  = cset_intersect  (a, b);
-    CSET db = cset_difference (b, a);
     Tcl_Obj* v [3];
     Tcl_Obj* r;
 
-    v[0] =  setc_new (i);
-    v[1] =  setc_new (da);
-    v[2] =  setc_new (db);
+    if (a == b) {
+	v[0] = setc_new (cset_dup (a));
+	v[1] = setc_new (setc_empty ());
+	v[2] = v[1];
+
+	/* v[1] could be made better if we
+	** had access to the Tcl_Obj* for a.
+	*/
+    } else {
+	v[0] = setc_new (cset_intersect  (a, b));
+	v[1] = setc_new (cset_difference (a, b));
+	v[2] = setc_new (cset_difference (b, a));
+    }
 
     r = Tcl_NewListObj (3, v);
     Tcl_IncrRefCount (r);
@@ -248,7 +257,7 @@ critcl::ccommand ::struct::set::union {} {
     /* Syntax: union A?... */
 
     int i;
-    CSET r, b;
+    CSET z, a, b;
 
     if (objc == 1) {
 	return TCL_OK;
@@ -264,18 +273,19 @@ critcl::ccommand ::struct::set::union {} {
 	}
     }
 
-    /* TODO: Possible optimization:
-    ** If there is a B == A (as handles),
-    ** then A + B = A and we ignore this B.
-    */
+    setc_get (interp, objv [1], &a);
+    z = cset_dup (a);
 
-    r = cset_create (setc_dup, setc_free, setc_compare, 0);
-    for (i = 1; i < objc; i++) {
+    for (i = 2; i < objc; i++) {
 	setc_get (interp, objv [i], &b);
-	cset_vunion (r, b);
+
+	/* Ignore an identical set, it has no effect */
+	if (b == a) continue;
+
+	cset_vunion (z, b);
     }
 
-    Tcl_SetObjResult (interp, setc_new (r));
+    Tcl_SetObjResult (interp, setc_new (z));
     return TCL_OK;
 }
 
@@ -287,7 +297,7 @@ critcl::ccommand ::struct::set::add {} {
 
     Tcl_Obj* varname;
     Tcl_Obj* s_boxed;
-    CSET     s, b;
+    CSET     s, sorig, b;
     int      i;
 
     if (objc < 2) {
@@ -310,12 +320,16 @@ critcl::ccommand ::struct::set::add {} {
     s_boxed = Tcl_ObjGetVar2 (interp, varname, 0, 0);
 
     if (!s_boxed) {
-	s       = cset_create (setc_dup, setc_free, setc_compare, 0);
+	s       = setc_empty ();
 	s_boxed = setc_new (s);
+	sorig   = s;
 
     } else {
 	int dup = 0;
 	if (Tcl_IsShared (s_boxed)) {
+	    if (setc_get (interp, s_boxed, &sorig) != TCL_OK) {
+		return TCL_ERROR;
+	    }
 	    s_boxed = Tcl_DuplicateObj (s_boxed);
 	    dup = 1;
 	}
@@ -326,11 +340,17 @@ critcl::ccommand ::struct::set::add {} {
 
 	if (dup) {
 	    Tcl_InvalidateStringRep (s_boxed);
+	} else {
+	    sorig = s;
 	}
     }
 
     for (i = 2; i < objc; i++) {
 	setc_get (interp, objv[i], &b);
+
+	/* Ignore an identical set, it has no effect */
+	if (b == sorig) continue;
+
 	cset_vunion (s, b);
     }
 
@@ -364,7 +384,7 @@ critcl::ccommand ::struct::set::set {} {
     s_boxed = Tcl_ObjGetVar2 (interp, varname, 0, 0);
 
     if (!s_boxed) {
-	s       = cset_create (setc_dup, setc_free, setc_compare, 0);
+	s       = setc_empty ();
 	s_boxed = setc_new (s);
 
     } else {
@@ -400,7 +420,7 @@ critcl::ccommand ::struct::set::subtract {} {
 
     Tcl_Obj* varname;
     Tcl_Obj* s_boxed;
-    CSET     s, b;
+    CSET     s, sorig, b;
     int      i, dup;
 
     if (objc < 2) {
@@ -427,6 +447,9 @@ critcl::ccommand ::struct::set::subtract {} {
 
     dup = 0;
     if (Tcl_IsShared (s_boxed)) {
+	if (setc_get (interp, s_boxed, &sorig) != TCL_OK) {
+	    return TCL_ERROR;
+	}
 	s_boxed = Tcl_DuplicateObj (s_boxed);
 	dup = 1;
     }
@@ -435,18 +458,26 @@ critcl::ccommand ::struct::set::subtract {} {
 	return TCL_ERROR;
     }
 
+    if (dup) {
+	Tcl_InvalidateStringRep (s_boxed);
+    } else {
+	sorig = s;
+    }
+
     for (i = 2; i < objc; i++) {
 	setc_get (interp, objv[i], &b);
+
+	if (b == sorig) {
+	    Tcl_DecrRefCount (s_boxed);
+	    s_boxed = setc_new (setc_empty ());
+	    break;
+	}
 	cset_vdifference (s, b);
 	if (cset_empty (s)) break;
     }
 
     if (!Tcl_ObjSetVar2 (interp, varname, 0, s_boxed, TCL_LEAVE_ERR_MSG)) {
 	return TCL_ERROR;
-    }
-
-    if (dup) {
-	Tcl_InvalidateStringRep (s_boxed);
     }
     return TCL_OK;
 }

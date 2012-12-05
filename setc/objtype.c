@@ -21,6 +21,21 @@ Tcl_ObjType cset_objtype = {
     cset_objtype_from
 };
 
+/* Helper functions for CSET's containing Tcl_Obj* keys.
+ */
+
+static void* setc_dup     (void const* a);
+static void  setc_free    (void* a);
+static int   setc_compare (void const* a, void const* b);
+
+/* .................................................. */
+
+CSET
+setc_empty ()
+{
+    return cset_create (setc_dup, setc_free, setc_compare, 0);
+}
+
 /* .................................................. */
 
 int
@@ -185,7 +200,7 @@ cset_objtype_from (Tcl_Interp* ip, Tcl_Obj* obj)
 
     /* Gen CSET from list */
 
-    s = cset_create (setc_dup, setc_free, setc_compare, 0);
+    s = setc_empty ();
 
     for (i=0; i < lc; i++) {
 	cset_vadd (s, lv[i]);
@@ -208,7 +223,7 @@ cset_objtype_from (Tcl_Interp* ip, Tcl_Obj* obj)
 
 /* .................................................. */
 
-void*
+static void*
 setc_dup (void const* e)
 {
     Tcl_Obj* o = (Tcl_Obj*) e;
@@ -216,14 +231,14 @@ setc_dup (void const* e)
     return (void*) e;
 }
 
-void
+static void
 setc_free (void* e)
 {
     Tcl_Obj* o = e;
     Tcl_DecrRefCount (o);
 }
 
-int
+static int
 setc_compare (void const* a, void const* b)
 {
     Tcl_Obj *objPtr1 = (Tcl_Obj*) a;
