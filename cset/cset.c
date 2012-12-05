@@ -5,6 +5,8 @@
  * TODO: Add assertions in each operator that the sets match structurally
  * (identical dup, rel, cmp functions).
  *
+ * TODO: Check for identital sets by pointer/handle and optimize on that.
+ *
  * = = == === ===== ======== ============= =====================
  * Client data management.
  */

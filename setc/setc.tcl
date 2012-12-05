@@ -95,6 +95,11 @@ critcl::ccommand ::struct::set::difference {} {
 	}
     }
 
+    /* TODO: Possible optimization:
+    ** If there is a B == A (as handles),
+    ** then A - B = nothing and we can bail out early
+    */
+
     setc_get (interp, objv [1], &a);
     a = cset_dup (a);
 
@@ -113,7 +118,10 @@ critcl::cproc ::struct::set::empty {CSET s} int {
 }
 
 critcl::cproc ::struct::set::equal {CSET a CSET b} boolean {
-    return cset_equal (a, b);
+    /* Optimization: (a == b) as handles */
+    return (a == b) 
+	   ? 1
+           : cset_equal (a, b);
 }
 
 critcl::ccommand ::struct::set::exclude {} {
@@ -186,6 +194,11 @@ critcl::ccommand ::struct::set::intersect {} {
 	}
     }
 
+    /* TODO: Possible optimization:
+    ** If there is a B == A (as handles),
+    ** then A * B = A and we ignore this B.
+    */
+
     setc_get (interp, objv [1], &a);
     a = cset_dup (a);
 
@@ -250,6 +263,11 @@ critcl::ccommand ::struct::set::union {} {
 	    return TCL_ERROR;
 	}
     }
+
+    /* TODO: Possible optimization:
+    ** If there is a B == A (as handles),
+    ** then A + B = A and we ignore this B.
+    */
 
     r = cset_create (setc_dup, setc_free, setc_compare, 0);
     for (i = 1; i < objc; i++) {
