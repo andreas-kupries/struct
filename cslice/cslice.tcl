@@ -50,6 +50,7 @@ critcl::cheaders   csliceInt.h
 # - Convenience functions: To and from Tcl "list" Tcl_Obj.
 
 critcl::api function CSLICE     cslice_create    {{long int} cc void** cv}
+critcl::api function CSLICE     cslice_make      {{long int} cc}
 critcl::api function void       cslice_destroy   {CSLICE s}
 critcl::api function void       cslice_get       {CSLICE s {long int *} cc void*** cv}
 critcl::api function CSLICE     cslice_reverse   {CSLICE s}
@@ -80,6 +81,19 @@ critcl::ccode {
 
 	s->cell    = cv;
 	s->dynamic = 0;
+	return s;
+    }
+
+    CSLICE
+    cslice_make ( long int cc )
+    {
+	CSLICE s = ALLOC (CSLICE_);
+
+	s->cell = NALLOC (cc, void*);
+	ASSERT (s->cell, "Allocation failure");
+
+	s->n       = cc;
+	s->dynamic = 1;
 	return s;
     }
 
