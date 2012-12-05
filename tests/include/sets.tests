@@ -44,15 +44,15 @@ test set-1.1 {bad method} -body {
 
 test set-2.0 {contains, wrong#args, not enough} -body {
     struct set contains
-} -returnCodes error -result [Wrong contains {S element} 0]
+} -returnCodes error -result [Wrong contains {s element} 0]
 
 test set-2.1 {contains, wrong#args, not enough} -body {
     struct set contains S
-} -returnCodes error -result [Wrong contains {S element} 1]
+} -returnCodes error -result [Wrong contains {s element} 1]
 
 test set-2.2 {contains, wrong#args, too many} -body {
     struct set contains S E bogus
-} -returnCodes error -result [TooMany contains {S element}]
+} -returnCodes error -result [TooMany contains {s element}]
 
 test set-2.3 {contains, yes} -body {
     struct set contains {x y A z x} A
@@ -80,7 +80,7 @@ test set-3.2 {create, input duplicate-free} -body {
 
 test set-4.0 {difference, wrong#args, not enough} -body {
     struct set difference
-} -returnCodes error -result [Wrong difference {S ...} 0]
+} -returnCodes error -result [Wrong difference {s ...} 0]
 
 test set-4.1 {difference, single set unchanged} -body {
     struct set difference {a b c}
@@ -133,11 +133,11 @@ test set-4.10 {difference} -body {
 
 test set-5.0 {empty, wrong#args, not enough} -body {
     struct set empty
-} -returnCodes error -result [Wrong empty {S} 0]
+} -returnCodes error -result [Wrong empty {s} 0]
 
 test set-5.1 {empty, wrong#args, too many} -body {
     struct set empty a b
-} -returnCodes error -result [TooMany empty {S}]
+} -returnCodes error -result [TooMany empty {s}]
 
 test set-5.2 {empty} -body {
     struct set empty $sempty
@@ -155,15 +155,15 @@ test set-5.4 {empty} -body {
 
 test set-6.0 {equal, wrong#args, not enough} -body {
     struct set equal
-} -returnCodes error -result [Wrong equal {A B} 0]
+} -returnCodes error -result [Wrong equal {a b} 0]
 
 test set-6.1 {equal, wrong#args, not enough} -body {
     struct set equal A
-} -returnCodes error -result [Wrong equal {A B} 1]
+} -returnCodes error -result [Wrong equal {a b} 1]
 
 test set-6.2 {equal, wrong#args, too many} -body {
    struct set equal a b c
-} -returnCodes error -result [TooMany equal {A B}]
+} -returnCodes error -result [TooMany equal {a b}]
 
 test set-6.3 {equal} -body {
     struct set equal $sempty $sempty
@@ -197,7 +197,7 @@ test set-6.9 {equal} -body {
 
 test set-7.0 {exclude, wrong#args, not enough} -body {
     struct set exclude
-} -returnCodes error -result [Wrong exclude {S ...} 0]
+} -returnCodes error -result [Wrong exclude {s ...} 0]
 
 test set-7.1 {exclude, just set} -body {
     lsort [struct set exclude {c a b c}]
@@ -211,7 +211,7 @@ test set-7.2 {exclude} -body {
 
 test set-8.0 {include, wrong#args, not enough} -body {
     struct set include
-} -returnCodes error -result [Wrong include {S ...} 0]
+} -returnCodes error -result [Wrong include {s ...} 0]
 
 test set-8.1 {include, just set} -body {
     lsort [struct set include {c a b c}]
@@ -283,15 +283,15 @@ test set-9.13 {intersect} -body {
 
 test set-10.0 {intersect3, wrong#args, not enough} -body {
     struct set intersect3
-} -returnCodes error -result [Wrong intersect3 {A B} 0]
+} -returnCodes error -result [Wrong intersect3 {a b} 0]
 
 test set-10.1 {intersect3, wrong#args, not enough} -body {
     struct set intersect3 a
-} -returnCodes error -result [Wrong intersect3 {A B} 1]
+} -returnCodes error -result [Wrong intersect3 {a b} 1]
 
 test set-10.2 {intersect3, wrong#args, too many} -body {
     struct set intersect3 a b c
-} -returnCodes error -result [TooMany intersect3 {A B}]
+} -returnCodes error -result [TooMany intersect3 {a b}]
 
 test set-10.3 {intersect3} -body {
     foreach {i da db} [struct set intersect3 $sa $sempty] break
@@ -332,11 +332,11 @@ test set-10.9 {intersect3} -body {
 
 test set-11.0 {size, wrong#args, not enough} -body {
     struct set size
-} -returnCodes error -result [Wrong size {S} 0]
+} -returnCodes error -result [Wrong size {s} 0]
 
 test set-11.1 {size, wrong#args, too many} -body {
     struct set size a b
-} -returnCodes error -result [TooMany size {S}]
+} -returnCodes error -result [TooMany size {s}]
 
 test set-11.2 {size} -body {
     struct set size $sempty
@@ -354,15 +354,15 @@ test set-11.4 {size} -body {
 
 test set-12.0 {subset, wrong#args, not enough} -body {
     struct set subset
-} -returnCodes error -result [Wrong subset {A B} 0]
+} -returnCodes error -result [Wrong subset {a b} 0]
 
 test set-12.1 {subset, wrong#args, not enough} -body {
     struct set subset A
-} -returnCodes error -result [Wrong subset {A B} 1]
+} -returnCodes error -result [Wrong subset {a b} 1]
 
 test set-12.2 {subset, wrong#args, too many} -body {
     struct set subset A B C
-} -returnCodes error -result [Wrong subset {A B} 1]
+} -returnCodes error -result [Wrong subset {a b} 1]
 
 test set-12.3 {subset} -body {
     struct set subset $sa $sb
@@ -384,15 +384,15 @@ test set-12.6 {subset} -body {
 
 test set-13.0 {superset, wrong#args, not enough} -body {
     struct set superset
-} -returnCodes error -result [Wrong superset {A B} 0]
+} -returnCodes error -result [Wrong superset {a b} 0]
 
 test set-13.1 {superset, wrong#args, not enough} -body {
     struct set superset A
-} -returnCodes error -result [Wrong superset {A B} 1]
+} -returnCodes error -result [Wrong superset {a b} 1]
 
 test set-13.2 {superset, wrong#args, too many} -body {
     struct set superset A B C
-} -returnCodes error -result [Wrong superset {A B} 1]
+} -returnCodes error -result [Wrong superset {a b} 1]
 
 test set-13.3 {superset} -body {
     struct set superset $sa $sb
@@ -414,15 +414,15 @@ test set-13.6 {superset} -body {
 
 test set-14.0 {symdifference, wrong#args, not enough} -body {
     struct set symdifference
-} -returnCodes error -result [Wrong symdifference {A B} 0]
+} -returnCodes error -result [Wrong symdifference {a b} 0]
 
 test set-14.1 {symdifference, wrong#args, not enough} -body {
     struct set symdifference a
-} -returnCodes error -result [Wrong symdifference {A B} 1]
+} -returnCodes error -result [Wrong symdifference {a b} 1]
 
 test set-14.2 {symdifference, wrong#args, too many} -body {
     struct set symdifference a b c
-} -returnCodes error -result [TooMany symdifference {A B}]
+} -returnCodes error -result [TooMany symdifference {a b}]
 
 test set-14.3 {symdifference} -body {
     lsort [struct set symdifference $sa $sempty]
