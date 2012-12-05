@@ -258,15 +258,14 @@ setc_compare (void const* a, void const* b)
     } else if (l1 > l2) {
 	return 1;
     } else {
-	for (;; p1++, p2++, l1--) {
-	    if (*p1 != *p2) {
-		if (*p1 < *p2) {
-		    return -1;
-		} else {
-		    return 1;
-		}
+	for (;l1; p1++, p2++, l1--) {
+	    if (*p1 < *p2) {
+		return -1;
+	    } else if (*p1 > *p2) {
+		return 1;
 	    }
 	}
+
 	return 0;
     }
 }
