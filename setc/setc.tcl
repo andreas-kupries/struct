@@ -85,7 +85,7 @@ critcl::ccommand ::struct::set::difference {} {
     CSET a, b;
 
     if (objc < 2) {
-	Tcl_WrongNumArgs (interp, 1, objv, "S args");
+	Tcl_WrongNumArgs (interp, 1, objv, "s ...");
 	return TCL_ERROR;
     }
 
@@ -123,7 +123,7 @@ critcl::ccommand ::struct::set::exclude {} {
     CSET a;
 
     if (objc < 2) {
-	Tcl_WrongNumArgs (interp, 1, objv, "S args");
+	Tcl_WrongNumArgs (interp, 1, objv, "s ...");
 	return TCL_ERROR;
     }
 
@@ -148,7 +148,7 @@ critcl::ccommand ::struct::set::include {} {
     CSET a;
 
     if (objc < 2) {
-	Tcl_WrongNumArgs (interp, 1, objv, "S args");
+	Tcl_WrongNumArgs (interp, 1, objv, "s ...");
 	return TCL_ERROR;
     }
 
@@ -172,10 +172,10 @@ critcl::ccommand ::struct::set::intersect {} {
     int i;
     CSET a, b;
 
-    if (objc == 0) {
+    if (objc == 1) {
 	return TCL_OK;
     }
-    if (objc == 1) {
+    if (objc == 2) {
 	Tcl_SetObjResult (interp, objv [1] );
 	return TCL_OK;
     }
@@ -204,12 +204,15 @@ critcl::cproc ::struct::set::intersect3 {CSET a CSET b} Tcl_Obj* {
     CSET i  = cset_intersect  (a, b);
     CSET db = cset_difference (b, a);
     Tcl_Obj* v [3];
+    Tcl_Obj* r;
 
     v[0] =  setc_new (i);
     v[1] =  setc_new (da);
     v[2] =  setc_new (db);
 
-    return Tcl_NewListObj (3, v);
+    r = Tcl_NewListObj (3, v);
+    Tcl_IncrRefCount (r);
+    return r;
 }
 
 critcl::cproc ::struct::set::size {CSET s} int {
@@ -234,10 +237,10 @@ critcl::ccommand ::struct::set::union {} {
     int i;
     CSET r, b;
 
-    if (objc == 0) {
+    if (objc == 1) {
 	return TCL_OK;
     }
-    if (objc == 1) {
+    if (objc == 2) {
 	Tcl_SetObjResult (interp, objv [1] );
 	return TCL_OK;
     }
@@ -264,18 +267,220 @@ critcl::ccommand ::struct::set::union {} {
 critcl::ccommand ::struct::set::add {} {
     /* Syntax: add Svar A?... */
 
+    Tcl_Obj* varname;
+    Tcl_Obj* s_boxed;
+    CSET     s, b;
+    int      i;
+
+    if (objc < 2) {
+	Tcl_WrongNumArgs (interp, 1, objv, "Svar ...");
+	return TCL_ERROR;
+    }
+
+    if (objc == 2) {
+	return TCL_OK;
+    }
+
+    for (i = 2; i < objc; i++) {
+	if (setc_get (interp, objv[i], &b) != TCL_OK) {
+	    return TCL_ERROR;
+	}
+    }
+
+    varname = objv[1];
+
+    s_boxed = Tcl_ObjGetVar2 (interp, varname, 0, 0);
+
+    if (!s_boxed) {
+	s       = cset_create (setc_dup, setc_free, setc_compare, 0);
+	s_boxed = setc_new (s);
+
+    } else {
+	int dup = 0;
+	if (Tcl_IsShared (s_boxed)) {
+	    s_boxed = Tcl_DuplicateObj (s_boxed);
+	    dup = 1;
+	}
+
+	if (setc_get (interp, s_boxed, &s) != TCL_OK) {
+	    return TCL_ERROR;
+	}
+
+	if (dup) {
+	    Tcl_InvalidateStringRep (s_boxed);
+	}
+    }
+
+    for (i = 2; i < objc; i++) {
+	setc_get (interp, objv[i], &b);
+	cset_vunion (s, b);
+    }
+
+    if (!Tcl_ObjSetVar2 (interp, varname, 0, s_boxed, TCL_LEAVE_ERR_MSG)) {
+	return TCL_ERROR;
+    }
+
+    return TCL_OK;
 }
 
 critcl::ccommand ::struct::set::set {} {
     /* Syntax: add Svar item?... */
+
+    Tcl_Obj* varname;
+    Tcl_Obj* s_boxed;
+    CSET     s;
+    int      i, added;
+
+    if (objc < 2) {
+	Tcl_WrongNumArgs (interp, 1, objv, "Svar ...");
+	return TCL_ERROR;
+    }
+
+    if (objc == 2) {
+	Tcl_SetObjResult (interp, Tcl_NewIntObj (0));
+	return TCL_OK;
+    }
+
+    varname = objv[1];
+
+    s_boxed = Tcl_ObjGetVar2 (interp, varname, 0, 0);
+
+    if (!s_boxed) {
+	s       = cset_create (setc_dup, setc_free, setc_compare, 0);
+	s_boxed = setc_new (s);
+
+    } else {
+	int dup = 0;
+	if (Tcl_IsShared (s_boxed)) {
+	    s_boxed = Tcl_DuplicateObj (s_boxed);
+	    dup = 1;
+	}
+
+	if (setc_get (interp, s_boxed, &s) != TCL_OK) {
+	    return TCL_ERROR;
+	}
+
+	if (dup) {
+	    Tcl_InvalidateStringRep (s_boxed);
+	}
+    }
+
+    for (i = 2, added = 0; i < objc; i++) {
+	added += cset_vadd (s, objv [i]);
+    }
+
+    if (!Tcl_ObjSetVar2 (interp, varname, 0, s_boxed, TCL_LEAVE_ERR_MSG)) {
+	return TCL_ERROR;
+    }
+
+    Tcl_SetObjResult (interp, Tcl_NewIntObj (added));
+    return TCL_OK;
 }
 
 critcl::ccommand ::struct::set::subtract {} {
     /* Syntax: subtract Svar A?... */
+
+    Tcl_Obj* varname;
+    Tcl_Obj* s_boxed;
+    CSET     s, b;
+    int      i, dup;
+
+    if (objc < 2) {
+	Tcl_WrongNumArgs (interp, 1, objv, "Svar ...");
+	return TCL_ERROR;
+    }
+
+    if (objc == 2) {
+	return TCL_OK;
+    }
+
+    varname = objv[1];
+
+    s_boxed = Tcl_ObjGetVar2 (interp, varname, 0, TCL_LEAVE_ERR_MSG);
+    if (!s_boxed) {
+	return TCL_ERROR;
+    }
+
+    for (i = 2; i < objc; i++) {
+	if (setc_get (interp, objv[i], &b) != TCL_OK) {
+	    return TCL_ERROR;
+	}
+    }
+
+    dup = 0;
+    if (Tcl_IsShared (s_boxed)) {
+	s_boxed = Tcl_DuplicateObj (s_boxed);
+	dup = 1;
+    }
+
+    if (setc_get (interp, s_boxed, &s) != TCL_OK) {
+	return TCL_ERROR;
+    }
+
+    for (i = 2; i < objc; i++) {
+	setc_get (interp, objv[i], &b);
+	cset_vdifference (s, b);
+	if (cset_empty (s)) break;
+    }
+
+    if (!Tcl_ObjSetVar2 (interp, varname, 0, s_boxed, TCL_LEAVE_ERR_MSG)) {
+	return TCL_ERROR;
+    }
+
+    if (dup) {
+	Tcl_InvalidateStringRep (s_boxed);
+    }
+    return TCL_OK;
 }
 
 critcl::ccommand ::struct::set::unset {} {
-    /* Syntax: subtract Svar item?... */
+    /* Syntax: unset Svar item?... */
+
+    Tcl_Obj* varname;
+    Tcl_Obj* s_boxed;
+    CSET     s;
+    int      i, removed, dup;
+
+    if (objc < 2) {
+	Tcl_WrongNumArgs (interp, 1, objv, "Svar ...");
+	return TCL_ERROR;
+    }
+
+    if (objc == 2) {
+	Tcl_SetObjResult (interp, Tcl_NewIntObj (0));
+	return TCL_OK;
+    }
+
+    varname = objv[1];
+    s_boxed = Tcl_ObjGetVar2 (interp, varname, 0, TCL_LEAVE_ERR_MSG);
+    if (!s_boxed) {
+	return TCL_ERROR;
+    }
+
+    dup = 0;
+    if (Tcl_IsShared (s_boxed)) {
+	s_boxed = Tcl_DuplicateObj (s_boxed);
+	dup = 1;
+    }
+
+    if (setc_get (interp, s_boxed, &s) != TCL_OK) {
+	return TCL_ERROR;
+    }
+
+    if (dup) {
+	Tcl_InvalidateStringRep (s_boxed);
+    }
+
+    for (i = 2, removed = 0; i < objc; i++) {
+	removed += cset_vsubtract (s, objv [i]);
+    }
+
+    if (!Tcl_ObjSetVar2 (interp, varname, 0, s_boxed, TCL_LEAVE_ERR_MSG)) {
+	return TCL_ERROR;
+    }
+
+    Tcl_SetObjResult (interp, Tcl_NewIntObj (removed));
+    return TCL_OK;
 }
 
 # # ## ### ##### ######## ############# #####################
