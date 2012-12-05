@@ -18,36 +18,36 @@ namespace eval ::struct::set {
 # # ## ### ##### ######## ############# #####################
 ## API. Functional. Sideeffect-free.
 
-proc ::struct::set::contains {S element} {
-    return [expr {$element in $S}]
+proc ::struct::set::contains {s element} {
+    return [expr {$element in $s}]
 }
 
 proc ::struct::set::create {args} {
     return [lsort -unique $args]
 }
 
-proc ::struct::set::difference {S args} {
+proc ::struct::set::difference {s args} {
     # Fast bailout
-    if {![llength $S]} { return $S }
+    if {![llength $s]} { return $s }
 
-    ::set S [lsort -unique $S]
+    ::set s [lsort -unique $s]
     foreach B $args {
-	::set S [Difference [K $S [::unset S]] $B]
+	::set s [Difference [K $s [::unset s]] $B]
 	# Fast bailout
-	if {![llength $S]} { return $S }
+	if {![llength $s]} { return $s }
     }
 
-    return $S
+    return $s
 }
 
-proc ::struct::set::empty {S} {
-    return [expr {![llength $S]}]
+proc ::struct::set::empty {s} {
+    return [expr {![llength $s]}]
 }
 
-proc ::struct::set::equal {A B} {
+proc ::struct::set::equal {a b} {
     # Prevent duplicates from affecting the comparison.
-    ::set A [lsort -unique $A]
-    ::set B [lsort -unique $B]
+    ::set A [lsort -unique $a]
+    ::set B [lsort -unique $b]
 
     # Equal if of the same cardinality and string identical for
     # canonical order.
@@ -55,12 +55,12 @@ proc ::struct::set::equal {A B} {
     return [expr {([llength $A] == [llength $B]) && ([lsort $A] eq [lsort $B])}]
 }
 
-proc ::struct::set::exclude {S args} {
-    difference $S $args
+proc ::struct::set::exclude {s args} {
+    difference $s $args
 }
 
-proc ::struct::set::include {S args} {
-    union $S $args
+proc ::struct::set::include {s args} {
+    union $s $args
 }
 
 proc ::struct::set::intersect {args} {
@@ -86,32 +86,32 @@ proc ::struct::set::intersect {args} {
     return $Z
 }
 
-proc ::struct::set::intersect3 {A B} {
+proc ::struct::set::intersect3 {a b} {
     return [list \
-		[intersect  $A $B] \
-		[difference $A $B] \
-		[difference $B $A]]
+		[intersect  $a $b] \
+		[difference $a $b] \
+		[difference $b $a]]
 }
 
-proc ::struct::set::size {S} {
-    return [llength [lsort -unique $S]]
+proc ::struct::set::size {s} {
+    return [llength [lsort -unique $s]]
 }
 
-proc ::struct::set::subset {A B} {
+proc ::struct::set::subset {a b} {
     # A subset|== B <=> (A == A*B)
-    return [equal $A [intersect $A $B]]
+    return [equal $a [intersect $a $b]]
 }
 
-proc ::struct::set::superset {A B} {
+proc ::struct::set::superset {a b} {
     # A superset|== B <=> (B == A*B)
-    return [equal $B [intersect $A $B]]
+    return [equal $b [intersect $a $b]]
 }
 
-proc ::struct::set::symdifference {A B} {
+proc ::struct::set::symdifference {a b} {
     # symdiff == (A-B) + (B-A) == (A+B)-(A*B)
-    if {![llength $A]} {return $B}
-    if {![llength $B]} {return $A}
-    return [union [difference $A $B] [difference $B $A]]
+    if {![llength $a]} {return $b}
+    if {![llength $b]} {return $a}
+    return [union [difference $a $b] [difference $b $a]]
 }
 
 proc ::struct::set::union {args} {
