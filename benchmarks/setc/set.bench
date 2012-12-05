@@ -5,11 +5,14 @@
 
 kb check Tcl 8.5
 
-kb local   benchmark struct::set
+kb local support   c::slice
+kb local support   c::set
+
+kb local benchmark struct::set
 
 # # ## ### ##### ######## ############# #####################
 
-proc id {} { return "tcl" }
+proc id {} { return "c" }
 
 # # ## ### ##### ######## ############# #####################
 
