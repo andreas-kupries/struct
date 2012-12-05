@@ -82,8 +82,8 @@ critcl::api function void cset_vunion      {CSET a {const CSET} b}
 ## Modifiers. Operations which modify the 1st argument.
 ## 2nd argument is element, not set.
 
-critcl::api function void cset_vadd      {CSET s {void const*} item}
-critcl::api function void cset_vsubtract {CSET s {void const*} item}
+critcl::api function int cset_vadd      {CSET s {void const*} item}
+critcl::api function int cset_vsubtract {CSET s {void const*} item}
 
 # # ## ### ##### ######## ############# #####################
 ## User data management. Set and retrieve.

@@ -77,7 +77,10 @@ cset_contents (const CSET s)
 int
 cset_contains (const CSET s, void const* item)
 {
-    return !jsw_find (s->set, (void*) item);
+    /* Return value is pointer, 0 signaling "not found". The double negation
+    ** reduces this to a proper boolean of the correct value.
+    */
+    return !!jsw_find (s->set, (void*) item);
 }
 
 int
@@ -276,6 +279,8 @@ cset_union (const CSET a, const CSET b)
 	for (item = jsw_tfirst (t, b->set);
 	     item;
 	     item = jsw_tnext (t)) {
+	    /* Ignore duplicates! */
+	    if (jsw_find (r->set, item)) continue;
 	    jsw_insert (r->set, item);
 	}
 	jsw_tdelete (t);
@@ -404,6 +409,8 @@ cset_vunion (CSET a, const CSET b)
 	for (item = jsw_tfirst (t, b->set);
 	     item;
 	     item = jsw_tnext (t)) {
+	    /* Ignore duplicates! */
+	    if (jsw_find (a->set, item)) continue;
 	    jsw_insert (a->set, item);
 	}
 
@@ -417,22 +424,30 @@ cset_vunion (CSET a, const CSET b)
  * 2nd argument is item.
  */
 
-void
+int
 cset_vadd (CSET s, void const* item)
 {
     /* A = A + item
      */
 
+    if (jsw_find (s->set, (void*) item)) {
+	return 0;
+    }
     jsw_insert (s->set, (void*) item);
+    return 1;
 }
 
-void
+int
 cset_vsubtract (CSET s, void const* item)
 {
     /* A = A - item
      */
 
+    if (!jsw_find (s->set, (void*) item)) {
+	return 0;
+    }
     jsw_erase (s->set, (void*) item);
+    return 1;
 }
 
 /*
