@@ -1,4 +1,5 @@
 #include "csetInt.h"
+#include <c_slice/c_sliceDecls.h>
 
 /*
  * TODO: Add assertions in each operator that the sets match structurally
@@ -52,6 +53,26 @@ cset_destroy (CSET s)
  * = = == === ===== ======== ============= =====================
  * Accessors.
  */
+
+CSLICE
+cset_contents (const CSET s)
+{
+    CSLICE slice = cslice_make (jsw_size (s->set));
+    long int c, i;
+    void**   v;
+    void*    item;
+    jsw_trav_t* t = jsw_tnew ();
+
+    cslice_get (slice, &c, &v);
+    for (i=0, item = jsw_tfirst (t, s->set);
+	 item;
+	 i++, item = jsw_tnext (t)) {
+	v[i] = item;
+    }
+    jsw_tdelete (t);
+
+    return slice;
+}
 
 int
 cset_contains (const CSET s, void const* item)

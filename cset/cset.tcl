@@ -31,6 +31,8 @@ critcl::subject structure
 critcl::subject {abstract data structure}
 critcl::subject {generic data structure}
 
+critcl::api import c::slice 1
+
 # # ## ### ##### ######## ############# #####################
 ## Configuration
 
@@ -55,6 +57,7 @@ critcl::api function void cset_destroy {CSET q}
 # # ## ### ##### ######## ############# #####################
 ## Accessors, and operations.
 
+critcl::api function CSLICE     cset_contents   {{const CSET} s}
 critcl::api function int        cset_contains   {{const CSET} s {void const*} item}
 critcl::api function CSET       cset_dup        {{const CSET} s}
 critcl::api function CSET       cset_difference {{const CSET} a {const CSET} b}

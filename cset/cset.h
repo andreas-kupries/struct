@@ -2,6 +2,12 @@
 #define CSET_H 1
 
 /*
+ * Import the slice API, especially the data types.
+ */
+
+#include "c_slice/c_sliceDecls.h"
+
+/*
  * Sets are conceptually a hashtable of void* cells, with each cell
  * either directly containing the data, or a pointer to it.
  *
@@ -24,7 +30,7 @@
 
 typedef struct CSET_* CSET;
 
-typedef void* (*CSET_CELL_DUP) (void* cell);
+typedef void* (*CSET_CELL_DUP) (void const* cell);
 typedef void  (*CSET_CELL_REL) (void* cell);
 typedef int   (*CSET_CELL_CMP) (const void* cella, const void* cellb);
 
